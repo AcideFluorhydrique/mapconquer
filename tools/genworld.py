@@ -182,6 +182,9 @@ def write_map(built):
     lines.append("id %s" % built.id)
     lines.append("cols %d" % grid.cols)
     lines.append("rows %d" % grid.rows)
+    # 只有涵蓋整個經度圈的地圖才環繞。區域地圖是平面的。
+    if abs((built.grid.lon_max - built.grid.lon_min) - 360.0) < 0.001:
+        lines.append("wrap x")
     lines.append("")
     lines.append("[terrain]")
     for row in range(grid.rows):

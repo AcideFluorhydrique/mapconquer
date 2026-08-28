@@ -270,7 +270,7 @@ class GameView(context: Context) : SurfaceView(context), SurfaceHolder.Callback 
         val cam = camera ?: return
         val over = overlay ?: return
         canvas.drawColor(Colors.of("#070C12"))
-        mapRenderer?.draw(canvas, cam, over, animateFog = true)
+        mapRenderer?.draw(canvas, cam, over)
         hudRenderer?.draw(canvas, buttons, over, aiThinking = !active.isPlayerTurn)
         panelRenderer?.draw(
             canvas, buttons, panel,
@@ -786,7 +786,6 @@ class GameView(context: Context) : SurfaceView(context), SurfaceHolder.Callback 
         cam.frameOn(home)
         camera = cam
 
-        active.recomputeVisibility(active.playerNationId)
         Audio.play(Sfx.TURN)
     }
 

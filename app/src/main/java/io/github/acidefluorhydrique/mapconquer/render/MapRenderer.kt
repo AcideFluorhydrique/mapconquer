@@ -38,11 +38,14 @@ class MapRenderer(private val session: Session) {
     private val rect = RectF()
     private val corners = FloatArray(12)
 
-    fun draw(canvas: Canvas, camera: Camera, overlay: MapOverlay, animateFog: Boolean) {
+    /** visibleCol 的「不在畫面上」哨兵值。 */
+    private val OFFSCREEN = Int.MIN_VALUE
+
+    fun draw(canvas: Canvas, camera: Camera, overlay: MapOverlay) {
         ensureHexPath(camera.hexSize)
         camera.visibleBounds(bounds)
 
-        drawTerrain(canvas, camera, overlay, animateFog)
+        drawTerrain(canvas, camera, overlay)
         drawCoastline(canvas, camera)
         drawBorders(canvas, camera)
         drawOverlayTiles(canvas, camera, overlay)
@@ -66,64 +69,66 @@ class MapRenderer(private val session: Session) {
         hexPath.close()
     }
 
+    /**
+     * 走過所有可見格。
+     *
+     * 環繞地圖上，欄號可能是負的或超過 cols —— **格子索引要折回去，
+     * 螢幕位置要用原始欄號算**。這兩件事分開，接縫才會無縫：
+     * 太平洋左右兩側畫的是同一批格子，只是世界座標差了一整圈。
+     */
     private inline fun forEachVisibleTile(camera: Camera, action: (tile: Int, cx: Float, cy: Float) -> Unit) {
         val layout = camera.layout
         for (row in bounds[1]..bounds[3]) {
             val cy = camera.screenY(layout.centerYOffset(row))
-            val base = row * map.cols
             for (col in bounds[0]..bounds[2]) {
                 val cx = camera.screenX(layout.centerXOffset(col, row))
-                action(base + col, cx, cy)
+                action(map.indexWrapped(col, row), cx, cy)
             }
         }
     }
 
-    private fun drawTerrain(canvas: Canvas, camera: Camera, overlay: MapOverlay, dimUnknown: Boolean) {
+    /**
+     * 把某一格的欄號搬到目前可見範圍內。回傳 [OFFSCREEN] 代表它不在畫面上。
+     *
+     * 城市、部隊、行軍路線都是「已知某一格，要問它畫在哪」，跟逐格掃描的
+     * 方向相反，所以需要這個反查。
+     */
+    private fun visibleCol(col: Int): Int {
+        if (!map.wrapX) return if (col in bounds[0]..bounds[2]) col else OFFSCREEN
+        val shifted = ((col - bounds[0]) % map.cols + map.cols) % map.cols + bounds[0]
+        return if (shifted <= bounds[2]) shifted else OFFSCREEN
+    }
+
+    private fun drawTerrain(canvas: Canvas, camera: Camera, overlay: MapOverlay) {
         paint.style = Paint.Style.FILL
         forEachVisibleTile(camera) { tile, cx, cy ->
-            val explored = !dimUnknown || session.isExplored(tile)
             canvas.save()
             canvas.translate(cx, cy)
-            if (!explored) {
-                paint.shader = null
-                paint.color = Palette.UNEXPLORED
-                canvas.drawPath(hexPath, paint)
-            } else {
-                val terrain = map.terrainAt(tile)
-                var colour = Palette.terrainColour(terrain, tile)
-                val visible = !dimUnknown || session.isVisible(tile)
-                if (!visible) colour = Palette.fogged(colour)
-                paint.color = colour
-                canvas.drawPath(hexPath, paint)
+            paint.shader = null
+            paint.color = Palette.terrainColour(map.terrainAt(tile), tile)
+            canvas.drawPath(hexPath, paint)
 
-                val owner = session.ownerOfTile(tile)
-                if (owner >= 0) {
-                    var tint = Palette.ownershipTint(session, owner)
-                    if (!visible) tint = Colors.alpha(tint, 0x48)
-                    paint.color = tint
-                    canvas.drawPath(hexPath, paint)
-                }
-                if (overlay.showSupply && session.isSupplied(tile)) {
-                    paint.color = Palette.SUPPLY_HINT
-                    canvas.drawPath(hexPath, paint)
-                }
+            val owner = session.ownerOfTile(tile)
+            if (owner >= 0) {
+                paint.color = Palette.ownershipTint(session, owner)
+                canvas.drawPath(hexPath, paint)
+            }
+            if (overlay.showSupply && session.isSupplied(tile)) {
+                paint.color = Palette.SUPPLY_HINT
+                canvas.drawPath(hexPath, paint)
             }
             canvas.restore()
         }
 
-        // 格線只畫在探索過的地方。畫滿整個畫面的話，地圖會看起來像浮在
-        // 一片六角格的虛空裡 —— 未探索區域本來就該是空白，不是網格。
         if (overlay.showGrid && camera.hexSize >= Ui.dp(11f)) {
             paint.style = Paint.Style.STROKE
             paint.strokeWidth = Ui.dp(0.6f)
             paint.color = Palette.GRID
-            forEachVisibleTile(camera) { tile, cx, cy ->
-                if (!dimUnknown || session.isExplored(tile)) {
-                    canvas.save()
-                    canvas.translate(cx, cy)
-                    canvas.drawPath(hexPath, paint)
-                    canvas.restore()
-                }
+            forEachVisibleTile(camera) { _, cx, cy ->
+                canvas.save()
+                canvas.translate(cx, cy)
+                canvas.drawPath(hexPath, paint)
+                canvas.restore()
             }
             paint.style = Paint.Style.FILL
         }
@@ -145,8 +150,8 @@ class MapRenderer(private val session: Session) {
 
         for (row in bounds[1]..bounds[3]) {
             for (col in bounds[0]..bounds[2]) {
-                val tile = row * map.cols + col
-                if (!map.isLand(tile) || !session.isExplored(tile)) continue
+                val tile = map.indexWrapped(col, row)
+                if (!map.isLand(tile)) continue
                 val cx = camera.screenX(layout.centerXOffset(col, row))
                 val cy = camera.screenY(layout.centerYOffset(row))
                 layout.corners(cx, cy, corners)
@@ -174,8 +179,7 @@ class MapRenderer(private val session: Session) {
 
         for (row in bounds[1]..bounds[3]) {
             for (col in bounds[0]..bounds[2]) {
-                val tile = row * map.cols + col
-                if (!session.isExplored(tile)) continue
+                val tile = map.indexWrapped(col, row)
                 val province = map.provinceOf[tile]
                 if (province < 0) continue
                 val owner = session.ownerOfTile(tile)
@@ -240,7 +244,7 @@ class MapRenderer(private val session: Session) {
         paint.style = Paint.Style.FILL
         for (row in bounds[1]..bounds[3]) {
             for (col in bounds[0]..bounds[2]) {
-                val tile = row * map.cols + col
+                val tile = map.indexWrapped(col, row)
                 val movable = overlay.movable[tile]
                 val attackable = overlay.attackable[tile]
                 if (!movable && !attackable) continue
@@ -257,10 +261,11 @@ class MapRenderer(private val session: Session) {
 
         // 選取框最後畫，才不會被範圍色蓋掉。
         val selected = overlay.selectedTile
-        if (selected >= 0 && map.inBounds(map.colOf(selected), map.rowOf(selected))) {
+        val selectedCol = if (selected >= 0) visibleCol(map.colOf(selected)) else OFFSCREEN
+        if (selectedCol != OFFSCREEN) {
             canvas.save()
             canvas.translate(
-                camera.screenX(layout.centerXOffset(map.colOf(selected), map.rowOf(selected))),
+                camera.screenX(layout.centerXOffset(selectedCol, map.rowOf(selected))),
                 camera.screenY(layout.centerYOffset(map.rowOf(selected)))
             )
             paint.style = Paint.Style.STROKE
@@ -286,10 +291,10 @@ class MapRenderer(private val session: Session) {
         for (province in map.provinces) {
             if (!province.hasCity) continue
             val tile = province.capitalTile
-            val col = map.colOf(tile)
             val row = map.rowOf(tile)
-            if (col < bounds[0] || col > bounds[2] || row < bounds[1] || row > bounds[3]) continue
-            if (!session.isExplored(tile)) continue
+            if (row < bounds[1] || row > bounds[3]) continue
+            val col = visibleCol(map.colOf(tile))
+            if (col == OFFSCREEN) continue
 
             val cx = camera.screenX(layout.centerXOffset(col, row))
             val cy = camera.screenY(layout.centerYOffset(row))
@@ -341,16 +346,20 @@ class MapRenderer(private val session: Session) {
         for (unit in session.units) {
             if (!unit.isAlive || unit.isLoaded) continue
             if (!session.isUnitVisibleToPlayer(unit)) continue
-            val col = map.colOf(unit.tile)
             val row = map.rowOf(unit.tile)
-            if (col < bounds[0] - 1 || col > bounds[2] + 1 || row < bounds[1] - 1 || row > bounds[3] + 1) continue
+            if (row < bounds[1] - 1 || row > bounds[3] + 1) continue
+            val col = visibleCol(map.colOf(unit.tile))
+            if (col == OFFSCREEN) continue
 
             var cx = camera.screenX(layout.centerXOffset(col, row))
             var cy = camera.screenY(layout.centerYOffset(row))
 
             // 移動動畫：把這支部隊畫在起點與終點之間。
             if (overlay.animUnit === unit && overlay.animFrom >= 0 && overlay.animTo >= 0) {
-                val fromX = camera.screenX(layout.centerXOffset(map.colOf(overlay.animFrom), map.rowOf(overlay.animFrom)))
+                val fromCol = visibleCol(map.colOf(overlay.animFrom))
+                val fromX = camera.screenX(
+                    layout.centerXOffset(if (fromCol == OFFSCREEN) map.colOf(overlay.animFrom) else fromCol, map.rowOf(overlay.animFrom))
+                )
                 val fromY = camera.screenY(layout.centerYOffset(map.rowOf(overlay.animFrom)))
                 val t = overlay.animProgress
                 cx = fromX + (cx - fromX) * t
@@ -445,20 +454,26 @@ class MapRenderer(private val session: Session) {
         for (i in 0 until overlay.path.size - 1) {
             val a = overlay.path[i]
             val b = overlay.path[i + 1]
+            val ca = visibleCol(map.colOf(a))
+            val cb = visibleCol(map.colOf(b))
+            if (ca == OFFSCREEN || cb == OFFSCREEN) continue
             canvas.drawLine(
-                camera.screenX(layout.centerXOffset(map.colOf(a), map.rowOf(a))),
+                camera.screenX(layout.centerXOffset(ca, map.rowOf(a))),
                 camera.screenY(layout.centerYOffset(map.rowOf(a))),
-                camera.screenX(layout.centerXOffset(map.colOf(b), map.rowOf(b))),
+                camera.screenX(layout.centerXOffset(cb, map.rowOf(b))),
                 camera.screenY(layout.centerYOffset(map.rowOf(b))),
                 paint
             )
         }
         paint.style = Paint.Style.FILL
         val last = overlay.path.last()
-        canvas.drawCircle(
-            camera.screenX(layout.centerXOffset(map.colOf(last), map.rowOf(last))),
-            camera.screenY(layout.centerYOffset(map.rowOf(last))),
-            Ui.dp(3.2f), paint
-        )
+        val lastCol = visibleCol(map.colOf(last))
+        if (lastCol != OFFSCREEN) {
+            canvas.drawCircle(
+                camera.screenX(layout.centerXOffset(lastCol, map.rowOf(last))),
+                camera.screenY(layout.centerYOffset(map.rowOf(last))),
+                Ui.dp(3.2f), paint
+            )
+        }
     }
 }

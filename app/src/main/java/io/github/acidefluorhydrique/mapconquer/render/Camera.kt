@@ -84,11 +84,18 @@ class Camera(private val map: WorldMap) {
     }
 
     fun tileOf(hex: Hex): Int =
-        if (map.inBounds(hex.col, hex.row)) map.index(hex.col, hex.row) else -1
+        if (map.inBounds(hex.col, hex.row)) map.indexWrapped(hex.col, hex.row) else -1
+
+    /** 環繞地圖上，一整圈在世界座標裡的寬度。接縫要對得起來就得用這個值。 */
+    val worldSpan: Float get() = HexLayout.SQRT3 * layout.size * map.cols
 
     /**
      * 目前可見的列與欄範圍，供繪製剔除使用。
      * 多留一格邊界，避免捲動時邊緣的格子閃爍。
+     *
+     * 環繞地圖的欄號**不夾制**：呼叫端會拿到像 -3..97 這種跨過接縫的範圍，
+     * 由它負責把欄號折回去取格子、同時用原始欄號算螢幕位置 ——
+     * 這正是接縫兩側能無縫接上的原因。
      */
     fun visibleBounds(out: IntArray) {
         val rowStride = layout.rowStride
@@ -97,10 +104,16 @@ class Camera(private val map: WorldMap) {
         val lastRow = ((offsetY + viewHeight - insetBottom + layout.size) / rowStride).toInt() + 1
         val firstCol = ((offsetX - hexWidth) / hexWidth).toInt() - 1
         val lastCol = ((offsetX + viewWidth + hexWidth) / hexWidth).toInt() + 1
-        out[0] = firstCol.coerceAtLeast(0)
         out[1] = firstRow.coerceAtLeast(0)
-        out[2] = lastCol.coerceAtMost(map.cols - 1)
         out[3] = lastRow.coerceAtMost(map.rows - 1)
+        if (map.wrapX) {
+            out[0] = firstCol
+            // 拉得再遠也不必畫超過一整圈，否則同一格會被重複畫好幾次。
+            out[2] = minOf(lastCol, firstCol + map.cols - 1)
+        } else {
+            out[0] = firstCol.coerceAtLeast(0)
+            out[2] = lastCol.coerceAtMost(map.cols - 1)
+        }
     }
 
     private fun minHexSize(): Float {
@@ -115,10 +128,16 @@ class Camera(private val map: WorldMap) {
         if (viewWidth == 0 || viewHeight == 0) return
         val worldWidth = layout.worldWidth(map.cols)
         val worldHeight = layout.worldHeight(map.rows)
-        offsetX = if (worldWidth <= viewWidth) {
-            (worldWidth - viewWidth) / 2f
+        if (map.wrapX) {
+            // 環繞方向沒有邊界，只有相位：一路往東推會回到出發點。
+            val span = worldSpan
+            offsetX = ((offsetX % span) + span) % span
         } else {
-            offsetX.coerceIn(0f, worldWidth - viewWidth)
+            offsetX = if (worldWidth <= viewWidth) {
+                (worldWidth - viewWidth) / 2f
+            } else {
+                offsetX.coerceIn(0f, worldWidth - viewWidth)
+            }
         }
         val visibleHeight = viewHeight - insetTop - insetBottom
         offsetY = if (worldHeight <= visibleHeight) {

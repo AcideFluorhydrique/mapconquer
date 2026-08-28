@@ -216,7 +216,6 @@ object SaveGame {
         }
         session.rebuildCargoLinks()
         session.refreshSupplyView()
-        session.recomputeVisibility(session.playerNationId)
         session
     }.getOrNull()
 }

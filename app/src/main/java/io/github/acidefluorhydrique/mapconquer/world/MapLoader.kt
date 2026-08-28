@@ -47,6 +47,7 @@ object MapLoader {
         var id = fallbackId
         var cols = 0
         var rows = 0
+        var wrapX = false
         var section = ""
         val terrainRows = ArrayList<String>()
         val provinceRows = ArrayList<String>()
@@ -71,6 +72,8 @@ object MapLoader {
                             "id" -> id = value
                             "cols" -> cols = value.toIntOrNull() ?: 0
                             "rows" -> rows = value.toIntOrNull() ?: 0
+                            // `wrap x` = 東西環繞（世界地圖）。沒寫就是平面地圖。
+                            "wrap" -> wrapX = value.equals("x", ignoreCase = true)
                         }
                     }
                 }
@@ -101,8 +104,8 @@ object MapLoader {
             decodeRunLength(provinceRows[row], provinceOf, row * cols, cols, id, row)
         }
 
-        val provinces = buildProvinces(metaRows, provinceOf, cols, rows, terrain, id)
-        return WorldMap(id, cols, rows, terrain, provinceOf, provinces)
+        val provinces = buildProvinces(metaRows, provinceOf, cols, rows, terrain, id, wrapX)
+        return WorldMap(id, cols, rows, terrain, provinceOf, provinces, wrapX)
     }
 
     /** `12:-1 6:0 78:-1` → 依序把 12 格填 -1、6 格填 0、78 格填 -1。 */
@@ -150,7 +153,8 @@ object MapLoader {
         cols: Int,
         rows: Int,
         terrain: ByteArray,
-        mapId: String
+        mapId: String,
+        wrapX: Boolean
     ): List<Province> {
         if (metaRows.isEmpty()) return emptyList()
 
@@ -184,7 +188,8 @@ object MapLoader {
         val neighbourSets = Array(maxId + 1) { HashSet<Int>() }
         val coastal = BooleanArray(maxId + 1)
         val buf = IntArray(6)
-        val scratchMap = WorldMap(mapId, cols, rows, terrain, provinceOf, emptyList())
+        // 省界的鄰接必須用同一套環繞規則算，否則接縫兩側的省份會被當成不相鄰。
+        val scratchMap = WorldMap(mapId, cols, rows, terrain, provinceOf, emptyList(), wrapX)
         for (i in provinceOf.indices) {
             val pid = provinceOf[i]
             if (pid < 0 || pid > maxId) continue

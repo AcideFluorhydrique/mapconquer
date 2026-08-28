@@ -22,9 +22,6 @@ import io.github.acidefluorhydrique.mapconquer.world.Terrain
  */
 object Palette {
 
-    /** 未探索區域。 */
-    val UNEXPLORED: Int get() = Colors.of("#0B1219")
-
     val GRID: Int get() = Colors.of("#22FFFFFF")
     val PROVINCE_BORDER: Int get() = Colors.of("#40000000")
     val SELECTION: Int get() = Colors.of("#FFD98A")
@@ -76,9 +73,6 @@ object Palette {
         session.isHostile(session.playerNationId, nationId) -> Colors.of("#FF7B6B")
         else -> Colors.of("#9AA8B4")
     }
-
-    /** 探索過但目前看不到：壓暗並稍微去飽和。 */
-    fun fogged(colour: Int): Int = Colors.lerp(colour, Colors.of("#FF0C141C"), 0.45f)
 
     /** 單位底板顏色：國色加深，好讓上面的白字讀得出來。 */
     fun unitPlate(session: Session, nationId: Int): Int =

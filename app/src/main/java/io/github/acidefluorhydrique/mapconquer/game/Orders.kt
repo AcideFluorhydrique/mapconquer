@@ -133,7 +133,6 @@ object Orders {
     /** 抵達之後的連鎖效果：佔領、視野、勝負重判。 */
     private fun onArrived(session: Session, unit: ArmyUnit) {
         tryCapture(session, unit)
-        if (unit.nationId == session.playerNationId) session.recomputeVisibility(session.playerNationId)
         session.refreshOutcome()
     }
 
@@ -257,9 +256,6 @@ object Orders {
             session.destroyUnit(attacker)
         }
 
-        if (attacker.nationId == session.playerNationId || defender.nationId == session.playerNationId) {
-            session.recomputeVisibility(session.playerNationId)
-        }
         session.refreshOutcome()
         return result
     }
@@ -369,7 +365,6 @@ object Orders {
         val unit = session.spawnUnit(kind, nationId, tile) ?: return null
         nation.funds -= kind.cost
         session.pushEvent("event_unit_built", listOf(kind.key, province.nameKey), tile, nationId)
-        if (nationId == session.playerNationId) session.recomputeVisibility(nationId)
         return unit
     }
 

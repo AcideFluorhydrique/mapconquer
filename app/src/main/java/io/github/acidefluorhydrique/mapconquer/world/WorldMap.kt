@@ -26,7 +26,16 @@ class WorldMap(
     val terrain: ByteArray,
     /** 每格所屬省份 id；-1 代表不屬於任何省（大洋）。 */
     val provinceOf: IntArray,
-    val provinces: List<Province>
+    val provinces: List<Province>,
+    /**
+     * 東西方向是否首尾相接。
+     *
+     * 世界地圖是圓柱體：從白令海峽往西走會回到歐洲。少了它，太平洋兩岸
+     * 在遊戲裡會變成地圖的兩個死角，艦隊得繞整個地球才過得去 ——
+     * 而那正是同類作品都把世界地圖做成環形的原因。
+     * 區域地圖（歐洲、北非等）是平面的，不環繞。
+     */
+    val wrapX: Boolean = false
 ) {
 
     val tileCount: Int get() = cols * rows
@@ -37,7 +46,13 @@ class WorldMap(
 
     fun rowOf(index: Int): Int = index / cols
 
-    fun inBounds(col: Int, row: Int): Boolean = col in 0 until cols && row in 0 until rows
+    fun inBounds(col: Int, row: Int): Boolean =
+        row in 0 until rows && (wrapX || col in 0 until cols)
+
+    /** 把可能繞出界的欄號折回 0 until cols。 */
+    fun normaliseCol(col: Int): Int = if (!wrapX) col else ((col % cols) + cols) % cols
+
+    fun indexWrapped(col: Int, row: Int): Int = row * cols + normaliseCol(col)
 
     fun terrainAt(index: Int): Terrain = Terrain.ALL[terrain[index].toInt()]
 
@@ -52,7 +67,23 @@ class WorldMap(
 
     fun hexOf(index: Int): Hex = HexMath.ofOffset(colOf(index), rowOf(index))
 
-    fun distance(a: Int, b: Int): Int = HexMath.distance(hexOf(a), hexOf(b))
+    /**
+     * 兩格之間的距離。環形地圖上要同時考慮「往東繞」與「往西繞」，取最短的那條 ——
+     * 否則堪察加到阿拉斯加會被算成跨越整個歐亞大陸。
+     */
+    fun distance(a: Int, b: Int): Int {
+        val from = hexOf(a)
+        var best = HexMath.distance(from, hexOf(b))
+        if (wrapX) {
+            val row = rowOf(b)
+            val col = colOf(b)
+            val east = HexMath.distance(from, HexMath.ofOffset(col + cols, row))
+            if (east < best) best = east
+            val west = HexMath.distance(from, HexMath.ofOffset(col - cols, row))
+            if (west < best) best = west
+        }
+        return best
+    }
 
     /**
      * 把 [index] 的六個鄰居寫進 [out]（長度必須 >= 6），回傳實際數量。
@@ -66,34 +97,20 @@ class WorldMap(
         val row = index / cols
         val odd = row and 1
         var n = 0
-        // 東
-        if (col + 1 < cols) out[n++] = index + 1
-        // 東北
-        run {
-            val c = if (odd == 1) col + 1 else col
-            val r = row - 1
-            if (r >= 0 && c in 0 until cols) out[n++] = r * cols + c
+
+        fun push(c: Int, r: Int) {
+            if (r < 0 || r >= rows) return
+            val cc = if (wrapX) ((c % cols) + cols) % cols else c
+            if (cc < 0 || cc >= cols) return
+            out[n++] = r * cols + cc
         }
-        // 西北
-        run {
-            val c = if (odd == 1) col else col - 1
-            val r = row - 1
-            if (r >= 0 && c in 0 until cols) out[n++] = r * cols + c
-        }
-        // 西
-        if (col - 1 >= 0) out[n++] = index - 1
-        // 西南
-        run {
-            val c = if (odd == 1) col else col - 1
-            val r = row + 1
-            if (r < rows && c in 0 until cols) out[n++] = r * cols + c
-        }
-        // 東南
-        run {
-            val c = if (odd == 1) col + 1 else col
-            val r = row + 1
-            if (r < rows && c in 0 until cols) out[n++] = r * cols + c
-        }
+
+        push(col + 1, row)                              // 東
+        push(if (odd == 1) col + 1 else col, row - 1)   // 東北
+        push(if (odd == 1) col else col - 1, row - 1)   // 西北
+        push(col - 1, row)                              // 西
+        push(if (odd == 1) col else col - 1, row + 1)   // 西南
+        push(if (odd == 1) col + 1 else col, row + 1)   // 東南
         return n
     }
 
@@ -111,7 +128,7 @@ class WorldMap(
         val buf = ArrayList<Hex>(3 * radius * (radius + 1) + 1)
         HexMath.spiral(center, radius, buf)
         for (h in buf) {
-            if (inBounds(h.col, h.row)) out.add(index(h.col, h.row))
+            if (inBounds(h.col, h.row)) out.add(indexWrapped(h.col, h.row))
         }
     }
 }

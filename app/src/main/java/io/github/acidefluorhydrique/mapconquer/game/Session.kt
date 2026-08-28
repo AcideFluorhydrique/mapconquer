@@ -4,8 +4,6 @@
 package io.github.acidefluorhydrique.mapconquer.game
 
 import io.github.acidefluorhydrique.mapconquer.core.Rng
-import io.github.acidefluorhydrique.mapconquer.hex.Hex
-import io.github.acidefluorhydrique.mapconquer.hex.HexMath
 import io.github.acidefluorhydrique.mapconquer.units.ArmyUnit
 import io.github.acidefluorhydrique.mapconquer.units.CommanderSkill
 import io.github.acidefluorhydrique.mapconquer.units.Domain
@@ -63,9 +61,6 @@ class Session(
      */
     private val occupancy = IntArray(map.tileCount * 3) { -1 }
 
-    /** 玩家視野：0 = 未探索、1 = 探索過（記得地形）、2 = 目前可見。 */
-    val visibility = ByteArray(map.tileCount)
-
     /** 目前行動國的補給覆蓋，回合開始時重算。 */
     private val suppliedTiles = BooleanArray(map.tileCount)
     private val supplyCost = IntArray(map.tileCount)
@@ -85,7 +80,6 @@ class Session(
     val events = ArrayList<GameEvent>(32)
 
     private val neighbourBuf = IntArray(6)
-    private val hexBuf = ArrayList<Hex>(64)
     private val starved = ArrayList<ArmyUnit>(8)
 
     init {
@@ -304,7 +298,6 @@ class Session(
         collectIncome(nation)
         computeSupply(nation.id)
         refreshUnits(nation)
-        if (nation.id == playerNationId) recomputeVisibility(playerNationId)
     }
 
     private fun endNationTurn(nation: Nation) {
@@ -471,49 +464,26 @@ class Session(
     }
 
     // ------------------------------------------------------------------
-    // 視野
+    // 偵察
     // ------------------------------------------------------------------
 
-    /** 重算指定國家的視野。目前只有玩家需要 —— AI 直接讀完整棋盤。 */
-    fun recomputeVisibility(nationId: Int) {
-        for (i in visibility.indices) {
-            // 2 → 1：看過的地形留著，但單位資訊會過期。
-            if (visibility[i].toInt() == 2) visibility[i] = 1
-        }
-        for (province in map.provinces) {
-            val owner = provinceOwner[province.id]
-            if (owner < 0 || !diplomacy.isAllied(owner, nationId)) continue
-            for (tile in province.tiles) visibility[tile] = 2
-        }
-        for (unit in units) {
-            if (unit.nationId != nationId || !unit.isAlive) continue
-            reveal(unit.tile, visionFor(unit))
-        }
-    }
-
-    private fun reveal(centre: Int, radius: Int) {
-        HexMath.spiral(map.hexOf(centre), radius, hexBuf)
-        for (h in hexBuf) {
-            if (map.inBounds(h.col, h.row)) visibility[map.index(h.col, h.row)] = 2
-        }
-    }
-
-    fun isVisible(tile: Int): Boolean = visibility[tile].toInt() == 2
-
-    fun isExplored(tile: Int): Boolean = visibility[tile].toInt() >= 1
-
     /**
-     * 玩家看不看得到這支部隊。
-     * 潛艇要靠得夠近或被反潛單位盯上才會現形 —— 這是它唯一的生存機制。
+     * 本作**沒有戰爭迷霧**：整張地圖從第一回合起就完全可見。
+     *
+     * 這是刻意的。大戰略的樂趣在於看著整個棋盤做取捨 —— 該先打哪一國、
+     * 戰線要拉多長、艦隊繞哪條航路 —— 而迷霧把這些決策換成了「派偵察兵去翻圖」，
+     * 那是戰術層的樂趣，不是這個尺度該有的。同類作品也都是上帝視角。
+     *
+     * 唯一的例外是潛艇：它必須靠得夠近或被反潛單位盯上才會現形，
+     * 否則潛艇這個兵種就完全沒有存在意義。[UnitKind.vision] 現在只用在這裡。
      */
     fun isUnitVisibleToPlayer(unit: ArmyUnit): Boolean {
         if (unit.nationId == playerNationId) return true
-        if (!isVisible(unit.tile)) return false
         if (!unit.kind.isStealth) return true
         for (own in units) {
             if (own.nationId != playerNationId || !own.isAlive) continue
             val d = map.distance(own.tile, unit.tile)
-            if (own.kind.isSubHunter && d <= own.kind.vision) return true
+            if (own.kind.isSubHunter && d <= visionFor(own)) return true
             if (d <= 1) return true
         }
         return false
