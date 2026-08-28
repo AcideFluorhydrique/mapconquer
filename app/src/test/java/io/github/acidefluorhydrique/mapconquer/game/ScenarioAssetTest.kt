@@ -99,7 +99,8 @@ class ScenarioAssetTest {
                 }
             }
             // 目標不能是自己開局就持有的省份，否則第一回合就通關了。
-            val owned = scenario.ownership[scenario.playable.first()].orEmpty().toSet()
+            // orEmpty() 沒有 IntArray? 的多載，所以老實地展開。
+            val owned = scenario.ownership[scenario.playable.first()]?.toSet() ?: emptySet()
             for (objective in scenario.objectives) {
                 if (objective.type != ObjectiveType.CAPTURE_PROVINCES) continue
                 for (pid in objective.provinces) {

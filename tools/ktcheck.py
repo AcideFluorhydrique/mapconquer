@@ -15,6 +15,9 @@ Kotlin 原始碼的快速健檢。
    錯誤訊息卻出現在別的檔案上（「Unresolved reference」），非常難追。
 2. **括號不平衡。**
 3. **漏掉的 import。** 專案內宣告的型別被跨套件使用卻沒有 import。
+4. **英美拼法對不上的成員名。** 宣告寫 `defenseBonus`、呼叫端寫 `defenceBonus`，
+   在一份混用 `Colors`（Android API）與 `colour`（自己的欄位）的程式碼裡
+   非常容易發生，而且只會在編譯時才炸出來。
 
 註解與字串是用逐字元掃描剝掉的，不是正則 —— 用正則配對巢狀註解正是
 第一條會被漏掉的原因。
@@ -118,6 +121,34 @@ DECL = re.compile(
     r"(class|object|interface|enum class)\s+(\w+)", re.M
 )
 
+MEMBER_DECL = re.compile(r"\b(?:fun|val|var)\s+(?:<[^>]*>\s+)?(\w+)")
+MEMBER_USE = re.compile(r"\.(\w+)")
+
+# 英式／美式拼法的對照。左右兩邊都會互換一次，所以只要列一個方向。
+SPELLINGS = [
+    ("defense", "defence"), ("offense", "offence"), ("armor", "armour"),
+    ("color", "colour"), ("center", "centre"), ("neighbor", "neighbour"),
+    ("behavior", "behaviour"), ("harbor", "harbour"), ("gray", "grey"),
+    ("license", "licence"), ("meter", "metre"), ("fiber", "fibre"),
+]
+
+
+def spelling_variants(name):
+    """回傳這個名字所有英美拼法的替換結果（不含自己）。"""
+    out = set()
+    lowered = name
+    for a, b in SPELLINGS:
+        for src, dst in ((a, b), (b, a)):
+            for cased_src, cased_dst in (
+                (src, dst),
+                (src.capitalize(), dst.capitalize()),
+                (src.upper(), dst.upper()),
+            ):
+                if cased_src in lowered:
+                    out.add(lowered.replace(cased_src, cased_dst))
+    out.discard(name)
+    return out
+
 
 def main():
     files = list(kotlin_files())
@@ -147,6 +178,28 @@ def main():
             if package:
                 for m in DECL.finditer(code):
                     declarations.setdefault(m.group(2), set()).add(package.group(1))
+
+    # 專案裡宣告過的所有成員名。跨檔案收集，因為呼叫端與宣告端本來就不同檔。
+    declared_members = set()
+    for path, (_text, code) in stripped.items():
+        declared_members.update(MEMBER_DECL.findall(code))
+        # 主建構式的參數也是屬性，正則抓 `val x: T` 已涵蓋。
+    for path, (_text, code) in stripped.items():
+        for line_no, line in enumerate(code.splitlines(), 1):
+            for used in MEMBER_USE.findall(line):
+                if used in declared_members:
+                    continue
+                # 只看駝峰式的複合名字。像 paint.color 這種單字成員多半是
+                # Android 或標準函式庫的（Paint.color 就是美式拼法），
+                # 而專案自己的欄位幾乎都是 defenceBonus 這種複合詞。
+                if len(used) < 6 or used[1:].islower():
+                    continue
+                hits = spelling_variants(used) & declared_members
+                if hits:
+                    problems.append(
+                        f"{rel(path)}:{line_no}: 用了 .{used}，但專案裡宣告的是 "
+                        f"{' / '.join(sorted(hits))} —— 英美拼法對不上"
+                    )
 
     for path, (text, code) in stripped.items():
         package = re.search(r"^package\s+([\w.]+)", code, re.M)

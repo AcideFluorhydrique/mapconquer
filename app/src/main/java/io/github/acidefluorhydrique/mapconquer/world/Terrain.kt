@@ -18,7 +18,7 @@ enum class Terrain(
     /** 陸軍進入此格要花的移動點；水域為 0（陸軍根本進不去）。 */
     val moveCost: Int,
     /** 守方防禦加成百分比。 */
-    val defenseBonus: Int,
+    val defenceBonus: Int,
     val isWater: Boolean,
     /** 深水：登陸艇與淺水單位進不來，主力艦隊的活動空間。 */
     val isDeep: Boolean,
