@@ -150,10 +150,18 @@ enum class UnitKind(
         intArrayOf(30, 24, 46, 40), 40, 7, 1, 2, 4,
         320, 3, 0, false, false, 8, Flags.INTERCEPT
     ),
+    /**
+     * 戰艦的射程 1..3 已經給了它岸轟能力：[Combat.canRetaliate] 只看距離，
+     * 隔著兩格開火本來就不會被還手。
+     *
+     * 它刻意**沒有** [Flags.BOMBARD] —— 那個旗標的意思是「被貼身就毫無自衛能力」
+     * （守方防禦乘 0.55），適用於火炮與火箭炮那種薄皮兵器。
+     * 全場最高的 55 防禦不該吃這個懲罰，不然戰艦會變成怕驅逐艦的怪東西。
+     */
     BATTLESHIP(
         "unit_battleship", Domain.SEA, TargetClass.SHIP, TechBranch.NAVY,
         intArrayOf(54, 46, 60, 20), 55, 6, 1, 3, 4,
-        480, 4, 0, false, false, 11, Flags.BOMBARD
+        480, 4, 0, false, false, 11, 0
     ),
     SUBMARINE(
         "unit_submarine", Domain.SEA, TargetClass.SHIP, TechBranch.NAVY,
@@ -217,6 +225,11 @@ enum class UnitKind(
 
 /** 兵種旗標。用位元而不是一堆 Boolean 欄位，純粹是為了讓上面的表讀得完。 */
 object Flags {
+    /**
+     * 只能遠射，被貼身時防禦會大打折扣。
+     * 帶這個旗標的兵種 minRange 必須 > 1 —— 「射程涵蓋一格」與「近戰無力」
+     * 是互相矛盾的兩件事，CombatTest 會把這條不變量釘住。
+     */
     const val BOMBARD = 1 shl 0
     const val SUPPLIER = 1 shl 1
     const val STEALTH = 1 shl 2

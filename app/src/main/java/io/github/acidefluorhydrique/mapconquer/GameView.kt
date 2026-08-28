@@ -205,15 +205,13 @@ class GameView(context: Context) : SurfaceView(context), SurfaceHolder.Callback 
             if (!player.step()) {
                 ai = null
                 active.advanceToNextNation()
-                if (active.isPlayerTurn) {
-                    onPlayerTurnStarted(active)
-                }
+                if (active.isPlayerTurn) onPlayerTurnStarted()
                 return
             }
         }
     }
 
-    private fun onPlayerTurnStarted(active: Session) {
+    private fun onPlayerTurnStarted() {
         overlay?.clearSelection()
         Audio.play(Sfx.TURN)
         autoSave()
