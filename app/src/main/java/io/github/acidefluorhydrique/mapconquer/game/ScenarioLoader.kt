@@ -102,7 +102,11 @@ object ScenarioLoader {
         )
     }
 
-    /** `GER|nation_ger|#6E7A86|12|AGGRESSIVE|900|1,1,1,1,0,1` */
+    /**
+     * `GER|nation_ger|#6E7A86|12|AGGRESSIVE|900|1,1,1,1,0,1|🇩🇪`
+     *
+     * 最後兩欄（科技、國旗）都可以省略，舊劇本不必改。
+     */
     private fun parseNation(line: String): ScenarioNation? {
         val p = line.split('|')
         if (p.size < 6) return null
@@ -117,7 +121,8 @@ object ScenarioLoader {
             aiProfile = runCatching { AiProfile.valueOf(p[4].trim().uppercase()) }
                 .getOrDefault(AiProfile.BALANCED),
             funds = p[5].trim().toIntOrNull() ?: 500,
-            tech = tech
+            tech = tech,
+            flag = if (p.size >= 8) p[7].trim() else ""
         )
     }
 

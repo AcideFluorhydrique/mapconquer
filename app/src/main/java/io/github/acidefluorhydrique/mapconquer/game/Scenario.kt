@@ -60,7 +60,9 @@ class ScenarioNation(
     val capitalProvince: Int,
     val aiProfile: AiProfile,
     val funds: Int,
-    val tech: IntArray
+    val tech: IntArray,
+    /** 區域指示符 emoji，交給系統字型畫。空字串代表沒有國旗。 */
+    val flag: String = ""
 )
 
 class ScenarioUnit(

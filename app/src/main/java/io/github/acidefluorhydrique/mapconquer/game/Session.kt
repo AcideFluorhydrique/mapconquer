@@ -91,7 +91,10 @@ class Session(
     init {
         val built = ArrayList<Nation>(scenario.nations.size)
         scenario.nations.forEachIndexed { index, sn ->
-            val nation = Nation(index, sn.code, sn.nameKey, sn.colour, sn.aiProfile, sn.capitalProvince)
+            val nation = Nation(
+                index, sn.code, sn.nameKey, sn.colour,
+                sn.aiProfile, sn.capitalProvince, sn.flag
+            )
             nation.funds = sn.funds
             for (i in sn.tech.indices) {
                 if (i < nation.tech.size) nation.tech[i] = sn.tech[i].coerceIn(0, Nation.MAX_TECH_LEVEL)

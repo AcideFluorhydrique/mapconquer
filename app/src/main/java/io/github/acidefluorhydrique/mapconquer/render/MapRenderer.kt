@@ -416,10 +416,21 @@ class MapRenderer(private val session: Session) {
             }
         }
 
+        // 國旗：左上角，只在放得夠大時才畫。emoji 由系統字型負責，
+        // 缺字型的裝置會退化成兩個字母，仍然認得出國別。
+        val flag = session.nations.getOrNull(unit.nationId)?.flag.orEmpty()
+        if (flag.isNotEmpty() && size >= Ui.dp(15f)) {
+            Widgets.centered(
+                canvas, flag, cx - w / 2f + size * 0.13f, top + size * 0.2f,
+                size * 0.30f, color = Colors.of("#FFFFFFFF")
+            )
+        }
+
         // 補給告急的紅點：這是玩家最需要一眼看到的異常狀態。
+        // 放右下角，避開左上的國旗。
         if (unit.supply < ArmyUnit.SUPPLY_STRAINED && size >= Ui.dp(10f)) {
             paint.color = Palette.supplyColour(unit.supply / ArmyUnit.MAX_SUPPLY.toFloat())
-            canvas.drawCircle(cx - w / 2f + size * 0.09f, top + size * 0.09f, size * 0.07f, paint)
+            canvas.drawCircle(cx + w / 2f - size * 0.09f, top + h - size * 0.09f, size * 0.07f, paint)
         }
     }
 

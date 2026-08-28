@@ -13,9 +13,9 @@ startYear 2026
 starTurns 20,30
 
 [nations]
-BLU|nation_blu|#4C7BA8|20|BALANCED|900|1,1,1,0,0,1
-RED|nation_red|#A8494C|15|AGGRESSIVE|900|1,1,1,0,0,1
-GRN|nation_grn|#4C8C5C|7|TURTLE|700|1,1,1,0,0,1
+BLU|nation_blu|#4C7BA8|20|BALANCED|900|1,1,1,0,0,1|🔵
+RED|nation_red|#A8494C|15|AGGRESSIVE|900|1,1,1,0,0,1|🔴
+GRN|nation_grn|#4C8C5C|7|TURTLE|700|1,1,1,0,0,1|🟢
 
 [relations]
 BLU RED WAR

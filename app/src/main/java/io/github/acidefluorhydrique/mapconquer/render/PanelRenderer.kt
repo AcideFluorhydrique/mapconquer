@@ -329,8 +329,10 @@ class PanelRenderer(private val session: Session) {
         val topCount = ranked.firstOrNull()?.let { session.provincesOf(it.id) }?.coerceAtLeast(1) ?: 1
         for (nation in shown) {
             val count = session.provincesOf(nation.id)
+            val label = (if (nation.flag.isEmpty()) "" else nation.flag + " ") +
+                Strings.byName(nation.nameKey)
             Widgets.leftFit(
-                canvas, Strings.byName(nation.nameKey), panel.left + Ui.dp(16f), y,
+                canvas, label, panel.left + Ui.dp(16f), y,
                 Ui.dp(10.5f), Ui.dp(100f),
                 if (nation.id == session.playerNationId) Colors.of("#F2D08A") else dim,
                 bold = nation.id == session.playerNationId

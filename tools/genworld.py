@@ -365,9 +365,10 @@ def write_conquest(built, scenario_id, name_key, desc_key, order, merge, start_y
         english, _t, _s, colour, profile, _funds = nation_row(code)
         funds = nation_funds[code]
         capital = max(owners[code], key=lambda pid: built.provinces[pid][1])
-        lines.append("%s|nation_%s|%s|%d|%s|%d|%s" % (
+        lines.append("%s|nation_%s|%s|%d|%s|%d|%s|%s" % (
             code, code.lower(), colour, capital, profile, funds,
             ",".join(str(v) for v in tech_for(funds)),
+            places.FLAGS.get(code, ""),
         ))
     lines.append("")
     lines.append("[owners]")
@@ -427,9 +428,10 @@ def write_campaign(built, mission):
     for code in owners:
         english, _t, _s, colour, funds, profile = scn.FACTIONS[code]
         capital = max(owners[code], key=lambda pid: built.provinces[pid][1]) if owners[code] else -1
-        lines.append("%s|nation_%s|%s|%d|%s|%d|%s" % (
+        lines.append("%s|nation_%s|%s|%d|%s|%d|%s|%s" % (
             code, code.lower(), colour, capital, profile, funds,
             ",".join(str(v) for v in mission.get("tech", {}).get(code, [1, 1, 1, 0, 0, 1])),
+            places.FLAGS.get(code, ""),
         ))
     lines.append("")
     lines.append("[relations]")

@@ -52,11 +52,15 @@ class HudRenderer(private val session: Session) {
         val pad = Ui.dp(8f)
         val textY = h * 0.5f + Ui.dp(4.5f)
 
-        // 國旗色塊：地圖上的領土用同一個顏色，兩邊要對得起來。
-        rect.set(pad, h * 0.24f, pad + Ui.dp(12f), h * 0.76f)
+        // 國旗 + 國色塊：emoji 認國家，色塊對應地圖上的領土色，兩者互補。
+        var x = pad
+        if (nation.flag.isNotEmpty()) {
+            Widgets.left(canvas, nation.flag, x, h * 0.68f, Ui.dp(15f), Colors.of(Widgets.INK))
+            x += Widgets.measure(nation.flag, Ui.dp(15f)) + Ui.dp(5f)
+        }
+        rect.set(x, h * 0.28f, x + Ui.dp(5f), h * 0.72f)
         Widgets.fill(canvas, rect, Palette.nationColour(session, nation.id), Ui.dp(2f))
-
-        var x = pad + Ui.dp(18f)
+        x += Ui.dp(11f)
         Widgets.left(
             canvas, Strings.byName(nation.nameKey), x, textY, Ui.dp(13f),
             Colors.of(Widgets.INK), bold = true
@@ -207,7 +211,8 @@ class HudRenderer(private val session: Session) {
         if (province != null) {
             val owner = session.provinceOwner[province.id]
             val ownerName = if (owner >= 0) {
-                Strings.byName(session.nations[owner].nameKey)
+                val n = session.nations[owner]
+                (if (n.flag.isEmpty()) "" else n.flag + " ") + Strings.byName(n.nameKey)
             } else {
                 Strings.get(R.string.hud_neutral)
             }

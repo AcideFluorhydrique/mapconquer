@@ -284,11 +284,19 @@ class MenuRenderer {
                 Ui.dp(if (selected) 1.8f else 1f), Ui.dp(6f)
             )
 
-            rect.set(inner.left + Ui.dp(7f), inner.top + Ui.dp(7f), inner.right - Ui.dp(7f), inner.top + Ui.dp(19f))
-            Widgets.fill(canvas, rect, Colors.of(nation.colour), Ui.dp(2f))
+            // 國旗擺在卡片最上面當主視覺，底下留一條國色 —— 那條色帶
+            // 對應地圖上的領土色，讓玩家在選完之後認得出自己是哪一片。
+            if (nation.flag.isNotEmpty()) {
+                Widgets.centered(
+                    canvas, nation.flag, inner.centerX(), inner.top + Ui.dp(20f),
+                    Ui.dp(17f), color = Colors.of(Widgets.INK)
+                )
+            }
+            rect.set(inner.left + Ui.dp(14f), inner.top + Ui.dp(24f), inner.right - Ui.dp(14f), inner.top + Ui.dp(27f))
+            Widgets.fill(canvas, rect, Colors.of(nation.colour), Ui.dp(1.5f))
 
             Widgets.centeredFit(
-                canvas, Strings.byName(nation.nameKey), inner.centerX(), inner.top + Ui.dp(35f),
+                canvas, Strings.byName(nation.nameKey), inner.centerX(), inner.top + Ui.dp(40f),
                 Ui.dp(11.5f), cardWidth - Ui.dp(10f), bold = true, color = Colors.of(Widgets.INK)
             )
             Widgets.centeredFit(

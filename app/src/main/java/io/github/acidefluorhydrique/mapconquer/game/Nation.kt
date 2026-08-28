@@ -33,7 +33,15 @@ class Nation(
     val colour: String,
     val aiProfile: AiProfile,
     /** 首都省份 id；-1 代表這個劇本不給它首都（例如流亡政權）。 */
-    var capitalProvince: Int
+    var capitalProvince: Int,
+    /**
+     * 國旗 emoji。
+     *
+     * 用區域指示符（🇩🇪 = U+1F1E9 U+1F1EA）而不是自己畫向量：系統字型本來就有，
+     * APK 裡不必放任何素材，而在缺 emoji 字型的裝置上會退化成兩個字母 DE，
+     * 仍然認得出是哪一國 —— 等於免費附帶一個合理的 fallback。
+     */
+    val flag: String = ""
 ) {
     var funds: Int = 0
 
