@@ -119,7 +119,7 @@ class MapAssetTest {
         val land = (0 until world.tileCount).count { world.isLand(it) }
         val ratio = land * 100 / world.tileCount
         // 排除南極與高緯度之後，陸地大約佔三成。這是防止產生器徹底壞掉的護欄。
-        assertTrue("陸地比例 $ratio%% 不合理", ratio in 20..45)
+        assertTrue("陸地比例 $ratio% 不合理", ratio in 20..45)
         assertTrue("城市太少", world.provinces.count { it.hasCity } > 100)
         assertTrue("首都級城市太少", world.provinces.count { it.cityTier >= 4 } >= 8)
     }

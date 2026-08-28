@@ -11,7 +11,7 @@ import org.junit.Test
 class PathfinderTest {
 
     /** 一張全是平原的空地圖，用來單獨檢驗圖論部分。 */
-    private fun flatMap(cols: Int, rows: Int): WorldMap = WorldMap(
+    private fun openMap(cols: Int, rows: Int): WorldMap = WorldMap(
         id = "flat",
         cols = cols,
         rows = rows,
@@ -26,7 +26,7 @@ class PathfinderTest {
 
     @Test
     fun `reachable set on open ground is the hex disc`() {
-        val map = flatMap(21, 21)
+        val map = openMap(21, 21)
         val finder = Pathfinder(map)
         val start = map.index(10, 10)
         val budget = 4
@@ -44,7 +44,7 @@ class PathfinderTest {
 
     @Test
     fun `path is contiguous and ends where asked`() {
-        val map = flatMap(21, 21)
+        val map = openMap(21, 21)
         val finder = Pathfinder(map)
         val start = map.index(3, 4)
         val target = map.index(9, 11)
@@ -64,7 +64,7 @@ class PathfinderTest {
         // 一整排高成本的格子橫在中間，只有第 0 欄留了缺口。
         val cols = 15
         val rows = 9
-        val map = flatMap(cols, rows)
+        val map = openMap(cols, rows)
         val finder = Pathfinder(map)
         val wallRow = 4
         val gate = map.index(0, wallRow)
@@ -87,7 +87,7 @@ class PathfinderTest {
 
     @Test
     fun `impassable tiles are never entered`() {
-        val map = flatMap(11, 11)
+        val map = openMap(11, 11)
         val finder = Pathfinder(map)
         val blocked = map.index(5, 4)
         val rules = object : MoveRules {
@@ -102,7 +102,7 @@ class PathfinderTest {
         // 一條寬一格的走廊，中間那格是控制區：不進去到不了另一頭。
         val cols = 11
         val rows = 3
-        val map = flatMap(cols, rows)
+        val map = openMap(cols, rows)
         val finder = Pathfinder(map)
         val corridorRow = 1
         val gate = map.index(5, corridorRow)
@@ -125,7 +125,7 @@ class PathfinderTest {
 
     @Test
     fun `repeated searches do not leak state into each other`() {
-        val map = flatMap(15, 15)
+        val map = openMap(15, 15)
         val finder = Pathfinder(map)
         finder.explore(map.index(1, 1), 10, uniformRules())
         val far = map.index(12, 12)
