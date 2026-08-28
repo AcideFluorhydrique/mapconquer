@@ -43,6 +43,7 @@ class MapRenderer(private val session: Session) {
         camera.visibleBounds(bounds)
 
         drawTerrain(canvas, camera, overlay, animateFog)
+        drawCoastline(canvas, camera)
         drawBorders(canvas, camera)
         drawOverlayTiles(canvas, camera, overlay)
         drawCities(canvas, camera)
@@ -110,18 +111,53 @@ class MapRenderer(private val session: Session) {
             canvas.restore()
         }
 
+        // 格線只畫在探索過的地方。畫滿整個畫面的話，地圖會看起來像浮在
+        // 一片六角格的虛空裡 —— 未探索區域本來就該是空白，不是網格。
         if (overlay.showGrid && camera.hexSize >= Ui.dp(11f)) {
             paint.style = Paint.Style.STROKE
             paint.strokeWidth = Ui.dp(0.6f)
             paint.color = Palette.GRID
-            forEachVisibleTile(camera) { _, cx, cy ->
-                canvas.save()
-                canvas.translate(cx, cy)
-                canvas.drawPath(hexPath, paint)
-                canvas.restore()
+            forEachVisibleTile(camera) { tile, cx, cy ->
+                if (!dimUnknown || session.isExplored(tile)) {
+                    canvas.save()
+                    canvas.translate(cx, cy)
+                    canvas.drawPath(hexPath, paint)
+                    canvas.restore()
+                }
             }
             paint.style = Paint.Style.FILL
         }
+    }
+
+    /**
+     * 海岸線。
+     *
+     * 只畫「陸地格朝向水域的那一條邊」。這是整張地圖上最重要的一條線 ——
+     * 六角格的地形色再怎麼調，遠看都會糊成一片，而一道亮邊可以讓
+     * 海陸關係在任何縮放下都是瞬間可讀的。
+     */
+    private fun drawCoastline(canvas: Canvas, camera: Camera) {
+        val layout = camera.layout
+        paint.style = Paint.Style.STROKE
+        paint.strokeCap = Paint.Cap.ROUND
+        paint.strokeWidth = Ui.dp(1.1f)
+        paint.color = Palette.COASTLINE
+
+        for (row in bounds[1]..bounds[3]) {
+            for (col in bounds[0]..bounds[2]) {
+                val tile = row * map.cols + col
+                if (!map.isLand(tile) || !session.isExplored(tile)) continue
+                val cx = camera.screenX(layout.centerXOffset(col, row))
+                val cy = camera.screenY(layout.centerYOffset(row))
+                layout.corners(cx, cy, corners)
+                val n = map.neighbours(tile, neighbourBuf)
+                for (i in 0 until n) {
+                    if (map.isWater(neighbourBuf[i])) drawEdge(canvas, directionToEdge(i))
+                }
+                // 地圖邊緣沒有鄰居的那幾條邊不畫，免得整張圖被框起來。
+            }
+        }
+        paint.style = Paint.Style.FILL
     }
 
     /**
@@ -346,12 +382,15 @@ class MapRenderer(private val session: Session) {
         paint.color = Palette.unitPlate(session, unit.nationId)
         canvas.drawRoundRect(rect, h * 0.25f, h * 0.25f, paint)
 
+        // 外框是敵我，填色是國別。一百多個國家的顏色一定有相近的，
+        // 但「這支是不是我的」不能靠分辨色差。
         paint.style = Paint.Style.STROKE
-        paint.strokeWidth = Ui.dp(1f)
+        paint.strokeWidth = Ui.dp(1.6f)
+        val outline = Palette.relationOutline(session, unit.nationId)
         paint.color = if (unit.isSpent && unit.nationId == session.playerNationId) {
-            Colors.of("#66FFFFFF")
+            Colors.alpha(outline, 0x66)
         } else {
-            Palette.unitOutline(session, unit.nationId)
+            outline
         }
         canvas.drawRoundRect(rect, h * 0.25f, h * 0.25f, paint)
         paint.style = Paint.Style.FILL

@@ -45,12 +45,36 @@ object Palette {
         if (nationId < 0 || nationId >= session.nations.size) Colors.of("#7A8794")
         else Colors.of(session.nations[nationId].colour)
 
-    /** 疊在地形上的領土色。玩家自己的國家亮一些，一眼認得出來。 */
+    /**
+     * 疊在地形上的領土色。
+     *
+     * alpha 刻意壓得很低。第一版用 0x8C／0x70，結果整張地圖變成一片平塗的國色，
+     * 地形完全看不見 —— 更糟的是玩家會把自己的藍色領土誤認成海。
+     * 歸屬的主要視覺線索應該是**國界線**（粗、亮、只畫在邊上），
+     * 填色只負責「這一片大致是誰的」，不該壓過底下的森林與山地。
+     */
     fun ownershipTint(session: Session, nationId: Int): Int {
         if (nationId < 0) return 0
         val base = nationColour(session, nationId)
-        val alpha = if (nationId == session.playerNationId) 0x8C else 0x70
+        val alpha = if (nationId == session.playerNationId) 0x4A else 0x3A
         return Colors.alpha(base, alpha)
+    }
+
+    /** 海岸線。陸地與水域之間畫一道亮線，是海陸分界最便宜也最有效的線索。 */
+    val COASTLINE: Int get() = Colors.of("#B37FC4E0")
+
+    /**
+     * 部隊外框的敵我色。
+     *
+     * 這一層跟國色是分開的：一百多個國家的顏色再怎麼調都會有相近的，
+     * 但「這支是不是我的」必須零猶豫。所以國色留給「是誰」，
+     * 外框專門回答「是敵是友」。
+     */
+    fun relationOutline(session: Session, nationId: Int): Int = when {
+        nationId == session.playerNationId -> Colors.of("#FFF3C4")
+        session.diplomacy.isAllied(session.playerNationId, nationId) -> Colors.of("#7FE0A0")
+        session.isHostile(session.playerNationId, nationId) -> Colors.of("#FF7B6B")
+        else -> Colors.of("#9AA8B4")
     }
 
     /** 探索過但目前看不到：壓暗並稍微去飽和。 */
@@ -59,9 +83,6 @@ object Palette {
     /** 單位底板顏色：國色加深，好讓上面的白字讀得出來。 */
     fun unitPlate(session: Session, nationId: Int): Int =
         Colors.scale(nationColour(session, nationId), 0.72f)
-
-    fun unitOutline(session: Session, nationId: Int): Int =
-        Colors.scale(nationColour(session, nationId), 1.45f)
 
     /** 三個層面各給一個記號形狀的暗示色，海空單位不至於跟陸軍混在一起。 */
     fun domainAccent(domain: Domain): Int = when (domain) {

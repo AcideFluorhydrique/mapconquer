@@ -94,6 +94,8 @@ class GameView(context: Context) : SurfaceView(context), SurfaceHolder.Callback 
     private var lastY = 0f
     private var dragged = false
     private var pinchDistance = 0f
+    private var pinchFocusX = 0f
+    private var pinchFocusY = 0f
     private var pinching = false
 
     private val reachable = ArrayList<Int>(160)
@@ -317,19 +319,23 @@ class GameView(context: Context) : SurfaceView(context), SurfaceHolder.Callback 
                     pinching = true
                     dragged = true
                     pinchDistance = spacing(event)
+                    pinchFocusX = (event.getX(0) + event.getX(1)) / 2f
+                    pinchFocusY = (event.getY(0) + event.getY(1)) / 2f
                 }
 
                 MotionEvent.ACTION_MOVE -> {
                     if (pinching && event.pointerCount >= 2) {
                         val distance = spacing(event)
+                        val focusX = (event.getX(0) + event.getX(1)) / 2f
+                        val focusY = (event.getY(0) + event.getY(1)) / 2f
                         if (pinchDistance > 1f && distance > 1f) {
-                            camera?.zoomBy(
-                                distance / pinchDistance,
-                                (event.getX(0) + event.getX(1)) / 2f,
-                                (event.getY(0) + event.getY(1)) / 2f
-                            )
+                            camera?.zoomBy(distance / pinchDistance, focusX, focusY)
                         }
+                        // 兩指一起平移時也要跟著走，否則捏合中地圖是釘死的。
+                        camera?.panBy(focusX - pinchFocusX, focusY - pinchFocusY)
                         pinchDistance = distance
+                        pinchFocusX = focusX
+                        pinchFocusY = focusY
                     } else {
                         val dx = event.x - lastX
                         val dy = event.y - lastY
@@ -342,7 +348,23 @@ class GameView(context: Context) : SurfaceView(context), SurfaceHolder.Callback 
                     }
                 }
 
-                MotionEvent.ACTION_POINTER_UP -> if (event.pointerCount <= 2) pinching = false
+                /**
+                 * 抬起一根手指時，平移的基準點必須換成**還留在螢幕上**的那根。
+                 *
+                 * 少了這段，下一個 ACTION_MOVE 會拿捏合開始前的 lastX/lastY 去相減，
+                 * 算出一個橫跨整段捏合的位移，地圖就瞬間飛走 —— 而且 event.x 取的是
+                 * pointer 0，如果抬起的剛好是它，基準還會悄悄換成另一根手指。
+                 */
+                MotionEvent.ACTION_POINTER_UP -> if (event.pointerCount <= 2) {
+                    pinching = false
+                    val remaining = if (event.actionIndex == 0) 1 else 0
+                    if (remaining < event.pointerCount) {
+                        lastX = event.getX(remaining)
+                        lastY = event.getY(remaining)
+                    }
+                    // 捏合過就不該再被當成點擊。
+                    dragged = true
+                }
 
                 MotionEvent.ACTION_UP -> if (!dragged) onTap(event.x, event.y)
 
