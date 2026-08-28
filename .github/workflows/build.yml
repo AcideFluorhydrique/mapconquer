@@ -19,6 +19,12 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
+      # 五秒鐘就跑得完，抓的是「不必等編譯器也看得出來」的錯：
+      # 未閉合的巢狀區塊註解、括號不平衡、跨套件漏掉的 import。
+      # 放在最前面是因為 Gradle 光是下載就要一分半。
+      - name: Kotlin sanity check
+        run: python3 tools/ktcheck.py
+
       - name: Set up JDK 17
         uses: actions/setup-java@v5
         with:

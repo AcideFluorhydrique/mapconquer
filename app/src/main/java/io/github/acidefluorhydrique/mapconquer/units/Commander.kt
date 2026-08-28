@@ -80,9 +80,9 @@ class Commander(
             Commander("cmd_alvarez", "cmd_alvarez", 5, listOf(CommanderSkill.ARTILLERY_EXPERT, CommanderSkill.LOGISTICS, CommanderSkill.VETERAN), "#7A5A34", 42)
         )
 
-        private val byId = ALL.associateBy { it.id }
+        private val lookup = ALL.associateBy { it.id }
 
-        fun byId(id: String): Commander? = byId[id]
+        fun byId(id: String): Commander? = lookup[id]
 
         /** 開局就有的那一位。 */
         val starter: Commander get() = ALL.first()

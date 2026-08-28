@@ -10,7 +10,7 @@ package io.github.acidefluorhydrique.mapconquer.world
  * 刻意不做「地形 × 兵種」的大表 —— 兵種的差異放在 [io.github.acidefluorhydrique.mapconquer.units.UnitKind]
  * 的 domain 與 mountaineer 這類旗標上，兩邊相乘就夠出戰術，卻不會變成沒人看得懂的平衡黑箱。
  *
- * [code] 是地圖檔裡的單一字元。改動它等於改動所有 assets/maps/*.map，別亂動。
+ * [code] 是地圖檔裡的單一字元。改動它等於改動 assets/maps 底下的每一張地圖，別亂動。
  */
 enum class Terrain(
     val code: Char,

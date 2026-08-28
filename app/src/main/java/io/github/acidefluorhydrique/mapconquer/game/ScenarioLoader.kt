@@ -7,7 +7,7 @@ import android.content.Context
 import java.io.BufferedReader
 
 /**
- * 劇本檔（assets/scenarios/*.scn）的解析器。
+ * 劇本檔（assets/scenarios 底下的 .scn）的解析器。
  *
  * 與地圖檔同一套風格：分節、每節逐行、`|` 分欄。
  * 省份 id 支援 `10-24,31,40` 這種寫法 —— 開局領土動輒幾十個省，

@@ -7,7 +7,7 @@ import android.content.Context
 import java.io.BufferedReader
 
 /**
- * 地圖檔（assets/maps/*.map）的解析器。
+ * 地圖檔（assets/maps 底下的 .map）的解析器。
  *
  * 格式刻意做成純文字而不是二進位或 JSON：
  *  - 地形那一段直接就是一張 ASCII 圖，在 diff 裡看得出改了哪一塊；

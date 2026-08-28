@@ -5,7 +5,6 @@ package io.github.acidefluorhydrique.mapconquer
 
 import android.media.AudioAttributes
 import android.media.AudioFormat
-import android.media.AudioManager
 import android.media.AudioTrack
 import io.github.acidefluorhydrique.mapconquer.core.Rng
 import kotlin.math.PI
@@ -149,7 +148,4 @@ object Audio {
         }
         return out
     }
-
-    @Suppress("unused")
-    private val legacyStreamHint = AudioManager.STREAM_MUSIC
 }
