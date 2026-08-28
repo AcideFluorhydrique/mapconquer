@@ -1,0 +1,441 @@
+// SPDX-FileCopyrightText: 2026 AcideFluorhydrique
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+package io.github.acidefluorhydrique.mapconquer.game
+
+import io.github.acidefluorhydrique.mapconquer.TestAssets
+import io.github.acidefluorhydrique.mapconquer.units.ArmyUnit
+import io.github.acidefluorhydrique.mapconquer.units.Domain
+import io.github.acidefluorhydrique.mapconquer.units.UnitKind
+import io.github.acidefluorhydrique.mapconquer.world.MapLoader
+import io.github.acidefluorhydrique.mapconquer.world.WorldMap
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
+import org.junit.Test
+
+/**
+ * 回合引擎與指令層。
+ *
+ * 用一張手寫的小地圖，才能把每一條規則單獨挑出來驗；
+ * 真實地圖的整局壓力測試在 [ConquestSmokeTest]。
+ */
+class SessionTest {
+
+    /**
+     * 8x6 的測試地圖：左半是 A 省，右半是 B 省，中間夾一排山，
+     * 最下面一列是海（給軍艦與登陸用）。
+     */
+    private fun testMap(): WorldMap {
+        val text = """
+            format 1
+            id test
+            cols 8
+            rows 6
+
+            [terrain]
+            ....^...
+            ....^...
+            ........
+            ....^...
+            ........
+            ~~~~~~~~
+
+            [provinces]
+            4:0 4:1
+            4:0 4:1
+            4:0 4:1
+            4:0 4:1
+            4:0 4:1
+            8:-1
+
+            [meta]
+            0|prov_a|3|1,1
+            1|prov_b|3|6,1
+        """.trimIndent()
+        return MapLoader.parse(text.reader().buffered(), "test")
+    }
+
+    private fun scenario(
+        units: List<ScenarioUnit> = emptyList(),
+        objectives: List<Objective> = emptyList(),
+        relations: List<Triple<String, String, Relation>> = listOf(Triple("AAA", "BBB", Relation.WAR))
+    ) = Scenario(
+        id = "test", mapId = "test", mode = GameMode.CAMPAIGN,
+        nameKey = "n", descKey = "d", order = 1, turnLimit = 50,
+        startYear = 2026, startMonth = 1,
+        nations = listOf(
+            ScenarioNation("AAA", "nation_aaa", "#FF0000", 0, AiProfile.BALANCED, 5000, IntArray(6)),
+            ScenarioNation("BBB", "nation_bbb", "#0000FF", 1, AiProfile.BALANCED, 5000, IntArray(6))
+        ),
+        relations = relations,
+        ownership = mapOf("AAA" to intArrayOf(0), "BBB" to intArrayOf(1)),
+        startingUnits = units,
+        playable = listOf("AAA"),
+        objectives = objectives,
+        starTurns = intArrayOf(10, 20)
+    )
+
+    private fun session(
+        units: List<ScenarioUnit> = emptyList(),
+        objectives: List<Objective> = emptyList(),
+        relations: List<Triple<String, String, Relation>> = listOf(Triple("AAA", "BBB", Relation.WAR))
+    ) = Session(testMap(), scenario(units, objectives, relations), Difficulty.OFFICER, "AAA", 1234L)
+
+    // ------------------------------------------------------------------
+
+    @Test
+    fun `the test map itself is what the other tests assume`() {
+        val map = testMap()
+        assertEquals(8, map.cols)
+        assertEquals(6, map.rows)
+        assertEquals(2, map.provinces.size)
+        assertEquals(map.index(1, 1), map.provinces[0].capitalTile)
+        assertEquals(map.index(6, 1), map.provinces[1].capitalTile)
+        assertTrue(map.isWater(map.index(3, 5)))
+        assertTrue(map.provinces[0].coastal)
+    }
+
+    @Test
+    fun `scenario ownership and units are applied on construction`() {
+        val s = session(listOf(ScenarioUnit("AAA", 1, 1, "INFANTRY", 2, "")))
+        assertEquals(0, s.playerNationId)
+        assertEquals(1, s.provincesOf(0))
+        assertEquals(1, s.provincesOf(1))
+        assertEquals(1, s.units.size)
+        val unit = s.units.first()
+        assertEquals(UnitKind.INFANTRY, unit.kind)
+        assertEquals(2, unit.level)
+        assertTrue("開局部隊要能立刻行動", unit.movesLeft > 0)
+        assertEquals(unit, s.unitAt(s.map.index(1, 1), Domain.LAND))
+        assertTrue(s.isHostile(0, 1))
+    }
+
+    @Test
+    fun `moving a unit updates occupancy and spends movement`() {
+        val s = session(listOf(ScenarioUnit("AAA", 1, 1, "INFANTRY", 1, "")))
+        val unit = s.units.first()
+        val from = unit.tile
+        val target = s.map.index(3, 1)
+
+        val reachable = ArrayList<Int>()
+        Orders.computeReachable(s, unit, reachable)
+        assertTrue("目標應在移動範圍內", reachable.contains(target))
+        assertFalse("山地在四點移動之外", reachable.contains(s.map.index(7, 1)))
+
+        val before = unit.movesLeft
+        val path = ArrayList<Int>()
+        assertEquals(target, Orders.move(s, unit, target, path))
+        assertEquals(target, unit.tile)
+        assertTrue(unit.movesLeft < before)
+        assertNull("舊格子要被清空", s.unitAt(from, Domain.LAND))
+        assertEquals(unit, s.unitAt(target, Domain.LAND))
+        assertEquals("走過就不算築壕", 0, unit.entrenchment)
+    }
+
+    @Test
+    fun `vehicles cannot climb mountains but infantry can`() {
+        val s = session(
+            listOf(
+                ScenarioUnit("AAA", 3, 0, "ARMOUR", 1, ""),
+                ScenarioUnit("AAA", 3, 1, "INFANTRY", 1, "")
+            )
+        )
+        val mountain = s.map.index(4, 0)
+        val armour = s.units.first { it.kind == UnitKind.ARMOUR }
+        val infantry = s.units.first { it.kind == UnitKind.INFANTRY }
+
+        val reachable = ArrayList<Int>()
+        Orders.computeReachable(s, armour, reachable)
+        assertFalse("裝甲不該進得了山地", reachable.contains(mountain))
+
+        Orders.computeReachable(s, infantry, reachable)
+        assertTrue("步兵應該進得了山地", reachable.contains(s.map.index(4, 1)))
+    }
+
+    @Test
+    fun `capturing the enemy capital flips the whole province`() {
+        val s = session(listOf(ScenarioUnit("AAA", 5, 1, "INFANTRY", 1, "")))
+        val unit = s.units.first()
+        val enemyCapital = s.map.provinces[1].capitalTile
+        assertEquals(1, s.provinceOwner[1])
+
+        val reachable = ArrayList<Int>()
+        Orders.computeReachable(s, unit, reachable)
+        assertTrue(reachable.contains(enemyCapital))
+        Orders.move(s, unit, enemyCapital, ArrayList())
+
+        assertEquals("整省易主", 0, s.provinceOwner[1])
+        assertEquals(2, s.provincesOf(0))
+        for (tile in s.map.provinces[1].tiles) assertEquals(0, s.ownerOfTile(tile))
+    }
+
+    @Test
+    fun `support units cannot capture`() {
+        val s = session(listOf(ScenarioUnit("AAA", 5, 1, "ARTILLERY", 1, "")))
+        val gun = s.units.first()
+        Orders.computeReachable(s, gun, ArrayList())
+        Orders.move(s, gun, s.map.provinces[1].capitalTile, ArrayList())
+        assertEquals("火炮不該佔得下省份", 1, s.provinceOwner[1])
+    }
+
+    @Test
+    fun `attacking costs the attacker its turn and damages the defender`() {
+        val s = session(
+            listOf(
+                ScenarioUnit("AAA", 2, 2, "INFANTRY", 1, ""),
+                ScenarioUnit("BBB", 3, 2, "INFANTRY", 1, "")
+            )
+        )
+        val attacker = s.units.first { it.nationId == 0 }
+        val defender = s.units.first { it.nationId == 1 }
+        val targets = ArrayList<Int>()
+        Orders.collectTargets(s, attacker, targets)
+        assertTrue("應該打得到隔壁的敵人", targets.contains(defender.tile))
+
+        val result = Orders.attack(s, attacker, defender.tile)
+        assertNotNull(result)
+        assertTrue("守方應該受傷", defender.hp < ArmyUnit.MAX_HP)
+        assertTrue("步兵對步兵應該有反擊", result!!.damageToAttacker > 0)
+        assertTrue(attacker.hasAttacked)
+        assertEquals("開火之後不能再動", 0, attacker.movesLeft)
+        assertNull("同一回合不能打第二次", Orders.attack(s, attacker, defender.tile))
+    }
+
+    @Test
+    fun `artillery reaches further than it can be reached`() {
+        val s = session(
+            listOf(
+                ScenarioUnit("AAA", 1, 2, "ARTILLERY", 1, ""),
+                ScenarioUnit("BBB", 3, 2, "INFANTRY", 1, "")
+            )
+        )
+        val gun = s.units.first { it.kind == UnitKind.ARTILLERY }
+        val target = s.units.first { it.nationId == 1 }
+        val result = Orders.attack(s, gun, target.tile)
+        assertNotNull("兩格外應該打得到", result)
+        assertEquals("遠射不該被反擊", 0, result!!.damageToAttacker)
+    }
+
+    @Test
+    fun `zone of control stops a unit next to an enemy`() {
+        val s = session(
+            listOf(
+                ScenarioUnit("AAA", 0, 2, "INFANTRY", 1, ""),
+                ScenarioUnit("BBB", 2, 2, "INFANTRY", 1, "")
+            )
+        )
+        val mover = s.units.first { it.nationId == 0 }
+        val reachable = ArrayList<Int>()
+        Orders.computeReachable(s, mover, reachable)
+        assertTrue("可以走到敵人旁邊", reachable.contains(s.map.index(1, 2)))
+        assertFalse("不該直接穿過敵人的控制區", reachable.contains(s.map.index(3, 2)))
+    }
+
+    @Test
+    fun `armour breaks through zones of control`() {
+        val s = session(
+            listOf(
+                ScenarioUnit("AAA", 0, 2, "ARMOUR", 1, ""),
+                ScenarioUnit("BBB", 2, 2, "INFANTRY", 1, "")
+            )
+        )
+        val armour = s.units.first { it.nationId == 0 }
+        val reachable = ArrayList<Int>()
+        Orders.computeReachable(s, armour, reachable)
+        assertTrue("裝甲應該推得過去", reachable.contains(s.map.index(3, 2)))
+    }
+
+    @Test
+    fun `production needs the province, the industry and the money`() {
+        val s = session()
+        val nation = s.nations[0]
+        nation.funds = 10_000
+
+        assertTrue(Orders.canBuild(s, 0, 0, UnitKind.INFANTRY))
+        assertEquals(
+            "不是自己的省份",
+            Orders.BuildBlocker.NOT_OWNED,
+            Orders.buildBlocker(s, 0, 1, UnitKind.INFANTRY)
+        )
+        assertEquals(
+            "大城的工業等級擋不下航艦",
+            Orders.BuildBlocker.LOW_INDUSTRY,
+            Orders.buildBlocker(s, 0, 0, UnitKind.CARRIER)
+        )
+
+        val built = Orders.build(s, 0, 0, UnitKind.INFANTRY)
+        assertNotNull(built)
+        assertEquals(10_000 - UnitKind.INFANTRY.cost, nation.funds)
+        assertEquals("新兵應該站在省會", s.map.provinces[0].capitalTile, built!!.tile)
+        assertEquals("新兵當回合不能動", 0, built.movesLeft)
+
+        assertEquals(
+            "省會被佔住了就沒地方部署",
+            Orders.BuildBlocker.NO_ROOM,
+            Orders.buildBlocker(s, 0, 0, UnitKind.INFANTRY)
+        )
+
+        nation.funds = 10
+        assertEquals(
+            Orders.BuildBlocker.NO_FUNDS,
+            Orders.buildBlocker(s, 0, 0, UnitKind.ARMOUR)
+        )
+    }
+
+    @Test
+    fun `warships are launched into the water next to their port`() {
+        val s = session()
+        s.nations[0].funds = 10_000
+        // A 省的省會在 (1,1)，離海還有距離，所以造不了船。
+        assertEquals(
+            Orders.BuildBlocker.NO_ROOM,
+            Orders.buildBlocker(s, 0, 0, UnitKind.DESTROYER)
+        )
+    }
+
+    @Test
+    fun `research spends funds and raises the bonus`() {
+        val s = session()
+        val nation = s.nations[0]
+        nation.funds = 10_000
+        val before = nation.techBonus(io.github.acidefluorhydrique.mapconquer.units.TechBranch.ARMOUR)
+        assertTrue(Orders.research(s, 0, io.github.acidefluorhydrique.mapconquer.units.TechBranch.ARMOUR))
+        assertTrue(
+            nation.techBonus(io.github.acidefluorhydrique.mapconquer.units.TechBranch.ARMOUR) > before
+        )
+        assertTrue(nation.funds < 10_000)
+    }
+
+    @Test
+    fun `turn order cycles through every nation and increments the turn`() {
+        val s = session()
+        assertEquals(1, s.turn)
+        assertEquals(0, s.activeNationId)
+        assertTrue(s.isPlayerTurn)
+
+        assertFalse("換到第二國還在同一回合", s.advanceToNextNation())
+        assertEquals(1, s.activeNationId)
+        assertEquals(1, s.turn)
+
+        assertTrue("繞完一圈才進下一回合", s.advanceToNextNation())
+        assertEquals(0, s.activeNationId)
+        assertEquals(2, s.turn)
+    }
+
+    @Test
+    fun `units entrench while standing still and refill in supply`() {
+        val s = session(listOf(ScenarioUnit("AAA", 1, 1, "INFANTRY", 1, "")))
+        val unit = s.units.first()
+        unit.hp = 50
+        unit.supply = 10
+        repeat(4) {
+            s.advanceToNextNation()
+            s.advanceToNextNation()
+        }
+        assertTrue("待在城裡應該回血", unit.hp > 50)
+        assertEquals("待在城裡應該補滿", ArmyUnit.MAX_SUPPLY, unit.supply)
+        assertTrue("原地不動應該築壕", unit.entrenchment > 0)
+        assertTrue(unit.entrenchment <= Session.MAX_ENTRENCHMENT)
+    }
+
+    @Test
+    fun `objectives drive victory`() {
+        val s = session(
+            units = listOf(ScenarioUnit("AAA", 5, 1, "INFANTRY", 1, "")),
+            objectives = listOf(
+                Objective(ObjectiveType.CAPTURE_PROVINCES, provinces = intArrayOf(1))
+            )
+        )
+        assertEquals(SessionStatus.PLAYING, s.status)
+        val unit = s.units.first { it.nationId == 0 }
+        Orders.computeReachable(s, unit, ArrayList())
+        Orders.move(s, unit, s.map.provinces[1].capitalTile, ArrayList())
+        assertEquals(SessionStatus.VICTORY, s.status)
+    }
+
+    @Test
+    fun `losing everything ends the game`() {
+        val s = session(
+            units = listOf(ScenarioUnit("BBB", 5, 1, "INFANTRY", 1, "")),
+            objectives = listOf(Objective(ObjectiveType.SURVIVE_TURNS, turn = 99))
+        )
+        // 直接把玩家的省份交出去，模擬被打光。
+        s.captureProvince(0, 1)
+        s.refreshOutcome()
+        assertEquals(SessionStatus.DEFEAT, s.status)
+    }
+
+    @Test
+    fun `transports carry land units over water`() {
+        val s = session(
+            listOf(
+                ScenarioUnit("AAA", 1, 4, "INFANTRY", 1, ""),
+                ScenarioUnit("AAA", 1, 5, "TRANSPORT_SHIP", 1, "")
+            )
+        )
+        val infantry = s.units.first { it.kind == UnitKind.INFANTRY }
+        val ship = s.units.first { it.kind == UnitKind.TRANSPORT_SHIP }
+
+        assertTrue(Orders.canLoad(s, infantry, ship))
+        assertTrue(Orders.load(s, infantry, ship))
+        assertTrue(infantry.isLoaded)
+        assertEquals(1, ship.cargo.size)
+        assertNull("上船之後不該再佔著陸地", s.unitAt(s.map.index(1, 4), Domain.LAND))
+
+        // 把運輸艦開到另一段海岸再放下來。
+        val reachable = ArrayList<Int>()
+        Orders.computeReachable(s, ship, reachable)
+        val destination = s.map.index(5, 5)
+        assertTrue(reachable.contains(destination))
+        Orders.move(s, ship, destination, ArrayList())
+        assertEquals("乘客要跟著船走", destination, infantry.tile)
+
+        val beach = s.map.index(5, 4)
+        assertTrue(Orders.canUnload(s, infantry, beach))
+        assertTrue(Orders.unload(s, infantry, beach))
+        assertFalse(infantry.isLoaded)
+        assertEquals(beach, infantry.tile)
+        assertTrue("一般步兵登陸當回合不能打", infantry.hasAttacked)
+    }
+
+    @Test
+    fun `marines can fight the turn they land`() {
+        val s = session(
+            listOf(
+                ScenarioUnit("AAA", 1, 4, "MARINE", 1, ""),
+                ScenarioUnit("AAA", 1, 5, "TRANSPORT_SHIP", 1, "")
+            )
+        )
+        val marine = s.units.first { it.kind == UnitKind.MARINE }
+        val ship = s.units.first { it.kind == UnitKind.TRANSPORT_SHIP }
+        Orders.load(s, marine, ship)
+        assertTrue(Orders.unload(s, marine, s.map.index(2, 4)))
+        assertFalse("陸戰隊下船就能打", marine.hasAttacked)
+    }
+
+    @Test
+    fun `save format survives a round trip through the parser`() {
+        // SaveGame 需要 Context，這裡只驗外交關係的編解碼 —— 那是唯一自訂的編碼。
+        val s = session()
+        s.diplomacy.set(0, 1, Relation.ALLIED)
+        val encoded = s.diplomacy.encode()
+        val other = Diplomacy(2)
+        other.decode(encoded)
+        assertEquals(Relation.ALLIED, other.relation(0, 1))
+        assertEquals(Relation.ALLIED, other.relation(1, 0))
+    }
+
+    @Test
+    fun `truces block a fresh declaration until they expire`() {
+        val diplomacy = Diplomacy(3)
+        assertTrue(diplomacy.declareWar(0, 1))
+        diplomacy.ceasefire(0, 1, 3)
+        assertEquals(Relation.PEACE, diplomacy.relation(0, 1))
+        assertFalse("停戰期內不得再宣戰", diplomacy.declareWar(0, 1))
+        repeat(3) { diplomacy.tickTruces() }
+        assertTrue(diplomacy.declareWar(0, 1))
+    }
+}

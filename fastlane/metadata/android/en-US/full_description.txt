@@ -1,0 +1,34 @@
+A turn-based grand-strategy game on a hex grid. Move armies, hold supply lines, take
+cities, and decide who the next war is with.
+
+CAMPAIGN
+Five training exercises, each built around one idea: an amphibious crossing, a supply
+line stretched across a desert, an island chain that can only be taken by sea and air,
+a defensive battle won by not losing, and a mountain offensive your vehicles cannot
+follow you into. Finish faster for more stars; stars pay out medals you spend on
+commanders who then serve you in every later game.
+
+CONQUEST
+The whole world map, a hundred-odd nations, everyone at peace on turn one. Pick anyone
+— a superpower or a country with a single city — and take 80% of the planet.
+
+WHAT MAKES A BATTLE
+Every unit has four separate attack values: against infantry, armour, ships and
+aircraft. Anti-tank guns shred armour and bounce off infantry. Fighters own the sky and
+do nothing on the ground. Artillery strikes from range and takes no return fire, but is
+nearly helpless once something reaches it. Terrain, city walls and entrenchment all
+protect the defender, so where you fight matters as much as what you bring.
+
+SUPPLY IS THE REAL OPPONENT
+Supply spreads out from your own cities along your own territory, and mountains cost
+more to reach across than plains do. An army that outruns its logistics loses strength
+every turn and eventually starves. Supply trucks and headquarters carry a small bubble
+with them — that is how an offensive keeps moving.
+
+20 unit types across land, sea and air. Six research branches. 16 commanders with
+stacking skills. Diplomacy with war, peace and alliances.
+
+FREE SOFTWARE
+GPL-3.0-or-later. No ads, no analytics, no in-app purchases, and no Android permissions
+at all — the game never touches the network, your storage or your location. Traditional
+Chinese, Simplified Chinese and English, switchable inside the app.

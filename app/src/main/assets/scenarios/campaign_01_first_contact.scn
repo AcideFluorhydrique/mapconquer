@@ -1,0 +1,46 @@
+# SPDX-FileCopyrightText: 2026 AcideFluorhydrique
+# SPDX-License-Identifier: GPL-3.0-or-later
+# 由 tools/genworld.py 產生，請勿手動編輯。
+format 1
+id campaign_01_first_contact
+map europe
+mode CAMPAIGN
+nameKey scn_campaign_01_first_contact
+descKey scn_campaign_01_first_contact_desc
+order 1
+turnLimit 30
+startYear 2026
+starTurns 12,18
+
+[nations]
+BLU|nation_blu|#4C7BA8|0|BALANCED|900|1,1,1,0,0,1
+RED|nation_red|#A8494C|4|AGGRESSIVE|900|1,1,1,0,0,1
+
+[relations]
+BLU RED WAR
+
+[owners]
+BLU: 0-3
+RED: 4-7
+
+[units]
+BLU|11,15|INFANTRY|2|-
+BLU|9,12|INFANTRY|2|-
+BLU|8,9|INFANTRY|2|-
+BLU|5,12|ARTILLERY|1|-
+BLU|11,14|TRANSPORT_SHIP|1|-
+BLU|10,12|TRANSPORT_SHIP|1|-
+BLU|9,9|MARINE|2|-
+BLU|4,11|MARINE|2|-
+BLU|11,16|DESTROYER|1|-
+RED|13,19|INFANTRY|1|-
+RED|10,25|INFANTRY|1|-
+RED|16,24|INFANTRY|1|-
+RED|16,16|INFANTRY|1|-
+RED|14,19|ANTI_TANK|1|-
+
+[playable]
+BLU
+
+[objectives]
+CAPTURE_PROVINCES|4,7|0

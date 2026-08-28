@@ -1,0 +1,6 @@
+First release.
+
+- Campaign: five training exercises
+- Conquest: the world map with 100+ nations
+- 20 unit types, six research branches, 16 commanders
+- Traditional Chinese, Simplified Chinese and English

@@ -1,0 +1,424 @@
+// SPDX-FileCopyrightText: 2026 AcideFluorhydrique
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+package io.github.acidefluorhydrique.mapconquer.game
+
+import io.github.acidefluorhydrique.mapconquer.units.ArmyUnit
+import io.github.acidefluorhydrique.mapconquer.units.Combat
+import io.github.acidefluorhydrique.mapconquer.units.CombatContext
+import io.github.acidefluorhydrique.mapconquer.units.CombatResult
+import io.github.acidefluorhydrique.mapconquer.units.Domain
+import io.github.acidefluorhydrique.mapconquer.units.TechBranch
+import io.github.acidefluorhydrique.mapconquer.units.UnitKind
+import io.github.acidefluorhydrique.mapconquer.world.MoveRules
+
+/**
+ * 一支部隊在目前戰局下的移動規則。
+ *
+ * 每次要算移動範圍時建一個新的（很輕，只有幾個欄位），
+ * 而不是複用一個可變物件 —— AI 會在同一輪裡交錯評估多支部隊，
+ * 共用可變狀態在那裡會變成很難查的錯誤。
+ */
+class UnitMoveRules(
+    private val session: Session,
+    private val unit: ArmyUnit,
+    /** 忽略敵軍阻擋，用於 AI 的「理想路線」規劃。 */
+    private val ignoreEnemies: Boolean = false
+) : MoveRules {
+
+    private val map = session.map
+    private val mountaineer = unit.kind.isMountaineer
+
+    /** stopsAt 躺在 Dijkstra 的內迴圈上，這裡配置陣列會被跑上萬次。 */
+    private val zocBuf = IntArray(6)
+
+    override fun enterCost(from: Int, to: Int): Int {
+        val terrain = map.terrainAt(to)
+        when (unit.kind.domain) {
+            // 步兵進得了山地與叢林，只是很慢；輪車與履帶進不去。
+            Domain.LAND -> {
+                if (terrain.isWater) return -1
+                if (unit.kind.vehicle && !terrain.vehiclePassable) return -1
+            }
+            Domain.SEA -> if (!terrain.isWater) return -1
+            Domain.AIR -> Unit
+        }
+
+        if (!ignoreEnemies) {
+            val blocker = session.unitAt(to, unit.kind.domain)
+            if (blocker != null && session.isHostile(blocker.nationId, unit.nationId)) return -1
+            // 中立國的部隊也擋路，但不能打 —— 免得玩家被迫宣戰才能通行。
+            if (blocker != null && blocker.nationId != unit.nationId &&
+                !session.diplomacy.isAllied(blocker.nationId, unit.nationId)
+            ) return -1
+        }
+
+        return when (unit.kind.domain) {
+            Domain.LAND -> {
+                var cost = terrain.moveCost
+                if (mountaineer && cost > 2) cost = 2
+                cost.coerceAtLeast(1)
+            }
+            Domain.SEA -> 1
+            Domain.AIR -> 1
+        }
+    }
+
+    /**
+     * 敵方控制區：踏進敵人隔壁就得停。
+     *
+     * 這一條是整個戰術層的支點 —— 沒有它，高機動部隊可以直接穿過防線去點後方城市，
+     * 「戰線」這個概念就不存在了。裝甲部隊的突破能力做成「無視一次 ZOC」，
+     * 讓它仍然是打開缺口的那把鑰匙，但不是萬能的。
+     */
+    override fun stopsAt(tile: Int): Boolean {
+        if (unit.kind.domain == Domain.AIR) return false
+        if (unit.kind.isBreakthrough) return false
+        val n = map.neighbours(tile, zocBuf)
+        for (i in 0 until n) {
+            val other = session.unitAt(zocBuf[i], Domain.LAND) ?: continue
+            if (session.isHostile(other.nationId, unit.nationId)) return true
+        }
+        return false
+    }
+
+    override fun canEndOn(tile: Int): Boolean = session.isTileFree(tile, unit.kind.domain)
+}
+
+/**
+ * 玩家與 AI 共用的指令入口。
+ *
+ * 所有會改變戰局的動作都集中在這裡，而且每個動作都是「先驗證、再執行」的形狀。
+ * 好處是 UI 可以先呼叫 `canXxx` 決定按鈕要不要變灰，
+ * 而 AI 可以放心亂試 —— 不合法的指令一律回 false，不會把戰局搞成半套狀態。
+ */
+object Orders {
+
+    /** 移動範圍。結果留在 session.pathfinder 裡，之後可以直接查路徑。 */
+    fun computeReachable(session: Session, unit: ArmyUnit, into: MutableList<Int>) {
+        into.clear()
+        if (unit.movesLeft <= 0 || unit.isLoaded) return
+        session.pathfinder.explore(unit.tile, unit.movesLeft, UnitMoveRules(session, unit))
+        for (tile in session.pathfinder.reached) {
+            if (tile == unit.tile) continue
+            if (!session.isTileFree(tile, unit.kind.domain)) continue
+            into.add(tile)
+        }
+    }
+
+    fun canMoveTo(session: Session, unit: ArmyUnit, target: Int): Boolean {
+        if (unit.movesLeft <= 0 || unit.isLoaded) return false
+        if (!session.isTileFree(target, unit.kind.domain)) return false
+        return session.pathfinder.origin == unit.tile && session.pathfinder.isReachable(target)
+    }
+
+    /**
+     * 執行移動。呼叫端必須先跑過 [computeReachable]（範圍計算與路徑回溯共用同一次搜尋）。
+     * 回傳實際走到的格；沒動就回傳原地。
+     */
+    fun move(session: Session, unit: ArmyUnit, target: Int, path: MutableList<Int>): Int {
+        if (!canMoveTo(session, unit, target)) return unit.tile
+        session.pathfinder.buildPath(target, path)
+        if (path.size < 2) return unit.tile
+
+        val spent = session.pathfinder.costTo(target)
+        session.relocate(unit, target)
+        unit.movesLeft = (unit.movesLeft - spent).coerceAtLeast(0)
+        unit.entrenchment = 0
+
+        onArrived(session, unit)
+        return target
+    }
+
+    /** 抵達之後的連鎖效果：佔領、視野、勝負重判。 */
+    private fun onArrived(session: Session, unit: ArmyUnit) {
+        tryCapture(session, unit)
+        if (unit.nationId == session.playerNationId) session.recomputeVisibility(session.playerNationId)
+        session.refreshOutcome()
+    }
+
+    /**
+     * 佔領：陸軍站上省會就整省易主。
+     *
+     * 為什麼不需要「留守」：省一旦易主，補給、收入、增援點全部跟著換邊，
+     * 對手要拿回去就得再打一次省會。這已經足夠讓玩家有守土的動機，
+     * 不必再加一層駐軍規則。
+     */
+    fun tryCapture(session: Session, unit: ArmyUnit): Boolean {
+        if (!unit.kind.canCapture || unit.kind.domain != Domain.LAND) return false
+        val province = session.map.provinceAt(unit.tile) ?: return false
+        if (province.capitalTile != unit.tile) return false
+        val owner = session.provinceOwner[province.id]
+        if (owner == unit.nationId) return false
+        if (owner >= 0 && !session.isHostile(owner, unit.nationId)) return false
+        return session.captureProvince(province.id, unit.nationId)
+    }
+
+    // ------------------------------------------------------------------
+    // 戰鬥
+    // ------------------------------------------------------------------
+
+    fun canAttack(session: Session, attacker: ArmyUnit, targetTile: Int): Boolean =
+        findTarget(session, attacker, targetTile) != null
+
+    /** 這格上有沒有這支部隊打得到的敵人。 */
+    fun findTarget(session: Session, attacker: ArmyUnit, targetTile: Int): ArmyUnit? {
+        if (attacker.hasAttacked || !attacker.isAlive || attacker.isLoaded) return null
+        if (!attacker.kind.canAttack) return null
+        val distance = session.map.distance(attacker.tile, targetTile)
+        if (!Combat.canReach(attacker, distance)) return null
+        for (domain in Domain.values()) {
+            val target = session.unitAt(targetTile, domain) ?: continue
+            if (!session.isHostile(target.nationId, attacker.nationId)) continue
+            if (attacker.kind.attackAgainst(target.kind.targetClass) <= 0) continue
+            if (attacker.nationId == session.playerNationId && !session.isUnitVisibleToPlayer(target)) continue
+            return target
+        }
+        return null
+    }
+
+    fun collectTargets(session: Session, attacker: ArmyUnit, into: MutableList<Int>) {
+        into.clear()
+        if (attacker.hasAttacked || !attacker.kind.canAttack || attacker.isLoaded) return
+        val map = session.map
+        val range = attacker.kind.maxRange
+        val tiles = ArrayList<Int>(3 * range * (range + 1) + 1)
+        map.collectWithin(attacker.tile, range, tiles)
+        for (tile in tiles) {
+            if (findTarget(session, attacker, tile) != null) into.add(tile)
+        }
+    }
+
+    fun buildContext(session: Session, attacker: ArmyUnit, defender: ArmyUnit): CombatContext {
+        val map = session.map
+        val defenderProvince = map.provinceAt(defender.tile)
+        val defenderCityBonus = if (
+            defenderProvince != null &&
+            defenderProvince.capitalTile == defender.tile &&
+            defender.kind.domain == Domain.LAND
+        ) defenderProvince.cityDefenceBonus else 0
+
+        // 空中單位不吃地形加成：它在天上，底下是山還是平原都一樣。
+        val defenderTerrain =
+            if (defender.kind.domain == Domain.AIR) 0 else map.terrainAt(defender.tile).defenceBonus
+        val attackerTerrain =
+            if (attacker.kind.domain == Domain.AIR) 0 else map.terrainAt(attacker.tile).defenceBonus
+
+        return CombatContext(
+            attacker = attacker,
+            defender = defender,
+            defenderTerrainBonus = defenderTerrain + defenderCityBonus,
+            attackerTerrainBonus = attackerTerrain,
+            distance = map.distance(attacker.tile, defender.tile),
+            attackerTech = session.nations[attacker.nationId].techBonus(attacker.kind.branch),
+            defenderTech = session.nations[defender.nationId].techBonus(defender.kind.branch),
+            attackerAura = session.commandAura(attacker),
+            defenderAura = session.commandAura(defender)
+        )
+    }
+
+    /** 不改變任何狀態的傷害預測，戰前面板與 AI 都用它。 */
+    fun previewDamage(session: Session, attacker: ArmyUnit, defender: ArmyUnit): Int =
+        Combat.previewDamage(buildContext(session, attacker, defender))
+
+    fun attack(session: Session, attacker: ArmyUnit, targetTile: Int): CombatResult? {
+        val defender = findTarget(session, attacker, targetTile) ?: return null
+        val ctx = buildContext(session, attacker, defender)
+        val result = Combat.resolve(ctx, session.rng)
+
+        attacker.hasAttacked = true
+        // 開火即定身：本回合不能再走。這讓「移動到哪裡開火」變成一個真正的抉擇。
+        attacker.movesLeft = 0
+        attacker.entrenchment = 0
+        // 消耗補給：連續進攻會把戰線推到補給極限，這是攻勢有節奏的原因。
+        attacker.supply = (attacker.supply - ATTACK_SUPPLY_COST).coerceAtLeast(0)
+
+        val attackerNation = session.nations[attacker.nationId]
+        val defenderNation = session.nations[defender.nationId]
+
+        if (result.defenderDestroyed) {
+            attackerNation.unitsKilled++
+            session.pushEvent(
+                "event_unit_destroyed",
+                listOf(defender.kind.key, defenderNation.nameKey),
+                defender.tile,
+                attacker.nationId
+            )
+            session.destroyUnit(defender)
+        }
+        if (result.attackerDestroyed) {
+            defenderNation.unitsKilled++
+            session.pushEvent(
+                "event_unit_destroyed",
+                listOf(attacker.kind.key, attackerNation.nameKey),
+                attacker.tile,
+                defender.nationId
+            )
+            session.destroyUnit(attacker)
+        }
+
+        if (attacker.nationId == session.playerNationId || defender.nationId == session.playerNationId) {
+            session.recomputeVisibility(session.playerNationId)
+        }
+        session.refreshOutcome()
+        return result
+    }
+
+    // ------------------------------------------------------------------
+    // 運輸
+    // ------------------------------------------------------------------
+
+    fun canLoad(session: Session, passenger: ArmyUnit, transport: ArmyUnit): Boolean {
+        if (passenger.isLoaded || transport.isLoaded) return false
+        if (passenger.nationId != transport.nationId) return false
+        if (!transport.kind.canCarry(passenger.kind)) return false
+        if (transport.cargo.size >= transport.kind.capacity) return false
+        if (passenger.movesLeft <= 0) return false
+        return session.map.distance(passenger.tile, transport.tile) <= 1
+    }
+
+    fun load(session: Session, passenger: ArmyUnit, transport: ArmyUnit): Boolean {
+        if (!canLoad(session, passenger, transport)) return false
+        session.clearOccupancy(passenger.tile, passenger.kind.domain, passenger.id)
+        passenger.tile = transport.tile
+        passenger.transportId = transport.id
+        passenger.movesLeft = 0
+        passenger.entrenchment = 0
+        transport.cargo.add(passenger.id)
+        return true
+    }
+
+    fun canUnload(session: Session, passenger: ArmyUnit, target: Int): Boolean {
+        if (!passenger.isLoaded) return false
+        val transport = session.unitById(passenger.transportId) ?: return false
+        if (session.map.distance(transport.tile, target) > 1) return false
+        if (!session.isTileFree(target, passenger.kind.domain)) return false
+        val terrain = session.map.terrainAt(target)
+        return when (passenger.kind.domain) {
+            Domain.LAND -> terrain.isLand && (!passenger.kind.vehicle || terrain.vehiclePassable)
+            Domain.AIR -> true
+            Domain.SEA -> terrain.isWater
+        }
+    }
+
+    /**
+     * 登陸。上岸的部隊本回合不能再動 —— 兩棲兵種例外，
+     * 這正是海軍陸戰隊存在的理由：它是唯一能「下船就打」的部隊。
+     */
+    fun unload(session: Session, passenger: ArmyUnit, target: Int): Boolean {
+        if (!canUnload(session, passenger, target)) return false
+        val transport = session.unitById(passenger.transportId) ?: return false
+        transport.cargo.remove(passenger.id)
+        passenger.transportId = -1
+        passenger.tile = target
+        session.setOccupancy(target, passenger.kind.domain, passenger.id)
+        if (passenger.kind.isAmphibious) {
+            passenger.movesLeft = 0
+            passenger.hasAttacked = false
+        } else {
+            passenger.movesLeft = 0
+            passenger.hasAttacked = true
+        }
+        onArrived(session, passenger)
+        return true
+    }
+
+    // ------------------------------------------------------------------
+    // 生產與研發
+    // ------------------------------------------------------------------
+
+    /** 這個省能不能造這種兵。 */
+    fun canBuild(session: Session, nationId: Int, provinceId: Int, kind: UnitKind): Boolean =
+        buildBlocker(session, nationId, provinceId, kind) == BuildBlocker.NONE
+
+    enum class BuildBlocker { NONE, NOT_OWNED, NO_CITY, LOW_INDUSTRY, NOT_COASTAL, NO_ROOM, NO_FUNDS }
+
+    fun buildBlocker(session: Session, nationId: Int, provinceId: Int, kind: UnitKind): BuildBlocker {
+        if (provinceId !in session.provinceOwner.indices) return BuildBlocker.NOT_OWNED
+        if (session.provinceOwner[provinceId] != nationId) return BuildBlocker.NOT_OWNED
+        val province = session.map.provinces[provinceId]
+        if (!province.hasCity) return BuildBlocker.NO_CITY
+        if (province.industry < kind.industry) return BuildBlocker.LOW_INDUSTRY
+        if (session.nations[nationId].funds < kind.cost) return BuildBlocker.NO_FUNDS
+        if (kind.isNaval) {
+            if (!province.coastal) return BuildBlocker.NOT_COASTAL
+            if (navalSpawnTile(session, province.capitalTile) < 0) return BuildBlocker.NO_ROOM
+        } else {
+            if (!session.isTileFree(province.capitalTile, kind.domain)) return BuildBlocker.NO_ROOM
+        }
+        return BuildBlocker.NONE
+    }
+
+    /** 港口旁邊第一個空著的水格。 */
+    private fun navalSpawnTile(session: Session, cityTile: Int): Int {
+        val buf = IntArray(6)
+        val n = session.map.neighbours(cityTile, buf)
+        for (i in 0 until n) {
+            val tile = buf[i]
+            if (session.map.isWater(tile) && session.isTileFree(tile, Domain.SEA)) return tile
+        }
+        return -1
+    }
+
+    fun build(session: Session, nationId: Int, provinceId: Int, kind: UnitKind): ArmyUnit? {
+        if (!canBuild(session, nationId, provinceId, kind)) return null
+        val province = session.map.provinces[provinceId]
+        val tile = if (kind.isNaval) navalSpawnTile(session, province.capitalTile) else province.capitalTile
+        if (tile < 0) return null
+        val nation = session.nations[nationId]
+        val unit = session.spawnUnit(kind, nationId, tile) ?: return null
+        nation.funds -= kind.cost
+        session.pushEvent("event_unit_built", listOf(kind.key, province.nameKey), tile, nationId)
+        if (nationId == session.playerNationId) session.recomputeVisibility(nationId)
+        return unit
+    }
+
+    fun canResearch(session: Session, nationId: Int, branch: TechBranch): Boolean {
+        val nation = session.nations[nationId]
+        return nation.canResearch(branch) && nation.funds >= nation.techCost(branch)
+    }
+
+    fun research(session: Session, nationId: Int, branch: TechBranch): Boolean {
+        if (!canResearch(session, nationId, branch)) return false
+        val nation = session.nations[nationId]
+        nation.funds -= nation.techCost(branch)
+        nation.tech[branch.ordinal]++
+        session.pushEvent("event_tech_advanced", listOf(branch.name, nation.nameKey), -1, nationId)
+        return true
+    }
+
+    /** 花錢就地補血。前線修不滿，只能靠城市。 */
+    fun repairCost(unit: ArmyUnit): Int {
+        val missing = ArmyUnit.MAX_HP - unit.hp
+        return (unit.kind.cost * missing) / 180
+    }
+
+    fun canRepair(session: Session, unit: ArmyUnit): Boolean {
+        if (unit.hp >= ArmyUnit.MAX_HP) return false
+        if (!session.isSupplySource(unit.tile, unit.nationId)) return false
+        return session.nations[unit.nationId].funds >= repairCost(unit)
+    }
+
+    fun repair(session: Session, unit: ArmyUnit): Boolean {
+        if (!canRepair(session, unit)) return false
+        session.nations[unit.nationId].funds -= repairCost(unit)
+        unit.hp = ArmyUnit.MAX_HP
+        unit.resupply(ArmyUnit.MAX_SUPPLY)
+        unit.movesLeft = 0
+        unit.hasAttacked = true
+        return true
+    }
+
+    /** 指派指揮官。一位指揮官同時只能帶一支部隊。 */
+    fun assignCommander(session: Session, unit: ArmyUnit, commanderId: String): Boolean {
+        if (commanderId.isNotEmpty()) {
+            for (other in session.units) {
+                if (other.id != unit.id && other.commanderId == commanderId) return false
+            }
+        }
+        unit.commanderId = commanderId
+        return true
+    }
+
+    const val ATTACK_SUPPLY_COST = 12
+}

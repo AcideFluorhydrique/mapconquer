@@ -1,0 +1,55 @@
+# SPDX-FileCopyrightText: 2026 AcideFluorhydrique
+# SPDX-License-Identifier: GPL-3.0-or-later
+# 由 tools/genworld.py 產生，請勿手動編輯。
+format 1
+id campaign_03_island_chain
+map sea_asia
+mode CAMPAIGN
+nameKey scn_campaign_03_island_chain
+descKey scn_campaign_03_island_chain_desc
+order 3
+turnLimit 40
+startYear 2026
+starTurns 20,30
+
+[nations]
+BLU|nation_blu|#4C7BA8|20|BALANCED|900|1,1,1,0,0,1
+RED|nation_red|#A8494C|15|AGGRESSIVE|900|1,1,1,0,0,1
+GRN|nation_grn|#4C8C5C|7|TURTLE|700|1,1,1,0,0,1
+
+[relations]
+BLU RED WAR
+
+[owners]
+BLU: 3-4,20-21
+RED: 12,14-16
+GRN: 7,10
+
+[units]
+BLU|24,11|MARINE|2|-
+BLU|27,16|MARINE|2|-
+BLU|24,1|MARINE|2|-
+BLU|25,2|TRANSPORT_SHIP|1|-
+BLU|23,11|TRANSPORT_SHIP|1|-
+BLU|28,16|FIGHTER|2|-
+BLU|25,11|FIGHTER|2|-
+BLU|23,1|DESTROYER|2|-
+BLU|25,10|INFANTRY|1|-
+BLU|27,15|INFANTRY|1|-
+RED|11,34|INFANTRY|2|-
+RED|16,35|INFANTRY|2|-
+RED|8,25|INFANTRY|2|-
+RED|7,24|INFANTRY|2|-
+RED|12,34|ANTI_AIR|2|-
+RED|15,35|ANTI_AIR|2|-
+RED|9,25|SUBMARINE|2|-
+RED|6,24|SUBMARINE|2|-
+RED|10,33|ARTILLERY|1|-
+GRN|6,12|INFANTRY|1|-
+GRN|11,15|INFANTRY|1|-
+
+[playable]
+BLU
+
+[objectives]
+CAPTURE_PROVINCES|14-15|0

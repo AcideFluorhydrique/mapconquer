@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    SPDX-FileCopyrightText: 2026 AcideFluorhydrique
+    SPDX-License-Identifier: GPL-3.0-or-later
+-->
+<resources>
+    <color name="window_background">#0E1621</color>
+    <color name="ic_launcher_background">#16283A</color>
+</resources>

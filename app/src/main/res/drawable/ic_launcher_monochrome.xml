@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    SPDX-FileCopyrightText: 2026 AcideFluorhydrique
+    SPDX-License-Identifier: GPL-3.0-or-later
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#000000"
+        android:pathData="M54,26 L74,37.5 L74,60.5 L54,72 L34,60.5 L34,37.5 Z M54,33 L40,41 L40,57 L54,65 L68,57 L68,41 Z" />
+    <path
+        android:fillColor="#000000"
+        android:pathData="M40,72 L52,79 L52,93 L40,100 L28,93 L28,79 Z" />
+    <path
+        android:fillColor="#000000"
+        android:pathData="M68,72 L80,79 L80,93 L68,100 L56,93 L56,79 Z" />
+</vector>
