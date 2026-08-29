@@ -54,7 +54,10 @@ class UnitMoveRules(
 
         return when {
             unit.kind.domain == Domain.AIR -> 1
-            terrain.isWater -> SEA_MOVE_COST
+            // 軍艦在水上是一格一點 —— 海洋就是它的地盤。
+            unit.kind.domain == Domain.SEA -> 1
+            // 只有浮渡的陸軍才付較高的代價：擠在駁船上就是比軍艦慢。
+            terrain.isWater -> EMBARK_MOVE_COST
             else -> {
                 var cost = terrain.moveCost
                 if (mountaineer && cost > 2) cost = 2
@@ -94,8 +97,14 @@ class UnitMoveRules(
     override fun canEndOn(tile: Int): Boolean = session.isTileFreeFor(unit, tile)
 
     private companion object {
-        /** 陸軍浮渡與軍艦航行的每格成本。 */
-        const val SEA_MOVE_COST = 2
+        /**
+         * 陸軍浮渡的每格成本。
+         *
+         * 只作用在陸軍身上。第一版把它套給所有水上移動，結果一併把每艘軍艦的
+         * 航程砍半（驅逐艦從八格掉到四格），而且沒有任何地方講得出這個改動 ——
+         * 是運輸艦的測試把它抓出來的。
+         */
+        const val EMBARK_MOVE_COST = 2
     }
 }
 

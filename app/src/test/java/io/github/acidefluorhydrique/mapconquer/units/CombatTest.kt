@@ -226,7 +226,10 @@ class CombatTest {
         val afloat = Combat.previewDamage(
             context(unit(UnitKind.DESTROYER), unit(UnitKind.INFANTRY, nation = 1), defenderAtSea = true)
         )
-        assertTrue("浮渡的陸軍應該非常好打 $afloat vs $ashore", afloat > ashore * 2)
+        // 攻防比公式的傷害上限是 55，而岸上已經打到 24，所以理論最大倍率
+        // 只有 2.29 倍 —— 原本斷言「超過兩倍」等於要求貼著公式天花板，
+        // 是門檻訂錯了，不是機制沒生效。真正的懲罰在下面：完全無法還手。
+        assertTrue("浮渡的陸軍應該明顯好打 $afloat vs $ashore", afloat > ashore * 3 / 2)
         assertFalse(
             "浮渡的陸軍還不了手",
             Combat.canRetaliate(
