@@ -18,6 +18,8 @@ Kotlin 原始碼的快速健檢。
 4. **英美拼法對不上的成員名。** 宣告寫 `defenseBonus`、呼叫端寫 `defenceBonus`，
    在一份混用 `Colors`（Android API）與 `colour`（自己的欄位）的程式碼裡
    非常容易發生，而且只會在編譯時才炸出來。
+5. **覆寫的參數個數對不上。** 改了介面方法的簽名，卻漏掉某個實作 ——
+   測試裡的匿名物件特別容易被忘記，因為它們不在主程式的搜尋結果裡。
 
 註解與字串是用逐字元掃描剝掉的，不是正則 —— 用正則配對巢狀註解正是
 第一條會被漏掉的原因。
@@ -123,6 +125,29 @@ DECL = re.compile(
 
 MEMBER_DECL = re.compile(r"\b(?:fun|val|var)\s+(?:<[^>]*>\s+)?(\w+)")
 MEMBER_USE = re.compile(r"\.(\w+)")
+FUN_DECL = re.compile(r"\b(override\s+)?fun\s+(?:<[^>]*>\s+)?(\w+)\s*\(")
+
+
+def count_params(code, open_paren):
+    """數一個函式宣告的參數個數。逐字元配對括號，巢狀的泛型與預設值才不會算錯。"""
+    depth = 0
+    i = open_paren
+    commas = 0
+    seen = False
+    while i < len(code):
+        ch = code[i]
+        if ch in "([<{":
+            depth += 1
+        elif ch in ")]>}":
+            depth -= 1
+            if depth == 0:
+                break
+        elif ch == "," and depth == 1:
+            commas += 1
+        elif depth == 1 and not ch.isspace():
+            seen = True
+        i += 1
+    return (commas + 1) if seen else 0
 
 # 英式／美式拼法的對照。左右兩邊都會互換一次，所以只要列一個方向。
 SPELLINGS = [
@@ -200,6 +225,31 @@ def main():
                         f"{rel(path)}:{line_no}: 用了 .{used}，但專案裡宣告的是 "
                         f"{' / '.join(sorted(hits))} —— 英美拼法對不上"
                     )
+
+    # override 的參數個數必須對得上專案裡某個同名宣告。
+    # 只在「這個名字專案裡有宣告」時才檢查 —— 平台方法（onCreate、draw…）
+    # 找不到宣告，那是正常的，不該報。
+    declared_arities = {}
+    for _path, (_text, code) in stripped.items():
+        for m in FUN_DECL.finditer(code):
+            if m.group(1):
+                continue
+            declared_arities.setdefault(m.group(2), set()).add(count_params(code, m.end() - 1))
+    for path, (_text, code) in stripped.items():
+        for m in FUN_DECL.finditer(code):
+            if not m.group(1):
+                continue
+            name = m.group(2)
+            arities = declared_arities.get(name)
+            if not arities:
+                continue
+            arity = count_params(code, m.end() - 1)
+            if arity not in arities:
+                line = code[:m.start()].count("\n") + 1
+                problems.append(
+                    f"{rel(path)}:{line}: override fun {name} 有 {arity} 個參數，"
+                    f"但專案裡宣告的是 {sorted(arities)} 個 —— 改簽名時漏掉了這個實作？"
+                )
 
     for path, (text, code) in stripped.items():
         package = re.search(r"^package\s+([\w.]+)", code, re.M)

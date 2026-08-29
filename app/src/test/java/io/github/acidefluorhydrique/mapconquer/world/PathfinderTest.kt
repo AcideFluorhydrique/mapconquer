@@ -110,7 +110,7 @@ class PathfinderTest {
             override fun enterCost(from: Int, to: Int): Int =
                 if (map.rowOf(to) == corridorRow) 1 else -1
 
-            override fun stopsAt(tile: Int) = tile == gate
+            override fun stopsAt(from: Int, to: Int) = to == gate
         }
 
         val start = map.index(2, corridorRow)
