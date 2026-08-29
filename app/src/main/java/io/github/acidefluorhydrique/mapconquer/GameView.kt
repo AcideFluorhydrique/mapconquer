@@ -105,6 +105,13 @@ class GameView(context: Context) : SurfaceView(context), SurfaceHolder.Callback 
     private var soundEnabled = true
     private var animationsEnabled = true
 
+    /**
+     * 上一次移動的快照。沒有迷霧，移動不會揭露任何東西，所以走錯一步
+     * 純粹是手滑 —— 沒有理由讓玩家為此賠掉一支部隊的一整個回合。
+     * 做了別的事（攻擊、生產、結束回合）就作廢。
+     */
+    private var undoRecord: Orders.MoveRecord? = null
+
     private var toastText: String = ""
     private var toastTimer = 0
     private val toastRect = RectF()
@@ -271,7 +278,11 @@ class GameView(context: Context) : SurfaceView(context), SurfaceHolder.Callback 
         val over = overlay ?: return
         canvas.drawColor(Colors.of("#070C12"))
         mapRenderer?.draw(canvas, cam, over)
-        hudRenderer?.draw(canvas, buttons, over, aiThinking = !active.isPlayerTurn)
+        hudRenderer?.draw(
+            canvas, buttons, over,
+            aiThinking = !active.isPlayerTurn,
+            canUndo = undoRecord?.let { Orders.canUndo(active, it) } == true
+        )
         panelRenderer?.draw(
             canvas, buttons, panel,
             selectedProvince = over.selectedTile.takeIf { it >= 0 }
@@ -459,6 +470,7 @@ class GameView(context: Context) : SurfaceView(context), SurfaceHolder.Callback 
                 Prefs.putBool(context, Prefs.KEY_ANIMATIONS, animationsEnabled)
             }
 
+            HudRenderer.ID_UNDO -> undoLastMove()
             HudRenderer.ID_END_TURN -> endPlayerTurn()
             HudRenderer.ID_MENU -> panel = Panel.PAUSE
             HudRenderer.ID_TECH -> panel = Panel.TECH
@@ -579,11 +591,19 @@ class GameView(context: Context) : SurfaceView(context), SurfaceHolder.Callback 
 
     private fun performMove(active: Session, unit: ArmyUnit, target: Int) {
         val from = unit.tile
+        val record = Orders.snapshot(unit)
+        // 佔領會牽動收入、補給與存亡判定，撤回它得回滾一整串狀態。
+        // 所以規則很單純：這一步打下了省份，就不能反悔。
+        val province = active.map.provinceOf[target]
+        val ownerBefore = if (province >= 0) active.provinceOwner[province] else -1
+
         val moved = Orders.move(active, unit, target, pathBuffer)
         if (moved == from) {
             Audio.play(Sfx.DENIED)
             return
         }
+        val captured = province >= 0 && active.provinceOwner[province] != ownerBefore
+        undoRecord = if (captured) null else record
         Audio.play(Sfx.MOVE)
         overlay?.let {
             if (animationsEnabled) it.startMoveAnimation(unit, from, moved)
@@ -593,6 +613,7 @@ class GameView(context: Context) : SurfaceView(context), SurfaceHolder.Callback 
     }
 
     private fun performAttack(active: Session, unit: ArmyUnit, target: Int) {
+        undoRecord = null
         val defender = Orders.findTarget(active, unit, target)
         val result = Orders.attack(active, unit, target)
         if (result == null) {
@@ -612,7 +633,24 @@ class GameView(context: Context) : SurfaceView(context), SurfaceHolder.Callback 
         }
     }
 
+    private fun undoLastMove() {
+        val active = session ?: return
+        val record = undoRecord ?: return
+        if (!Orders.undoMove(active, record)) {
+            Audio.play(Sfx.DENIED)
+            return
+        }
+        undoRecord = null
+        Audio.play(Sfx.MOVE)
+        overlay?.let {
+            it.selectedUnit = active.unitById(record.unitId)
+            it.selectedTile = record.from
+            refreshHighlights(active, it)
+        }
+    }
+
     private fun skipSelectedUnit() {
+        undoRecord = null
         val unit = overlay?.selectedUnit ?: return
         unit.movesLeft = 0
         unit.hasAttacked = true
@@ -653,6 +691,7 @@ class GameView(context: Context) : SurfaceView(context), SurfaceHolder.Callback 
     private fun buildUnit(kindOrdinal: Int) {
         val active = session ?: return
         val over = overlay ?: return
+        undoRecord = null
         val kind = UnitKind.ALL.getOrNull(kindOrdinal) ?: return
         val tile = over.selectedTile
         if (tile < 0) return
@@ -710,6 +749,7 @@ class GameView(context: Context) : SurfaceView(context), SurfaceHolder.Callback 
         val active = session ?: return
         if (!active.isPlayerTurn) return
         overlay?.clearSelection()
+        undoRecord = null
         panel = Panel.NONE
         active.advanceToNextNation()
         Audio.play(Sfx.TURN)
@@ -771,6 +811,7 @@ class GameView(context: Context) : SurfaceView(context), SurfaceHolder.Callback 
         hudRenderer = HudRenderer(active)
         panelRenderer = PanelRenderer(active)
         ai = null
+        undoRecord = null
         panel = Panel.NONE
         screen = Screen.GAME
 

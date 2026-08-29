@@ -36,7 +36,10 @@ class CombatContext(
      * 沒有護航就渡海，是把整支部隊送給對方的艦隊。
      */
     val attackerAtSea: Boolean = false,
-    val defenderAtSea: Boolean = false
+    val defenderAtSea: Boolean = false,
+    /** 士氣等級，由 Session 依當下態勢推導後傳進來（+1 高昂 … −3 混亂）。 */
+    val attackerMorale: Int = 0,
+    val defenderMorale: Int = 0
 )
 
 /** 一次交戰的結果。UI 用它播動畫，AI 用它評估要不要打。 */
@@ -66,6 +69,20 @@ class CombatResult(
  */
 object Combat {
 
+    /**
+     * 士氣對輸出的乘數。
+     *
+     * 高昂的加成小、低落的懲罰大 —— 挨打比佔便宜更有感，這樣「把對方圍起來」
+     * 才會是划算的投資。混亂直接歸零：那一級的意思就是打不出去。
+     */
+    fun moraleFactor(level: Int): Float = when {
+        level >= 1 -> 1.08f
+        level == 0 -> 1f
+        level == -1 -> 0.85f
+        level == -2 -> 0.65f
+        else -> 0f
+    }
+
     /** 均勢對打時的單回合傷害基準。調它等於調整整場戰爭的節奏。 */
     private const val DAMAGE_SCALE = 55f
 
@@ -82,7 +99,7 @@ object Combat {
         p *= 1f + ctx.attackerAura / 100f
         p *= commanderAttackFactor(u, ctx.defender)
         p *= u.supplyFactor
-        p *= u.moraleFactor
+        p *= moraleFactor(ctx.attackerMorale)
         // 浮渡中的陸軍只剩象徵性的自衛火力。
         if (ctx.attackerAtSea) p *= 0.3f
         // 殘血部隊的輸出等比下降，但不會完全消失。
@@ -129,7 +146,7 @@ object Combat {
         if (ctx.distance > 1) return false
         if (d.kind.minRange > 1) return false
         if (!d.kind.canAttack) return false
-        if (d.isDisrupted) return false
+        if (ctx.defenderMorale <= ArmyUnit.MIN_MORALE) return false
         // 浮渡中的陸軍還不了手。
         if (ctx.defenderAtSea) return false
         // 魚雷：潛艇出手時對方來不及反應。潛艇本體很脆，全靠這一條活著。
@@ -154,6 +171,8 @@ object Combat {
                 defender = ctx.attacker,
                 attackerAtSea = ctx.defenderAtSea,
                 defenderAtSea = ctx.attackerAtSea,
+                attackerMorale = ctx.defenderMorale,
+                defenderMorale = ctx.attackerMorale,
                 defenderTerrainBonus = ctx.attackerTerrainBonus,
                 attackerTerrainBonus = ctx.defenderTerrainBonus,
                 distance = ctx.distance,

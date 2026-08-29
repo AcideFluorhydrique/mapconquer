@@ -42,6 +42,7 @@
     <string name="hud_repair">整補</string>
     <string name="hud_wait">待命</string>
     <string name="hud_next_unit">下一支</string>
+    <string name="hud_undo">撤回</string>
     <string name="hud_toggle_grid">格線</string>
     <string name="hud_toggle_supply">補給</string>
     <string name="hud_neutral">中立</string>
@@ -138,7 +139,15 @@
     <string name="help_basics">基本操作</string>
     <string name="help_basics_body">點一下部隊即可選取。藍色格是它走得到的地方，紅色格上有它打得到的敵人。再點一次同一支部隊會打開詳細資料。拖曳可以平移地圖，兩指捏合可以縮放。陸軍只要在城市上結束移動，整個省份就會易主 —— 連同它的收入、補給與工業。</string>
     <string name="help_combat">戰鬥</string>
+    <string name="help_morale">士氣與包圍</string>
+    <string name="help_morale_body">士氣不是會慢慢流失的一條槽，而是「這支部隊現在站在什麼處境」的讀數。對向兩格有敵人就是夾擊、士氣下降；四面以上有敵人就是包圍、士氣嚴重下降；再降一級就是混亂 —— 無法攻擊，也無法還手。帶謠言的指揮官每次命中都有機會再壓一級，所以包圍加一次謠言、夾擊加兩次、或是純粹三次謠言，結果都一樣。正因為它讀的是處境，包圍圈一鬆開，士氣就立刻回來。</string>
     <string name="help_combat_body">每支部隊都有四個獨立的攻擊值：對步兵、對裝甲、對艦艇、對空。反坦克炮打戰車勢如破竹，打步兵卻軟弱無力；戰鬥機制空無敵，對地面卻幾乎沒有作用。火炮從兩格以外開火且不會被反擊，可是一旦被貼身就幾乎沒有自衛能力 —— 前面一定要有步兵擋著。地形、城牆與築壕都會提高守方的防禦，所以「打山裡挖好壕溝的敵人」跟「在農地上逮到它」是兩回事。</string>
+    <string name="morale_elevated">士氣高昂</string>
+    <string name="morale_steady">正常</string>
+    <string name="morale_shaken">士氣下降</string>
+    <string name="morale_broken">士氣嚴重下降</string>
+    <string name="morale_disrupted">混亂</string>
+    <string name="hud_morale">士氣：%1$s</string>
     <string name="help_supply">補給線</string>
     <string name="help_supply_body">補給從你自己的城市沿著自己的領土擴散，而越過山脈要付出的代價遠高於平原。在補給範圍內的部隊每回合會回補與整補；範圍外的部隊會先掉補給、再掉戰力，最後餓死。補給車與司令部自帶一個小型補給圈，攻勢跑贏城市之後就靠它們續命。打開「補給」圖層，就看得到自己的後勤到底伸得多遠。</string>
     <string name="help_victory">勝利條件</string>
@@ -215,6 +224,8 @@
     <string name="skill_scout_desc">視野 +1</string>
     <string name="skill_iron_will">鋼鐵意志</string>
     <string name="skill_iron_will_desc">斷補給時損耗減半</string>
+    <string name="skill_rumour">謠言</string>
+    <string name="skill_rumour_desc">攻擊後有機會讓目標士氣再降一級</string>
 
     <!-- Commanders -->
     <string name="cmd_ashby">艾許比上校</string>

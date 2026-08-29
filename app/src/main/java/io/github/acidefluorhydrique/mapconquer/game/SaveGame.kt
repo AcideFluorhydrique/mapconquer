@@ -83,7 +83,7 @@ object SaveGame {
                 .append(unit.movesLeft).append(' ')
                 .append(if (unit.hasAttacked) 1 else 0).append(' ')
                 .append(unit.entrenchment).append(' ')
-                .append(unit.morale).append(' ')
+                .append(unit.rumour).append(' ')
                 .append(unit.transportId).append(' ')
                 .append(unit.commanderId.ifEmpty { "-" }).append('\n')
         }
@@ -211,8 +211,7 @@ object SaveGame {
             unit.movesLeft = p[8].toIntOrNull() ?: 0
             unit.hasAttacked = p[9] == "1"
             unit.entrenchment = p[10].toIntOrNull() ?: 0
-            unit.morale = (p[11].toIntOrNull() ?: 0)
-                .coerceIn(ArmyUnit.MIN_MORALE, ArmyUnit.MAX_MORALE)
+            unit.rumour = (p[11].toIntOrNull() ?: 0).coerceIn(0, ArmyUnit.MAX_RUMOUR)
             unit.transportId = p[12].toIntOrNull() ?: -1
             unit.commanderId = if (p[13] == "-") "" else p[13]
             session.restoreUnit(unit)

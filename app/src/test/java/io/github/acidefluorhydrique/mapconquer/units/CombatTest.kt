@@ -26,7 +26,9 @@ class CombatTest {
         distance: Int = 1,
         defenderTerrain: Int = 0,
         attackerAtSea: Boolean = false,
-        defenderAtSea: Boolean = false
+        defenderAtSea: Boolean = false,
+        attackerMorale: Int = 0,
+        defenderMorale: Int = 0
     ) = CombatContext(
         attacker, defender,
         defenderTerrainBonus = defenderTerrain,
@@ -35,7 +37,9 @@ class CombatTest {
         attackerTech = 0, defenderTech = 0,
         attackerAura = 0, defenderAura = 0,
         attackerAtSea = attackerAtSea,
-        defenderAtSea = defenderAtSea
+        defenderAtSea = defenderAtSea,
+        attackerMorale = attackerMorale,
+        defenderMorale = defenderMorale
     )
 
     @Test
@@ -190,31 +194,31 @@ class CombatTest {
         val attacker = unit(UnitKind.INFANTRY)
         val defender = unit(UnitKind.INFANTRY, nation = 1)
         assertTrue(Combat.canRetaliate(context(attacker, defender)))
-        defender.morale = ArmyUnit.MIN_MORALE
-        assertTrue(defender.isDisrupted)
-        assertFalse("陷入混亂就打不出去了", Combat.canRetaliate(context(attacker, defender)))
+        assertFalse(
+            "陷入混亂就打不出去了",
+            Combat.canRetaliate(context(attacker, defender, defenderMorale = ArmyUnit.MIN_MORALE))
+        )
     }
 
     @Test
-    fun `morale swings the damage both ways`() {
-        val steady = Combat.previewDamage(
-            context(unit(UnitKind.ARMOUR), unit(UnitKind.INFANTRY, nation = 1))
+    fun `the morale ladder scales output the way it reads`() {
+        fun hit(morale: Int) = Combat.previewDamage(
+            context(unit(UnitKind.ARMOUR), unit(UnitKind.INFANTRY, nation = 1), attackerMorale = morale)
         )
-        val shaken = Combat.previewDamage(
-            context(unit(UnitKind.ARMOUR).apply { morale = -2 }, unit(UnitKind.INFANTRY, nation = 1))
-        )
-        val eager = Combat.previewDamage(
-            context(unit(UnitKind.ARMOUR).apply { morale = 2 }, unit(UnitKind.INFANTRY, nation = 1))
-        )
-        assertTrue("士氣低落應該打得軟 $shaken vs $steady", shaken < steady)
-        assertTrue("士氣高昂應該打得重 $eager vs $steady", eager > steady)
-        assertEquals(
-            "混亂的部隊完全打不出傷害",
-            0,
-            Combat.previewDamage(
-                context(unit(UnitKind.ARMOUR).apply { morale = ArmyUnit.MIN_MORALE },
-                        unit(UnitKind.INFANTRY, nation = 1))
-            )
+
+        val elevated = hit(1)
+        val steady = hit(0)
+        val shaken = hit(-1)
+        val broken = hit(-2)
+        assertTrue("士氣高昂 $elevated > 正常 $steady", elevated > steady)
+        assertTrue("正常 $steady > 士氣下降 $shaken", steady > shaken)
+        assertTrue("士氣下降 $shaken > 士氣嚴重下降 $broken", shaken > broken)
+        assertEquals("混亂完全打不出傷害", 0, hit(ArmyUnit.MIN_MORALE))
+
+        // 懲罰要比獎勵有感，否則「把對方圍起來」不會是划算的投資。
+        assertTrue(
+            "低落的懲罰應該大於高昂的獎勵",
+            (steady - shaken) > (elevated - steady)
         )
     }
 

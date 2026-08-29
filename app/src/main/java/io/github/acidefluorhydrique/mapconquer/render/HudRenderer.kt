@@ -28,11 +28,17 @@ class HudRenderer(private val session: Session) {
     private val rect = RectF()
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
 
-    fun draw(canvas: Canvas, buttons: ButtonLayer, overlay: MapOverlay, aiThinking: Boolean) {
+    fun draw(
+        canvas: Canvas,
+        buttons: ButtonLayer,
+        overlay: MapOverlay,
+        aiThinking: Boolean,
+        canUndo: Boolean
+    ) {
         drawTopBar(canvas, buttons)
         drawSideToggles(canvas, buttons, overlay)
         drawEvents(canvas)
-        drawBottomBar(canvas, buttons, overlay)
+        drawBottomBar(canvas, buttons, overlay, canUndo)
         if (aiThinking) drawTurnBanner(canvas)
     }
 
@@ -173,7 +179,12 @@ class HudRenderer(private val session: Session) {
 
     // ------------------------------------------------------------------
 
-    private fun drawBottomBar(canvas: Canvas, buttons: ButtonLayer, overlay: MapOverlay) {
+    private fun drawBottomBar(
+        canvas: Canvas,
+        buttons: ButtonLayer,
+        overlay: MapOverlay,
+        canUndo: Boolean
+    ) {
         val tile = overlay.selectedTile
         if (tile < 0) return
 
@@ -188,7 +199,7 @@ class HudRenderer(private val session: Session) {
 
         val unit = overlay.selectedUnit
         if (unit != null) drawUnitInfo(canvas, unit, Ui.dp(150f), top)
-        drawContextActions(canvas, buttons, overlay, top, h)
+        drawContextActions(canvas, buttons, overlay, top, h, canUndo)
     }
 
     private fun drawTileInfo(canvas: Canvas, tile: Int, x: Float, top: Float) {
@@ -261,7 +272,15 @@ class HudRenderer(private val session: Session) {
         Widgets.bar(canvas, rect, supplyRatio, Palette.supplyColour(supplyRatio))
         Widgets.left(canvas, "${unit.supply}", barX + barWidth + Ui.dp(5f), top + Ui.dp(32f), Ui.dp(10f), dim)
 
-        if (unit.entrenchment > 0) {
+        // 士氣是位置決定的，玩家必須看得到它 —— 否則「為什麼我打不出去」
+        // 會變成一個沒有線索的謎題。
+        val morale = session.moraleOf(unit)
+        if (morale != 0) {
+            Widgets.left(
+                canvas, Strings.format(R.string.hud_morale, moraleLabel(morale)),
+                barX, top + Ui.dp(44f), Ui.dp(10f), moraleColour(morale)
+            )
+        } else if (unit.entrenchment > 0) {
             Widgets.left(
                 canvas, Strings.format(R.string.hud_entrenched, unit.entrenchment),
                 barX, top + Ui.dp(44f), Ui.dp(10f), Colors.of("#8FBFA0")
@@ -278,7 +297,8 @@ class HudRenderer(private val session: Session) {
         buttons: ButtonLayer,
         overlay: MapOverlay,
         top: Float,
-        height: Float
+        height: Float,
+        canUndo: Boolean
     ) {
         val unit = overlay.selectedUnit
         val tile = overlay.selectedTile
@@ -302,6 +322,12 @@ class HudRenderer(private val session: Session) {
         if (session.isPlayerTurn) {
             action(ID_NEXT_UNIT, R.string.hud_next_unit, true, Widgets.STEEL_TOP, Widgets.STEEL_BOTTOM)
 
+            // 撤回擺在最顯眼的位置，而且只在真的可以撤的時候出現 ——
+            // 一排灰掉的按鈕比沒有按鈕更難讀。
+            if (canUndo) {
+                action(ID_UNDO, R.string.hud_undo, true, Widgets.PURPLE_TOP, Widgets.PURPLE_BOTTOM)
+            }
+
             if (province != null &&
                 session.provinceOwner[province.id] == session.playerNationId &&
                 province.hasCity
@@ -318,6 +344,23 @@ class HudRenderer(private val session: Session) {
                 action(ID_WAIT, R.string.hud_wait, !unit.isSpent, Widgets.GRAY_TOP, Widgets.GRAY_BOTTOM)
             }
         }
+    }
+
+    private fun moraleLabel(level: Int): String = Strings.get(
+        when {
+            level >= 1 -> R.string.morale_elevated
+            level == -1 -> R.string.morale_shaken
+            level == -2 -> R.string.morale_broken
+            level <= -3 -> R.string.morale_disrupted
+            else -> R.string.morale_steady
+        }
+    )
+
+    private fun moraleColour(level: Int): Int = when {
+        level >= 1 -> Colors.of("#8FE0B0")
+        level == -1 -> Colors.of("#E0C87F")
+        level == -2 -> Colors.of("#E09A6B")
+        else -> Colors.of("#FF7B6B")
     }
 
     /** AI 回合時蓋在畫面中央上方的提示條。 */
@@ -346,6 +389,7 @@ class HudRenderer(private val session: Session) {
         const val ID_REPAIR = "repair"
         const val ID_WAIT = "wait"
         const val ID_NEXT_UNIT = "next_unit"
+        const val ID_UNDO = "undo"
         const val ID_TOGGLE_GRID = "toggle_grid"
         const val ID_TOGGLE_SUPPLY = "toggle_supply"
 

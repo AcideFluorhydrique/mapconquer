@@ -114,6 +114,35 @@ class WorldMap(
         return n
     }
 
+    /**
+     * 依**方向索引**填入六個鄰居，缺的補 -1。
+     *
+     * [neighbours] 回傳的是壓縮過的陣列（地圖邊緣會少幾個），位置對不上方向；
+     * 判斷夾擊需要知道「東邊和西邊是不是同時有敵人」，那就必須有固定索引。
+     * 方向順序同 [HexMath.DIRECTIONS]，對向就是 i 與 i+3。
+     */
+    fun neighboursByDirection(index: Int, out: IntArray) {
+        val col = index % cols
+        val row = index / cols
+        val odd = row and 1
+
+        fun at(slot: Int, c: Int, r: Int) {
+            if (r < 0 || r >= rows) {
+                out[slot] = -1
+                return
+            }
+            val cc = if (wrapX) ((c % cols) + cols) % cols else c
+            out[slot] = if (cc in 0 until cols) r * cols + cc else -1
+        }
+
+        at(0, col + 1, row)
+        at(1, if (odd == 1) col + 1 else col, row - 1)
+        at(2, if (odd == 1) col else col - 1, row - 1)
+        at(3, col - 1, row)
+        at(4, if (odd == 1) col else col - 1, row + 1)
+        at(5, if (odd == 1) col + 1 else col, row + 1)
+    }
+
     /** 鄰居中有沒有水域 —— 判斷「臨海」用。只在載入時跑，配置一個小陣列不心疼。 */
     fun isCoastal(index: Int, buf: IntArray = IntArray(6)): Boolean {
         val n = neighbours(index, buf)

@@ -72,6 +72,7 @@ UI = {
     "hud_repair": ("Repair", "整補", "整补"),
     "hud_wait": ("Wait", "待命", "待命"),
     "hud_next_unit": ("Next", "下一支", "下一支"),
+    "hud_undo": ("Undo", "撤回", "撤回"),
     "hud_toggle_grid": ("Grid", "格線", "格线"),
     "hud_toggle_supply": ("Supply", "補給", "补给"),
     "hud_neutral": ("Neutral", "中立", "中立"),
@@ -207,6 +208,26 @@ UI = {
         "再点一次同一支部队会打开详细资料。拖曳可以平移地图，两指捏合可以缩放。"
         "陆军只要在城市上结束移动，整个省份就会易主 —— 连同它的收入、补给与工业。"),
     "help_combat": ("Combat", "戰鬥", "战斗"),
+    "help_morale": ("Morale and encirclement", "士氣與包圍", "士气与包围"),
+    "help_morale_body": (
+        "Morale is not a bar that drains -- it is a read of the position a unit is in right now. "
+        "Enemies on two opposite sides leave it shaken; four or more around it leave it broken; "
+        "one step further and it is disrupted, unable to attack or even return fire. "
+        "A commander with Rumour pushes the target one step lower on a hit, so encircle plus one "
+        "rumour, or a flank plus two, or three rumours alone all reach the same place. "
+        "Because morale reads the position, it comes straight back the moment the ring opens up.",
+        "士氣不是會慢慢流失的一條槽，而是「這支部隊現在站在什麼處境」的讀數。"
+        "對向兩格有敵人就是夾擊、士氣下降；四面以上有敵人就是包圍、士氣嚴重下降；"
+        "再降一級就是混亂 —— 無法攻擊，也無法還手。"
+        "帶謠言的指揮官每次命中都有機會再壓一級，所以包圍加一次謠言、夾擊加兩次、"
+        "或是純粹三次謠言，結果都一樣。"
+        "正因為它讀的是處境，包圍圈一鬆開，士氣就立刻回來。",
+        "士气不是会慢慢流失的一条槽，而是「这支部队现在站在什么处境」的读数。"
+        "对向两格有敌人就是夹击、士气下降；四面以上有敌人就是包围、士气严重下降；"
+        "再降一级就是混乱 —— 无法攻击，也无法还手。"
+        "带谣言的指挥官每次命中都有机会再压一级，所以包围加一次谣言、夹击加两次、"
+        "或是纯粹三次谣言，结果都一样。"
+        "正因为它读的是处境，包围圈一松开，士气就立刻回来。"),
     "help_combat_body": (
         "Every unit has four separate attack values: against infantry, armour, ships and aircraft. "
         "Anti-tank guns shred armour and bounce off infantry; fighters own the sky and do nothing on the ground. "
@@ -221,6 +242,13 @@ UI = {
         "反坦克炮打战车势如破竹，打步兵却软弱无力；战斗机制空无敌，对地面却几乎没有作用。"
         "火炮从两格以外开火且不会被反击，可是一旦被贴身就几乎没有自卫能力 —— 前面一定要有步兵挡着。"
         "地形、城墙与筑壕都会提高守方的防御，所以「打山里挖好壕沟的敌人」跟「在农地上逮到它」是两回事。"),
+    "morale_elevated": ("Elevated", "士氣高昂", "士气高昂"),
+    "morale_steady": ("Steady", "正常", "正常"),
+    "morale_shaken": ("Shaken", "士氣下降", "士气下降"),
+    "morale_broken": ("Broken", "士氣嚴重下降", "士气严重下降"),
+    "morale_disrupted": ("Disrupted", "混亂", "混乱"),
+    "hud_morale": ("Morale: %1$s", "士氣：%1$s", "士气：%1$s"),
+
     "help_supply": ("Supply lines", "補給線", "补给线"),
     "help_supply_body": (
         "Supply spreads out from your own cities along your own territory, and mountains cost more to reach across than plains. "
@@ -349,6 +377,10 @@ SKILLS = {
     "skill_field_medic": ("Field Medic", "野戰醫護", "野战医护", "+8 HP repaired each turn", "每回合多回復 8 點兵力", "每回合多回复 8 点兵力"),
     "skill_scout": ("Scout", "斥候", "斥候", "+1 vision", "視野 +1", "视野 +1"),
     "skill_iron_will": ("Iron Will", "鋼鐵意志", "钢铁意志", "Half attrition when out of supply", "斷補給時損耗減半", "断补给时损耗减半"),
+    "skill_rumour": ("Rumour", "謠言", "谣言",
+                     "Attacks may push the target one morale step lower",
+                     "攻擊後有機會讓目標士氣再降一級",
+                     "攻击后有机会让目标士气再降一级"),
 }
 
 COMMANDERS = {

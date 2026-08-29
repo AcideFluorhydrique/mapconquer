@@ -42,6 +42,7 @@
     <string name="hud_repair">Repair</string>
     <string name="hud_wait">Wait</string>
     <string name="hud_next_unit">Next</string>
+    <string name="hud_undo">Undo</string>
     <string name="hud_toggle_grid">Grid</string>
     <string name="hud_toggle_supply">Supply</string>
     <string name="hud_neutral">Neutral</string>
@@ -138,7 +139,15 @@
     <string name="help_basics">The basics</string>
     <string name="help_basics_body">Tap a unit to select it. Blue hexes are where it can move; red hexes hold an enemy it can attack. Tap the same unit again for its full stats. Drag to pan the map, pinch to zoom. A land unit that ends its move on a city takes the whole province — its income, its supply and its factories.</string>
     <string name="help_combat">Combat</string>
+    <string name="help_morale">Morale and encirclement</string>
+    <string name="help_morale_body">Morale is not a bar that drains -- it is a read of the position a unit is in right now. Enemies on two opposite sides leave it shaken; four or more around it leave it broken; one step further and it is disrupted, unable to attack or even return fire. A commander with Rumour pushes the target one step lower on a hit, so encircle plus one rumour, or a flank plus two, or three rumours alone all reach the same place. Because morale reads the position, it comes straight back the moment the ring opens up.</string>
     <string name="help_combat_body">Every unit has four separate attack values: against infantry, armour, ships and aircraft. Anti-tank guns shred armour and bounce off infantry; fighters own the sky and do nothing on the ground. Artillery strikes from two or more hexes away and takes no return fire, but is nearly helpless once something reaches it — keep infantry in front of it. Terrain, city walls and entrenchment all raise the defender\'s strength, so attacking a dug-in unit in the mountains is a very different proposition from catching it on open farmland.</string>
+    <string name="morale_elevated">Elevated</string>
+    <string name="morale_steady">Steady</string>
+    <string name="morale_shaken">Shaken</string>
+    <string name="morale_broken">Broken</string>
+    <string name="morale_disrupted">Disrupted</string>
+    <string name="hud_morale">Morale: %1$s</string>
     <string name="help_supply">Supply lines</string>
     <string name="help_supply_body">Supply spreads out from your own cities along your own territory, and mountains cost more to reach across than plains. A unit inside supply refills and repairs each turn; a unit outside it loses supply, then strength, then dies. Supply trucks and headquarters carry a small supply bubble with them, which is how an offensive keeps moving once it has outrun its cities. Turn on the Supply overlay to see exactly how far your logistics reach.</string>
     <string name="help_victory">Winning</string>
@@ -215,6 +224,8 @@
     <string name="skill_scout_desc">+1 vision</string>
     <string name="skill_iron_will">Iron Will</string>
     <string name="skill_iron_will_desc">Half attrition when out of supply</string>
+    <string name="skill_rumour">Rumour</string>
+    <string name="skill_rumour_desc">Attacks may push the target one morale step lower</string>
 
     <!-- Commanders -->
     <string name="cmd_ashby">Col. Ashby</string>

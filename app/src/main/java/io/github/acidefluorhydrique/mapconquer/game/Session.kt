@@ -80,6 +80,7 @@ class Session(
     val events = ArrayList<GameEvent>(32)
 
     private val neighbourBuf = IntArray(6)
+    private val directionBuf = IntArray(6)
     private val starved = ArrayList<ArmyUnit>(8)
 
     init {
@@ -429,7 +430,7 @@ class Session(
                 // 完全斷補給就開始失血 —— 深入敵境的孤軍必須有代價。
                 if (unit.supply <= 0) unit.damage(STARVATION_DAMAGE)
             }
-            updateMorale(unit)
+            unit.decayRumour()
             if (!unit.isAlive) starved.add(unit)
         }
         for (unit in starved) {
@@ -444,34 +445,58 @@ class Session(
     }
 
     /**
-     * 士氣：被包圍會掉，脫離接觸會回。
+     * 士氣。**不是存起來的狀態，而是當下態勢的函數。**
      *
-     * 掉到 [ArmyUnit.MIN_MORALE] 就進入混亂，完全打不出去 —— 這讓「先把它圍住，
-     * 下回合再收」變成一個真正的戰術，而不是只有數值大小的比較。
-     * 用「相鄰敵軍數」而不是嚴格的六面合圍：後者在六角格上太難達成，
-     * 玩家一輩子也觸發不了幾次。
+     * ```
+     *   +1  士氣高昂     待在自己的城市裡且無人接觸
+     *    0  正常
+     *   -1  士氣下降     被夾擊（對向兩格都有敵人）
+     *   -2  士氣嚴重下降 被包圍（四面以上有敵人）
+     *   -3  混亂         打不出去也還不了手
+     * ```
+     *
+     * 謠言每層再往下壓一級，所以進入混亂有三條路：
+     * 包圍＋一次謠言、夾擊＋兩次謠言、或是純粹三次謠言。
+     *
+     * 做成推導值而不是計數器，是因為士氣描述的是「現在被圍住」這件事 ——
+     * 敵人散開，士氣就該立刻回來，而不是還要慢慢爬。
      */
-    private fun updateMorale(unit: ArmyUnit) {
-        val n = map.neighbours(unit.tile, neighbourBuf)
-        var pressure = 0
-        for (i in 0 until n) {
-            for (domain in Domain.values()) {
-                val other = unitAt(neighbourBuf[i], domain) ?: continue
-                if (isHostile(other.nationId, unit.nationId)) pressure++
-            }
+    fun moraleOf(unit: ArmyUnit): Int {
+        map.neighboursByDirection(unit.tile, directionBuf)
+        var hostiles = 0
+        var flanked = false
+        for (i in 0 until 6) {
+            if (!hasHostileAt(directionBuf[i], unit.nationId)) continue
+            hostiles++
+            // 對向：i 與 i+3。任何一組成立就算夾擊。
+            if (i < 3 && hasHostileAt(directionBuf[i + 3], unit.nationId)) flanked = true
         }
-        when {
-            pressure >= 5 -> unit.shiftMorale(-2)
-            pressure >= 3 -> unit.shiftMorale(-1)
-            pressure == 0 && unit.morale < 0 -> unit.shiftMorale(1)
-            else -> Unit
+
+        var level = when {
+            hostiles >= ENCIRCLED_THRESHOLD -> -2
+            flanked -> -1
+            // 士氣高昂要求「完全沒有壓力」：有敵人接觸、或是還沒散去的謠言，
+            // 都不算。少了謠言那個條件，三次謠言在城裡就打不進混亂，
+            // 而那是這套階梯明確保證的三條路徑之一。
+            hostiles == 0 && unit.rumour == 0 && isSupplySource(unit.tile, unit.nationId) -> 1
+            else -> 0
         }
-        // 待在自己的城市裡會鼓舞士氣。
-        if (pressure == 0 && isSupplySource(unit.tile, unit.nationId) && unit.morale < 1) {
-            unit.shiftMorale(1)
-        }
+        level -= unit.rumour
+        return level.coerceIn(ArmyUnit.MIN_MORALE, ArmyUnit.MAX_MORALE)
     }
 
+    private fun hasHostileAt(tile: Int, nationId: Int): Boolean {
+        if (tile < 0) return false
+        for (domain in Domain.values()) {
+            val other = unitAt(tile, domain) ?: continue
+            if (isHostile(other.nationId, nationId)) return true
+        }
+        return false
+    }
+
+    fun isDisrupted(unit: ArmyUnit): Boolean = moraleOf(unit) <= ArmyUnit.MIN_MORALE
+
+    /** 飛機停在自己的機場／航艦上時算有補給。 */
     /** 飛機停在自己的機場／航艦上時算有補給。 */
     private fun carriedByFriendlyBase(unit: ArmyUnit): Boolean {
         if (unit.isLoaded) {
@@ -690,6 +715,9 @@ class Session(
 
     companion object {
         const val MAX_ENTRENCHMENT = 3
+
+        /** 相鄰敵軍到這個數量就算被包圍。 */
+        const val ENCIRCLED_THRESHOLD = 4
         const val COMMAND_AURA_RANGE = 3
         const val COMMAND_AURA_BONUS = 10
 

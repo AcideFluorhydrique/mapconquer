@@ -24,7 +24,15 @@ enum class CommanderSkill(val key: String) {
     VETERAN("skill_veteran"),
     FIELD_MEDIC("skill_field_medic"),
     SCOUT("skill_scout"),
-    IRON_WILL("skill_iron_will");
+    IRON_WILL("skill_iron_will"),
+
+    /**
+     * 謠言：攻擊之後有機會讓目標的士氣再降一級。
+     *
+     * 它之所以是全遊戲最泛用的技能，是因為它把「打不死」變成「打殘廢」——
+     * 累積到混亂的敵人完全無法攻擊也無法還手，等於少了一個單位。
+     */
+    RUMOUR("skill_rumour");
 
     val descKey: String get() = key + "_desc"
 }
@@ -66,16 +74,16 @@ class Commander(
             Commander("cmd_bergstrom", "cmd_bergstrom", 2, listOf(CommanderSkill.DEFENSIVE), "#3F6B57", 6),
             Commander("cmd_okonkwo", "cmd_okonkwo", 3, listOf(CommanderSkill.BLITZ, CommanderSkill.OFFENSIVE), "#9A6B2F", 12),
             Commander("cmd_varela", "cmd_varela", 3, listOf(CommanderSkill.ARTILLERY_EXPERT, CommanderSkill.SIEGE), "#7A4A66", 12),
-            Commander("cmd_lindqvist", "cmd_lindqvist", 3, listOf(CommanderSkill.LOGISTICS, CommanderSkill.IRON_WILL), "#436C87", 14),
-            Commander("cmd_haddad", "cmd_haddad", 3, listOf(CommanderSkill.SCOUT, CommanderSkill.BLITZ), "#8A6A34", 12),
+            Commander("cmd_lindqvist", "cmd_lindqvist", 3, listOf(CommanderSkill.LOGISTICS, CommanderSkill.RUMOUR), "#436C87", 14),
+            Commander("cmd_haddad", "cmd_haddad", 3, listOf(CommanderSkill.SCOUT, CommanderSkill.RUMOUR), "#8A6A34", 12),
             Commander("cmd_novak", "cmd_novak", 4, listOf(CommanderSkill.ARMOUR_EXPERT, CommanderSkill.BLITZ), "#6A5B8C", 22),
             Commander("cmd_tanaka", "cmd_tanaka", 4, listOf(CommanderSkill.NAVAL_EXPERT, CommanderSkill.SCOUT), "#2F6076", 22),
             Commander("cmd_moreau", "cmd_moreau", 4, listOf(CommanderSkill.AIR_EXPERT, CommanderSkill.OFFENSIVE), "#7C4A3A", 24),
             Commander("cmd_ferreira", "cmd_ferreira", 4, listOf(CommanderSkill.FORTRESS, CommanderSkill.DEFENSIVE), "#4C6A3F", 20),
             Commander("cmd_reyes", "cmd_reyes", 4, listOf(CommanderSkill.FIELD_MEDIC, CommanderSkill.VETERAN), "#8C4F5A", 24),
             Commander("cmd_adeyemi", "cmd_adeyemi", 5, listOf(CommanderSkill.OFFENSIVE, CommanderSkill.BLITZ, CommanderSkill.VETERAN), "#96702B", 40),
-            Commander("cmd_sorokin", "cmd_sorokin", 5, listOf(CommanderSkill.DEFENSIVE, CommanderSkill.IRON_WILL, CommanderSkill.FORTRESS), "#4A5C74", 40),
-            Commander("cmd_kaur", "cmd_kaur", 5, listOf(CommanderSkill.ARMOUR_EXPERT, CommanderSkill.OFFENSIVE, CommanderSkill.SIEGE), "#7E4470", 44),
+            Commander("cmd_sorokin", "cmd_sorokin", 5, listOf(CommanderSkill.DEFENSIVE, CommanderSkill.IRON_WILL, CommanderSkill.RUMOUR), "#4A5C74", 40),
+            Commander("cmd_kaur", "cmd_kaur", 5, listOf(CommanderSkill.ARMOUR_EXPERT, CommanderSkill.OFFENSIVE, CommanderSkill.RUMOUR), "#7E4470", 44),
             Commander("cmd_lindholm", "cmd_lindholm", 5, listOf(CommanderSkill.NAVAL_EXPERT, CommanderSkill.AIR_EXPERT, CommanderSkill.SCOUT), "#356B7E", 44),
             Commander("cmd_alvarez", "cmd_alvarez", 5, listOf(CommanderSkill.ARTILLERY_EXPERT, CommanderSkill.LOGISTICS, CommanderSkill.VETERAN), "#7A5A34", 42)
         )

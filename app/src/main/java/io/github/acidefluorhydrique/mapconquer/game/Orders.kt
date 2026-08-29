@@ -7,6 +7,7 @@ import io.github.acidefluorhydrique.mapconquer.units.ArmyUnit
 import io.github.acidefluorhydrique.mapconquer.units.Combat
 import io.github.acidefluorhydrique.mapconquer.units.CombatContext
 import io.github.acidefluorhydrique.mapconquer.units.CombatResult
+import io.github.acidefluorhydrique.mapconquer.units.CommanderSkill
 import io.github.acidefluorhydrique.mapconquer.units.Domain
 import io.github.acidefluorhydrique.mapconquer.units.TechBranch
 import io.github.acidefluorhydrique.mapconquer.units.UnitKind
@@ -176,6 +177,40 @@ object Orders {
         return session.captureProvince(province.id, unit.nationId)
     }
 
+    /**
+     * 一次移動的快照，用來撤回。
+     *
+     * 沒有戰爭迷霧，所以移動不會揭露任何東西 —— 走錯一步純粹是手滑，
+     * 沒有理由讓玩家為此付出一整支部隊的一回合。同類作品都允許撤回，
+     * 條件是「還沒做別的事」。
+     */
+    class MoveRecord(
+        val unitId: Int,
+        val from: Int,
+        val movesBefore: Int,
+        val entrenchmentBefore: Int
+    )
+
+    fun snapshot(unit: ArmyUnit) =
+        MoveRecord(unit.id, unit.tile, unit.movesLeft, unit.entrenchment)
+
+    fun canUndo(session: Session, record: MoveRecord): Boolean {
+        val unit = session.unitById(record.unitId) ?: return false
+        if (!unit.isAlive || unit.hasAttacked || unit.isLoaded) return false
+        if (unit.tile == record.from) return false
+        return session.isTileFreeFor(unit, record.from)
+    }
+
+    /** 把部隊放回原位，移動點與築壕值一併還原。 */
+    fun undoMove(session: Session, record: MoveRecord): Boolean {
+        if (!canUndo(session, record)) return false
+        val unit = session.unitById(record.unitId) ?: return false
+        session.relocate(unit, record.from)
+        unit.movesLeft = record.movesBefore
+        unit.entrenchment = record.entrenchmentBefore
+        return true
+    }
+
     // ------------------------------------------------------------------
     // 戰鬥
     // ------------------------------------------------------------------
@@ -188,7 +223,7 @@ object Orders {
         if (attacker.hasAttacked || !attacker.isAlive || attacker.isLoaded) return null
         if (!attacker.kind.canAttack) return null
         // 陷入混亂的部隊打不出去，這是包圍戰術的收益。
-        if (attacker.isDisrupted) return null
+        if (session.isDisrupted(attacker)) return null
         val distance = session.map.distance(attacker.tile, targetTile)
         if (!Combat.canReach(attacker, distance)) return null
         for (domain in Domain.values()) {
@@ -204,7 +239,7 @@ object Orders {
     fun collectTargets(session: Session, attacker: ArmyUnit, into: MutableList<Int>) {
         into.clear()
         if (attacker.hasAttacked || !attacker.kind.canAttack || attacker.isLoaded) return
-        if (attacker.isDisrupted) return
+        if (session.isDisrupted(attacker)) return
         val map = session.map
         val range = attacker.kind.maxRange
         val tiles = ArrayList<Int>(3 * range * (range + 1) + 1)
@@ -240,7 +275,9 @@ object Orders {
             attackerAura = session.commandAura(attacker),
             defenderAura = session.commandAura(defender),
             attackerAtSea = session.isEmbarked(attacker),
-            defenderAtSea = session.isEmbarked(defender)
+            defenderAtSea = session.isEmbarked(defender),
+            attackerMorale = session.moraleOf(attacker),
+            defenderMorale = session.moraleOf(defender)
         )
     }
 
@@ -269,9 +306,13 @@ object Orders {
         val chains = result.defenderDestroyed && attacker.isAlive && attacker.kind.isAssault
         attacker.hasAttacked = !chains
 
-        // 挨重擊會動搖士氣，被圍毆的部隊很快就會陷入混亂。
-        if (result.damageToDefender >= MORALE_SHOCK && defender.isAlive) defender.shiftMorale(-1)
-        if (result.damageToAttacker >= MORALE_SHOCK && attacker.isAlive) attacker.shiftMorale(-1)
+        // 謠言：帶這個技能的指揮官出手之後，有機會再把目標往混亂推一級。
+        if (defender.isAlive &&
+            attacker.commander?.has(CommanderSkill.RUMOUR) == true &&
+            session.rng.chance(RUMOUR_CHANCE)
+        ) {
+            defender.addRumour()
+        }
 
         val attackerNation = session.nations[attacker.nationId]
         val defenderNation = session.nations[defender.nationId]
@@ -458,6 +499,6 @@ object Orders {
 
     const val ATTACK_SUPPLY_COST = 12
 
-    /** 單次受創到這個程度就會動搖士氣。 */
-    const val MORALE_SHOCK = 25
+    /** 謠言技能生效的機率。 */
+    const val RUMOUR_CHANCE = 55
 }

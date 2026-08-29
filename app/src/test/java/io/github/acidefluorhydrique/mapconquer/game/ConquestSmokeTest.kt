@@ -37,9 +37,10 @@ class ConquestSmokeTest {
                 unit.entrenchment in 0..Session.MAX_ENTRENCHMENT
             )
 
+            assertTrue("$where: 謠言層數越界 ${unit.rumour}", unit.rumour in 0..ArmyUnit.MAX_RUMOUR)
             assertTrue(
-                "$where: 士氣越界 ${unit.morale}",
-                unit.morale in ArmyUnit.MIN_MORALE..ArmyUnit.MAX_MORALE
+                "$where: 士氣越界 ${session.moraleOf(unit)}",
+                session.moraleOf(unit) in ArmyUnit.MIN_MORALE..ArmyUnit.MAX_MORALE
             )
 
             when (unit.kind.domain) {

@@ -520,41 +520,166 @@ class SessionTest {
         assertTrue("步兵沒有突擊，打完就結束", attacker.hasAttacked)
     }
 
+    /**
+     * 士氣階梯。這是規格本身：
+     *
+     *   +1 高昂 / 0 正常 / −1 夾擊 / −2 包圍 / −3 混亂
+     *
+     * 而進入混亂剛好有三條等價的路徑，全部都是累計到 −3。
+     */
     @Test
-    fun `being surrounded breaks morale, and a broken unit cannot attack`() {
+    fun `flanking costs one step of morale`() {
+        // (2,2) 的東西兩格是一組對向。
         val s = session(
             listOf(
                 ScenarioUnit("AAA", 2, 2, "INFANTRY", 1, ""),
                 ScenarioUnit("BBB", 3, 2, "INFANTRY", 1, ""),
-                ScenarioUnit("BBB", 2, 1, "INFANTRY", 1, ""),
-                ScenarioUnit("BBB", 1, 2, "INFANTRY", 1, ""),
-                ScenarioUnit("BBB", 2, 3, "INFANTRY", 1, "")
+                ScenarioUnit("BBB", 1, 2, "INFANTRY", 1, "")
             )
         )
-        val trapped = s.units.first { it.nationId == 0 }
-        // 開局的 beginNationTurn 已經算過一次士氣，所以這裡不會是 0。
-        assertTrue("一開局就被圍住，士氣應該已經開始掉", trapped.morale < 0)
-
-        // 再跑幾個回合，讓被包圍的一方徹底崩潰。
-        repeat(4) {
-            s.advanceToNextNation()
-            s.advanceToNextNation()
-        }
-        assertTrue("被四面圍住的部隊士氣該垮 (${trapped.morale})", trapped.morale < 0)
-        assertTrue("最後應該陷入混亂", trapped.isDisrupted)
-        assertNull("混亂的部隊打不出去", Orders.attack(s, trapped, s.map.index(3, 2)))
+        val target = s.units.first { it.nationId == 0 }
+        assertEquals("對向兩格有敵人就是夾擊", -1, s.moraleOf(target))
+        assertFalse(s.isDisrupted(target))
     }
 
     @Test
-    fun `morale recovers once the pressure is gone`() {
+    fun `two adjacent enemies on the same side are not a flank`() {
+        val s = session(
+            listOf(
+                ScenarioUnit("AAA", 2, 2, "INFANTRY", 1, ""),
+                ScenarioUnit("BBB", 3, 2, "INFANTRY", 1, ""),
+                ScenarioUnit("BBB", 2, 1, "INFANTRY", 1, "")
+            )
+        )
+        val target = s.units.first { it.nationId == 0 }
+        assertEquals("同一側的兩個敵人不構成夾擊", 0, s.moraleOf(target))
+    }
+
+    @Test
+    fun `four neighbours is an encirclement`() {
+        val s = session(
+            listOf(
+                ScenarioUnit("AAA", 2, 2, "INFANTRY", 1, ""),
+                ScenarioUnit("BBB", 3, 2, "INFANTRY", 1, ""),
+                ScenarioUnit("BBB", 1, 2, "INFANTRY", 1, ""),
+                ScenarioUnit("BBB", 2, 1, "INFANTRY", 1, ""),
+                ScenarioUnit("BBB", 2, 3, "INFANTRY", 1, "")
+            )
+        )
+        val target = s.units.first { it.nationId == 0 }
+        assertEquals("四面有敵人就是包圍", -2, s.moraleOf(target))
+        assertFalse("光是包圍還不到混亂", s.isDisrupted(target))
+    }
+
+    @Test
+    fun `all three routes into disruption reach the same place`() {
+        fun trapped(enemies: List<Pair<Int, Int>>, rumour: Int): Session {
+            val units = ArrayList<ScenarioUnit>()
+            units.add(ScenarioUnit("AAA", 2, 2, "INFANTRY", 1, ""))
+            for ((c, r) in enemies) units.add(ScenarioUnit("BBB", c, r, "INFANTRY", 1, ""))
+            val s = Session(testMap(), scenario(units), Difficulty.OFFICER, "AAA", 1L)
+            s.units.first { it.nationId == 0 }.rumour = rumour
+            return s
+        }
+
+        val encircleAndRumour = trapped(listOf(3 to 2, 1 to 2, 2 to 1, 2 to 3), 1)
+        val flankAndTwoRumours = trapped(listOf(3 to 2, 1 to 2), 2)
+        val threeRumours = trapped(emptyList(), 3)
+
+        for ((name, s) in listOf(
+            "包圍＋謠言×1" to encircleAndRumour,
+            "夾擊＋謠言×2" to flankAndTwoRumours,
+            "純謠言×3" to threeRumours
+        )) {
+            val unit = s.units.first { it.nationId == 0 }
+            assertEquals("$name 應該進入混亂", ArmyUnit.MIN_MORALE, s.moraleOf(unit))
+            assertTrue(name, s.isDisrupted(unit))
+            assertNull("$name：混亂的部隊打不出去", Orders.attack(s, unit, s.map.index(3, 2)))
+        }
+    }
+
+    @Test
+    fun `morale is a read of the position, so it returns the moment the ring opens`() {
+        val s = session(
+            listOf(
+                ScenarioUnit("AAA", 2, 2, "INFANTRY", 1, ""),
+                ScenarioUnit("BBB", 3, 2, "INFANTRY", 1, ""),
+                ScenarioUnit("BBB", 1, 2, "INFANTRY", 1, "")
+            )
+        )
+        val target = s.units.first { it.nationId == 0 }
+        assertEquals(-1, s.moraleOf(target))
+
+        // 拿掉其中一個，夾擊立刻解除 —— 不必等回合、不必慢慢爬回來。
+        s.destroyUnit(s.units.first { it.nationId == 1 })
+        assertEquals("包圍圈一鬆開，士氣立刻回來", 0, s.moraleOf(target))
+    }
+
+    @Test
+    fun `standing unopposed in your own city lifts morale, but rumour cancels it`() {
         val s = session(listOf(ScenarioUnit("AAA", 1, 1, "INFANTRY", 1, "")))
         val unit = s.units.first()
-        unit.morale = ArmyUnit.MIN_MORALE
-        repeat(6) {
-            s.advanceToNextNation()
-            s.advanceToNextNation()
-        }
-        assertTrue("脫離接觸之後士氣要回得來 (${unit.morale})", unit.morale >= 0)
+        assertEquals("待在自己的城市裡且無人接觸", 1, s.moraleOf(unit))
+
+        unit.rumour = 3
+        assertEquals(
+            "謠言會取消高昂，否則三次謠言在城裡就打不進混亂",
+            ArmyUnit.MIN_MORALE,
+            s.moraleOf(unit)
+        )
+    }
+
+    @Test
+    fun `rumour fades one stack per turn`() {
+        val s = session(listOf(ScenarioUnit("AAA", 1, 1, "INFANTRY", 1, "")))
+        val unit = s.units.first()
+        unit.rumour = 3
+        s.advanceToNextNation()
+        s.advanceToNextNation()
+        assertEquals("每回合散去一層", 2, unit.rumour)
+    }
+
+    // ------------------------------------------------------------------
+    // 撤回
+    // ------------------------------------------------------------------
+
+    @Test
+    fun `a move can be taken back while nothing else has happened`() {
+        val s = session(listOf(ScenarioUnit("AAA", 1, 1, "INFANTRY", 1, "")))
+        val unit = s.units.first()
+        val record = Orders.snapshot(unit)
+        val movesBefore = unit.movesLeft
+
+        Orders.computeReachable(s, unit, ArrayList())
+        Orders.move(s, unit, s.map.index(3, 1), ArrayList())
+        assertTrue(unit.movesLeft < movesBefore)
+
+        assertTrue(Orders.canUndo(s, record))
+        assertTrue(Orders.undoMove(s, record))
+        assertEquals("該回到原位", s.map.index(1, 1), unit.tile)
+        assertEquals("移動點要還原", movesBefore, unit.movesLeft)
+        assertEquals(unit, s.unitAt(s.map.index(1, 1), Domain.LAND))
+        assertNull("新位置要清空", s.unitAt(s.map.index(3, 1), Domain.LAND))
+    }
+
+    @Test
+    fun `a move cannot be taken back after the unit has fired`() {
+        val s = session(
+            listOf(
+                ScenarioUnit("AAA", 1, 2, "INFANTRY", 1, ""),
+                ScenarioUnit("BBB", 4, 2, "INFANTRY", 1, "")
+            )
+        )
+        val unit = s.units.first { it.nationId == 0 }
+        val record = Orders.snapshot(unit)
+        Orders.computeReachable(s, unit, ArrayList())
+        Orders.move(s, unit, s.map.index(3, 2), ArrayList())
+        assertTrue(Orders.canUndo(s, record))
+
+        Orders.attack(s, unit, s.map.index(4, 2))
+        assertFalse("開過火就不能反悔了", Orders.canUndo(s, record))
+        assertFalse(Orders.undoMove(s, record))
+        assertEquals(s.map.index(3, 2), unit.tile)
     }
 
     @Test

@@ -28,13 +28,16 @@ class ArmyUnit(
     var supply: Int = MAX_SUPPLY
 
     /**
-     * 士氣，範圍 [MIN_MORALE]..[MAX_MORALE]，0 是常態。
+     * 謠言層數。
      *
-     * 被包圍會掉士氣，掉到底就進入**混亂**：完全無法攻擊。
-     * 這是「先包圍、再降士氣、最後才打」這套戰術成立的基礎 ——
-     * 少了它，站位就只是「誰打得到誰」，而不是一個可以經營的優勢。
+     * 士氣本身**不存**，它是由當下態勢推導出來的（見 Session.moraleOf）：
+     * 夾擊 −1、包圍 −2、每層謠言再 −1。只有謠言需要持久化，因為它是
+     * 「上一回合被做了什麼」而不是「現在站在哪」。
+     *
+     * 第一版把士氣做成會逐回合累加的計數器，結果只要待在接觸線上就必然崩潰，
+     * 跟站位完全無關 —— 那讓「先包圍再打」這個戰術失去了意義，因為不包圍也會垮。
      */
-    var morale: Int = 0
+    var rumour: Int = 0
 
     var commanderId: String = ""
 
@@ -74,21 +77,13 @@ class ArmyUnit(
 
     val entrenchBonus: Int get() = entrenchment * 8
 
-    /** 士氣歸零以下就打不出去了。 */
-    val isDisrupted: Boolean get() = morale <= MIN_MORALE
+    fun addRumour(stacks: Int = 1) {
+        rumour = (rumour + stacks).coerceIn(0, MAX_RUMOUR)
+    }
 
-    /** 士氣對輸出的乘數。高昂加成小、低落懲罰大 —— 挨打比佔便宜更有感。 */
-    val moraleFactor: Float
-        get() = when {
-            morale >= 1 -> 1f + 0.08f * morale
-            morale >= 0 -> 1f
-            morale == -1 -> 0.85f
-            morale == -2 -> 0.65f
-            else -> 0f
-        }
-
-    fun shiftMorale(delta: Int) {
-        morale = (morale + delta).coerceIn(MIN_MORALE, MAX_MORALE)
+    /** 每回合散去一層。謠言是壓制，不是永久減益。 */
+    fun decayRumour() {
+        if (rumour > 0) rumour--
     }
 
     /** 升級所需累計經驗。刻意讓前兩級便宜、後兩級昂貴。 */
@@ -134,7 +129,11 @@ class ArmyUnit(
         const val SUPPLY_STRAINED = 40
         const val SUPPLY_CRITICAL = 20
 
+        /** 士氣階梯：+1 高昂、0 正常、−1 夾擊、−2 包圍、−3 混亂。 */
         const val MIN_MORALE = -3
-        const val MAX_MORALE = 2
+        const val MAX_MORALE = 1
+
+        /** 三層謠言單獨就足以打進混亂。 */
+        const val MAX_RUMOUR = 3
     }
 }
