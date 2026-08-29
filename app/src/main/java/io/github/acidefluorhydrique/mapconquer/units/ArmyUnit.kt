@@ -27,6 +27,15 @@ class ArmyUnit(
     /** 0..100。低於 [SUPPLY_STRAINED] 開始掉戰力，歸零會逐回合失血。 */
     var supply: Int = MAX_SUPPLY
 
+    /**
+     * 士氣，範圍 [MIN_MORALE]..[MAX_MORALE]，0 是常態。
+     *
+     * 被包圍會掉士氣，掉到底就進入**混亂**：完全無法攻擊。
+     * 這是「先包圍、再降士氣、最後才打」這套戰術成立的基礎 ——
+     * 少了它，站位就只是「誰打得到誰」，而不是一個可以經營的優勢。
+     */
+    var morale: Int = 0
+
     var commanderId: String = ""
 
     /** 本回合剩餘移動點。回合開始時重置。 */
@@ -64,6 +73,23 @@ class ArmyUnit(
         }
 
     val entrenchBonus: Int get() = entrenchment * 8
+
+    /** 士氣歸零以下就打不出去了。 */
+    val isDisrupted: Boolean get() = morale <= MIN_MORALE
+
+    /** 士氣對輸出的乘數。高昂加成小、低落懲罰大 —— 挨打比佔便宜更有感。 */
+    val moraleFactor: Float
+        get() = when {
+            morale >= 1 -> 1f + 0.08f * morale
+            morale >= 0 -> 1f
+            morale == -1 -> 0.85f
+            morale == -2 -> 0.65f
+            else -> 0f
+        }
+
+    fun shiftMorale(delta: Int) {
+        morale = (morale + delta).coerceIn(MIN_MORALE, MAX_MORALE)
+    }
 
     /** 升級所需累計經驗。刻意讓前兩級便宜、後兩級昂貴。 */
     fun expForNextLevel(): Int = when (level) {
@@ -107,5 +133,8 @@ class ArmyUnit(
         /** 低於這個補給開始掉戰力。 */
         const val SUPPLY_STRAINED = 40
         const val SUPPLY_CRITICAL = 20
+
+        const val MIN_MORALE = -3
+        const val MAX_MORALE = 2
     }
 }

@@ -155,6 +155,25 @@ class Session(
     fun isTileFree(tile: Int, domain: Domain): Boolean =
         occupancy[domain.ordinal * map.tileCount + tile] < 0
 
+    /**
+     * 這支部隊在指定格子上佔哪一層。
+     *
+     * 浮渡中的陸軍佔的是**海層**，不是陸層。這一條很關鍵：它讓渡海的部隊
+     * 跟軍艦互相排擠、也讓敵方艦隊真的能把它堵在海上，
+     * 而不是幽靈一樣跟軍艦疊在同一格。
+     */
+    fun layerFor(kind: UnitKind, tile: Int): Domain =
+        if (kind.domain == Domain.LAND && map.isWater(tile)) Domain.SEA else kind.domain
+
+    fun layerOf(unit: ArmyUnit): Domain = layerFor(unit.kind, unit.tile)
+
+    /** 陸軍站在水上就是在浮渡。不另外存狀態，地形本身就是答案。 */
+    fun isEmbarked(unit: ArmyUnit): Boolean =
+        unit.kind.domain == Domain.LAND && !unit.isLoaded && map.isWater(unit.tile)
+
+    fun isTileFreeFor(unit: ArmyUnit, tile: Int): Boolean =
+        isTileFree(tile, layerFor(unit.kind, tile))
+
     /** 這格是不是某國的補給來源（自己的城市）。 */
     fun isSupplySource(tile: Int, nationId: Int): Boolean {
         val province = map.provinceAt(tile) ?: return false
@@ -182,7 +201,7 @@ class Session(
     // ------------------------------------------------------------------
 
     fun spawnUnit(kind: UnitKind, nationId: Int, tile: Int, level: Int = 1, commanderId: String = ""): ArmyUnit? {
-        if (!isTileFree(tile, kind.domain)) return null
+        if (!isTileFree(tile, layerFor(kind, tile))) return null
         val unit = ArmyUnit(nextUnitId++, kind, nationId, tile)
         unit.level = level.coerceIn(1, ArmyUnit.MAX_LEVEL)
         unit.commanderId = commanderId
@@ -191,7 +210,7 @@ class Session(
         unit.hasAttacked = true
         units.add(unit)
         unitsById[unit.id] = unit
-        setOccupancy(tile, kind.domain, unit.id)
+        setOccupancy(tile, layerFor(kind, tile), unit.id)
         return unit
     }
 
@@ -203,7 +222,7 @@ class Session(
             for (id in doomed) unitsById[id]?.let { destroyUnit(it) }
         }
         detachFromTransport(unit)
-        if (!unit.isLoaded) clearOccupancy(unit.tile, unit.kind.domain, unit.id)
+        if (!unit.isLoaded) clearOccupancy(unit.tile, layerOf(unit), unit.id)
         unit.hp = 0
         units.remove(unit)
         unitsById.remove(unit.id)
@@ -220,9 +239,11 @@ class Session(
     }
 
     internal fun relocate(unit: ArmyUnit, toTile: Int) {
-        clearOccupancy(unit.tile, unit.kind.domain, unit.id)
+        // layerOf 讀的是 unit.tile，所以清舊位置要在改座標之前 —— 陸軍
+        // 從陸地走到海上時，前後佔的是不同層。
+        clearOccupancy(unit.tile, layerOf(unit), unit.id)
         unit.tile = toTile
-        setOccupancy(toTile, unit.kind.domain, unit.id)
+        setOccupancy(toTile, layerOf(unit), unit.id)
         // 載著的部隊跟著走，但它們不佔格。
         for (id in unit.cargo) unitsById[id]?.tile = toTile
     }
@@ -408,6 +429,7 @@ class Session(
                 // 完全斷補給就開始失血 —— 深入敵境的孤軍必須有代價。
                 if (unit.supply <= 0) unit.damage(STARVATION_DAMAGE)
             }
+            updateMorale(unit)
             if (!unit.isAlive) starved.add(unit)
         }
         for (unit in starved) {
@@ -419,6 +441,35 @@ class Session(
             rebuildOccupancy()
         }
         checkElimination(nation.id)
+    }
+
+    /**
+     * 士氣：被包圍會掉，脫離接觸會回。
+     *
+     * 掉到 [ArmyUnit.MIN_MORALE] 就進入混亂，完全打不出去 —— 這讓「先把它圍住，
+     * 下回合再收」變成一個真正的戰術，而不是只有數值大小的比較。
+     * 用「相鄰敵軍數」而不是嚴格的六面合圍：後者在六角格上太難達成，
+     * 玩家一輩子也觸發不了幾次。
+     */
+    private fun updateMorale(unit: ArmyUnit) {
+        val n = map.neighbours(unit.tile, neighbourBuf)
+        var pressure = 0
+        for (i in 0 until n) {
+            for (domain in Domain.values()) {
+                val other = unitAt(neighbourBuf[i], domain) ?: continue
+                if (isHostile(other.nationId, unit.nationId)) pressure++
+            }
+        }
+        when {
+            pressure >= 5 -> unit.shiftMorale(-2)
+            pressure >= 3 -> unit.shiftMorale(-1)
+            pressure == 0 && unit.morale < 0 -> unit.shiftMorale(1)
+            else -> Unit
+        }
+        // 待在自己的城市裡會鼓舞士氣。
+        if (pressure == 0 && isSupplySource(unit.tile, unit.nationId) && unit.morale < 1) {
+            unit.shiftMorale(1)
+        }
     }
 
     /** 飛機停在自己的機場／航艦上時算有補給。 */
@@ -443,7 +494,7 @@ class Session(
         java.util.Arrays.fill(occupancy, -1)
         for (unit in units) {
             if (!unit.isAlive || unit.isLoaded) continue
-            setOccupancy(unit.tile, unit.kind.domain, unit.id)
+            setOccupancy(unit.tile, layerOf(unit), unit.id)
         }
     }
 
@@ -559,7 +610,7 @@ class Session(
     internal fun restoreUnit(unit: ArmyUnit) {
         units.add(unit)
         unitsById[unit.id] = unit
-        if (!unit.isLoaded) setOccupancy(unit.tile, unit.kind.domain, unit.id)
+        if (!unit.isLoaded) setOccupancy(unit.tile, layerOf(unit), unit.id)
         if (unit.id >= nextUnitId) nextUnitId = unit.id + 1
     }
 
@@ -571,7 +622,7 @@ class Session(
             val transport = unitsById[unit.transportId]
             if (transport == null) {
                 unit.transportId = -1
-                setOccupancy(unit.tile, unit.kind.domain, unit.id)
+                setOccupancy(unit.tile, layerOf(unit), unit.id)
             } else {
                 transport.cargo.add(unit.id)
             }

@@ -37,9 +37,20 @@ class ConquestSmokeTest {
                 unit.entrenchment in 0..Session.MAX_ENTRENCHMENT
             )
 
+            assertTrue(
+                "$where: 士氣越界 ${unit.morale}",
+                unit.morale in ArmyUnit.MIN_MORALE..ArmyUnit.MAX_MORALE
+            )
+
             when (unit.kind.domain) {
-                Domain.LAND -> if (!unit.isLoaded) {
-                    assertTrue("$where: 陸軍站在水上 ${unit.kind}", map.isLand(unit.tile))
+                // 陸軍站在水上是合法的 —— 那是浮渡。但它必須佔海層，
+                // 否則就會跟軍艦疊在同一格。
+                Domain.LAND -> if (!unit.isLoaded && map.isWater(unit.tile)) {
+                    assertEquals(
+                        "$where: 浮渡的陸軍該佔海層",
+                        Domain.SEA,
+                        session.layerOf(unit)
+                    )
                 }
                 Domain.SEA -> assertTrue("$where: 軍艦擱淺 ${unit.kind}", map.isWater(unit.tile))
                 Domain.AIR -> Unit
@@ -52,13 +63,13 @@ class ConquestSmokeTest {
                 assertEquals("$where: 乘客沒跟著載具", transport.tile, unit.tile)
             } else {
                 // 同一層、同一格只能有一支。
-                val key = unit.kind.domain.ordinal * map.tileCount + unit.tile
+                val key = session.layerOf(unit).ordinal * map.tileCount + unit.tile
                 val previous = seen.put(key, unit.id)
                 assertTrue("$where: 兩支部隊疊在同一格 $previous / ${unit.id}", previous == null)
                 assertEquals(
                     "$where: 佔位表跟部隊對不上",
                     unit,
-                    session.unitAt(unit.tile, unit.kind.domain)
+                    session.unitAt(unit.tile, session.layerOf(unit))
                 )
             }
         }

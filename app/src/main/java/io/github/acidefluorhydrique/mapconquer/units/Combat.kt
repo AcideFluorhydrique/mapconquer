@@ -27,7 +27,16 @@ class CombatContext(
     val defenderTech: Int,
     /** 附近有司令部時的攻擊加成（百分比）。 */
     val attackerAura: Int,
-    val defenderAura: Int
+    val defenderAura: Int,
+    /**
+     * 陸軍是否正在浮渡。
+     *
+     * 下了海的陸軍等於擠在運輸駁船上：防禦幾乎歸零、火力大打折扣、
+     * 兵種技能全部失效。這讓「制海權」變成真的有意義 ——
+     * 沒有護航就渡海，是把整支部隊送給對方的艦隊。
+     */
+    val attackerAtSea: Boolean = false,
+    val defenderAtSea: Boolean = false
 )
 
 /** 一次交戰的結果。UI 用它播動畫，AI 用它評估要不要打。 */
@@ -73,6 +82,9 @@ object Combat {
         p *= 1f + ctx.attackerAura / 100f
         p *= commanderAttackFactor(u, ctx.defender)
         p *= u.supplyFactor
+        p *= u.moraleFactor
+        // 浮渡中的陸軍只剩象徵性的自衛火力。
+        if (ctx.attackerAtSea) p *= 0.3f
         // 殘血部隊的輸出等比下降，但不會完全消失。
         p *= 0.35f + 0.65f * (u.hp / ArmyUnit.MAX_HP.toFloat())
         return p
@@ -91,6 +103,8 @@ object Combat {
         p *= 0.45f + 0.55f * (u.hp / ArmyUnit.MAX_HP.toFloat())
         // 砲兵被貼身時幾乎沒有自衛能力，這是它必須被保護的原因。
         if (u.kind.isBombard && ctx.distance <= 1) p *= 0.55f
+        // 浮渡中的陸軍防禦幾乎歸零 —— 這正是它不該單獨出海的原因。
+        if (ctx.defenderAtSea) p *= 0.15f
         return p.coerceAtLeast(1f)
     }
 
@@ -115,6 +129,11 @@ object Combat {
         if (ctx.distance > 1) return false
         if (d.kind.minRange > 1) return false
         if (!d.kind.canAttack) return false
+        if (d.isDisrupted) return false
+        // 浮渡中的陸軍還不了手。
+        if (ctx.defenderAtSea) return false
+        // 魚雷：潛艇出手時對方來不及反應。潛艇本體很脆，全靠這一條活著。
+        if (ctx.attacker.kind.isStealth) return false
         return d.kind.attackAgainst(ctx.attacker.kind.targetClass) > 0
     }
 
@@ -133,6 +152,8 @@ object Combat {
             val counter = CombatContext(
                 attacker = ctx.defender,
                 defender = ctx.attacker,
+                attackerAtSea = ctx.defenderAtSea,
+                defenderAtSea = ctx.attackerAtSea,
                 defenderTerrainBonus = ctx.attackerTerrainBonus,
                 attackerTerrainBonus = ctx.defenderTerrainBonus,
                 distance = ctx.distance,

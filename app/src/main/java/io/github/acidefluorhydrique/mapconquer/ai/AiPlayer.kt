@@ -421,6 +421,9 @@ class AiPlayer(private val session: Session, private val nationId: Int) {
             score += map.terrainAt(tile).defenceBonus * 0.25f
             // 別走出補給範圍。
             if (!session.isSupplied(tile)) score -= 12f
+            // 浮渡中的陸軍防禦幾乎歸零，是活靶。AI 只有在能大幅拉近距離時
+            // 才值得下水 —— 這個懲罰讓它願意渡窄海峽，但不會整批走進大洋。
+            if (unit.kind.domain == Domain.LAND && map.terrainAt(tile).isWater) score -= 35f
             if (tile == goal) score += 40f
             if (score > bestScore) {
                 bestScore = score

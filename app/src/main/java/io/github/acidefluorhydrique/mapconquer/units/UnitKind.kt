@@ -71,12 +71,12 @@ enum class UnitKind(
     RECON(
         "unit_recon", Domain.LAND, TargetClass.ARMOURED, TechBranch.ARMOUR,
         intArrayOf(24, 14, 6, 8), 22, 9, 1, 1, 5,
-        140, 1, 0, true, true, 5, Flags.RECON
+        140, 1, 0, true, true, 5, Flags.RECON or Flags.ASSAULT
     ),
     ARMOUR(
         "unit_armour", Domain.LAND, TargetClass.ARMOURED, TechBranch.ARMOUR,
         intArrayOf(40, 32, 10, 6), 38, 7, 1, 1, 3,
-        240, 2, 0, true, true, 8, Flags.BREAKTHROUGH
+        240, 2, 0, true, true, 8, Flags.BREAKTHROUGH or Flags.ASSAULT
     ),
     /**
      * 反坦克炮把「兵種相剋」的三角關係閉合起來：
@@ -189,6 +189,9 @@ enum class UnitKind(
     val isAirbase: Boolean get() = flags and Flags.AIRBASE != 0
     val isBreakthrough: Boolean get() = flags and Flags.BREAKTHROUGH != 0
 
+    /** 殲滅目標後可以再打一次。這是裝甲之所以能決定戰局的原因。 */
+    val isAssault: Boolean get() = flags and Flags.ASSAULT != 0
+
     val canAttack: Boolean get() = attack.any { it > 0 }
 
     /** 只能停在海上，且需要臨海城市才造得出來。 */
@@ -241,4 +244,13 @@ object Flags {
     const val SUB_HUNTER = 1 shl 8
     const val AIRBASE = 1 shl 9
     const val BREAKTHROUGH = 1 shl 10
+
+    /**
+     * 突擊：擊毀目標之後可以立刻再攻擊一次，能連鎖下去。
+     *
+     * 這一條讓裝甲從「數值比較高的兵」變成「能一口氣打穿一條戰線的兵」，
+     * 也是戰車值得那個價錢的唯一理由。連鎖會自然停止 ——
+     * 打不死下一個目標就結束了。
+     */
+    const val ASSAULT = 1 shl 11
 }

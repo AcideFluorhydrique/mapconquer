@@ -13,8 +13,14 @@ interface MoveRules {
     /** 從 [from] 走進 [to] 的成本；回傳 <= 0 代表不可通行。 */
     fun enterCost(from: Int, to: Int): Int
 
-    /** 進入這格之後是否必須停下（敵方控制區、剛登陸）。 */
-    fun stopsAt(tile: Int): Boolean = false
+    /**
+     * 走到 [to] 之後是否必須停下。
+     *
+     * 需要 [from] 是因為有些規則看的是**轉換**而不是目的地本身：
+     * 陸軍入海與登陸各要耗掉一整個回合，而「這格是海」或「這格是陸」
+     * 單獨都判斷不出來。
+     */
+    fun stopsAt(from: Int, to: Int): Boolean = false
 
     /** 這格能不能作為最終落點（有友軍佔著的格子可以路過但不能停）。 */
     fun canEndOn(tile: Int): Boolean = true
@@ -82,7 +88,7 @@ class Pathfinder(private val map: WorldMap) {
             reached.add(tile)
 
             // 進了敵方控制區就停：不能再往前推，但這格本身是合法落點。
-            if (tile != start && rules.stopsAt(tile)) continue
+            if (tile != start && rules.stopsAt(cameFrom[tile], tile)) continue
 
             val count = map.neighbours(tile, neighbourBuf)
             for (i in 0 until count) {

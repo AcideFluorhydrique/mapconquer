@@ -35,46 +35,55 @@ class UnitMoveRules(
     override fun enterCost(from: Int, to: Int): Int {
         val terrain = map.terrainAt(to)
         when (unit.kind.domain) {
+            // 陸軍可以直接下海浮渡。它在水上防禦幾乎歸零、火力剩三成，
+            // 所以這不是把陸軍變強，而是把「要不要冒險渡海」交還給玩家決定。
             // 步兵進得了山地與叢林，只是很慢；輪車與履帶進不去。
-            Domain.LAND -> {
-                if (terrain.isWater) return -1
-                if (unit.kind.vehicle && !terrain.vehiclePassable) return -1
-            }
+            Domain.LAND -> if (terrain.isLand && unit.kind.vehicle && !terrain.vehiclePassable) return -1
             Domain.SEA -> if (!terrain.isWater) return -1
             Domain.AIR -> Unit
         }
 
         if (!ignoreEnemies) {
-            val blocker = session.unitAt(to, unit.kind.domain)
-            if (blocker != null && session.isHostile(blocker.nationId, unit.nationId)) return -1
-            // 中立國的部隊也擋路，但不能打 —— 免得玩家被迫宣戰才能通行。
+            // 用「這支部隊在那一格會佔哪一層」去查阻擋 —— 浮渡中的陸軍
+            // 跟軍艦是互相排擠的，這樣敵方艦隊才堵得住渡海的部隊。
+            val blocker = session.unitAt(to, session.layerFor(unit.kind, to))
             if (blocker != null && blocker.nationId != unit.nationId &&
                 !session.diplomacy.isAllied(blocker.nationId, unit.nationId)
             ) return -1
         }
 
-        return when (unit.kind.domain) {
-            Domain.LAND -> {
+        return when {
+            unit.kind.domain == Domain.AIR -> 1
+            terrain.isWater -> SEA_MOVE_COST
+            else -> {
                 var cost = terrain.moveCost
                 if (mountaineer && cost > 2) cost = 2
                 cost.coerceAtLeast(1)
             }
-            Domain.SEA -> 1
-            Domain.AIR -> 1
         }
     }
 
     /**
-     * 敵方控制區：踏進敵人隔壁就得停。
+     * 走到這格之後必須停下嗎。
      *
-     * 這一條是整個戰術層的支點 —— 沒有它，高機動部隊可以直接穿過防線去點後方城市，
-     * 「戰線」這個概念就不存在了。裝甲部隊的突破能力做成「無視一次 ZOC」，
-     * 讓它仍然是打開缺口的那把鑰匙，但不是萬能的。
+     * 兩條規則疊在一起：
+     *
+     * **敵方控制區** —— 踏進敵人隔壁就得停。這是整個戰術層的支點：沒有它，
+     * 高機動部隊可以直接穿過防線去點後方城市，「戰線」就不存在了。
+     * 裝甲的突破能力做成「無視 ZOC」，讓它仍然是打開缺口的鑰匙，但不是萬能的。
+     *
+     * **入海與登陸各要一整個回合** —— 海岸線因此變成真正的門檻，
+     * 登陸不再是行軍途中順手做的事，而是一次要規劃的作戰。
      */
-    override fun stopsAt(tile: Int): Boolean {
+    override fun stopsAt(from: Int, to: Int): Boolean {
         if (unit.kind.domain == Domain.AIR) return false
+
+        if (unit.kind.domain == Domain.LAND && from >= 0 && map.isWater(from) != map.isWater(to)) {
+            return true
+        }
         if (unit.kind.isBreakthrough) return false
-        val n = map.neighbours(tile, zocBuf)
+
+        val n = map.neighbours(to, zocBuf)
         for (i in 0 until n) {
             val other = session.unitAt(zocBuf[i], Domain.LAND) ?: continue
             if (session.isHostile(other.nationId, unit.nationId)) return true
@@ -82,7 +91,12 @@ class UnitMoveRules(
         return false
     }
 
-    override fun canEndOn(tile: Int): Boolean = session.isTileFree(tile, unit.kind.domain)
+    override fun canEndOn(tile: Int): Boolean = session.isTileFreeFor(unit, tile)
+
+    private companion object {
+        /** 陸軍浮渡與軍艦航行的每格成本。 */
+        const val SEA_MOVE_COST = 2
+    }
 }
 
 /**
@@ -101,14 +115,14 @@ object Orders {
         session.pathfinder.explore(unit.tile, unit.movesLeft, UnitMoveRules(session, unit))
         for (tile in session.pathfinder.reached) {
             if (tile == unit.tile) continue
-            if (!session.isTileFree(tile, unit.kind.domain)) continue
+            if (!session.isTileFreeFor(unit, tile)) continue
             into.add(tile)
         }
     }
 
     fun canMoveTo(session: Session, unit: ArmyUnit, target: Int): Boolean {
         if (unit.movesLeft <= 0 || unit.isLoaded) return false
-        if (!session.isTileFree(target, unit.kind.domain)) return false
+        if (!session.isTileFreeFor(unit, target)) return false
         return session.pathfinder.origin == unit.tile && session.pathfinder.isReachable(target)
     }
 
@@ -164,6 +178,8 @@ object Orders {
     fun findTarget(session: Session, attacker: ArmyUnit, targetTile: Int): ArmyUnit? {
         if (attacker.hasAttacked || !attacker.isAlive || attacker.isLoaded) return null
         if (!attacker.kind.canAttack) return null
+        // 陷入混亂的部隊打不出去，這是包圍戰術的收益。
+        if (attacker.isDisrupted) return null
         val distance = session.map.distance(attacker.tile, targetTile)
         if (!Combat.canReach(attacker, distance)) return null
         for (domain in Domain.values()) {
@@ -179,6 +195,7 @@ object Orders {
     fun collectTargets(session: Session, attacker: ArmyUnit, into: MutableList<Int>) {
         into.clear()
         if (attacker.hasAttacked || !attacker.kind.canAttack || attacker.isLoaded) return
+        if (attacker.isDisrupted) return
         val map = session.map
         val range = attacker.kind.maxRange
         val tiles = ArrayList<Int>(3 * range * (range + 1) + 1)
@@ -212,7 +229,9 @@ object Orders {
             attackerTech = session.nations[attacker.nationId].techBonus(attacker.kind.branch),
             defenderTech = session.nations[defender.nationId].techBonus(defender.kind.branch),
             attackerAura = session.commandAura(attacker),
-            defenderAura = session.commandAura(defender)
+            defenderAura = session.commandAura(defender),
+            attackerAtSea = session.isEmbarked(attacker),
+            defenderAtSea = session.isEmbarked(defender)
         )
     }
 
@@ -225,12 +244,25 @@ object Orders {
         val ctx = buildContext(session, attacker, defender)
         val result = Combat.resolve(ctx, session.rng)
 
-        attacker.hasAttacked = true
         // 開火即定身：本回合不能再走。這讓「移動到哪裡開火」變成一個真正的抉擇。
         attacker.movesLeft = 0
         attacker.entrenchment = 0
         // 消耗補給：連續進攻會把戰線推到補給極限，這是攻勢有節奏的原因。
         attacker.supply = (attacker.supply - ATTACK_SUPPLY_COST).coerceAtLeast(0)
+
+        /*
+         * 突擊：擊毀目標之後可以立刻再打一次，而且能一路連鎖下去。
+         *
+         * 這一條讓裝甲從「數值高一點的兵」變成「能一口氣打穿一條戰線的兵」，
+         * 也是它值那個價錢的唯一理由。連鎖會自然停止 —— 打不死下一個就結束了 ——
+         * 所以不需要另外設上限。移動點仍然歸零，它只能原地掃射鄰接目標。
+         */
+        val chains = result.defenderDestroyed && attacker.isAlive && attacker.kind.isAssault
+        attacker.hasAttacked = !chains
+
+        // 挨重擊會動搖士氣，被圍毆的部隊很快就會陷入混亂。
+        if (result.damageToDefender >= MORALE_SHOCK && defender.isAlive) defender.shiftMorale(-1)
+        if (result.damageToAttacker >= MORALE_SHOCK && attacker.isAlive) attacker.shiftMorale(-1)
 
         val attackerNation = session.nations[attacker.nationId]
         val defenderNation = session.nations[defender.nationId]
@@ -275,7 +307,7 @@ object Orders {
 
     fun load(session: Session, passenger: ArmyUnit, transport: ArmyUnit): Boolean {
         if (!canLoad(session, passenger, transport)) return false
-        session.clearOccupancy(passenger.tile, passenger.kind.domain, passenger.id)
+        session.clearOccupancy(passenger.tile, session.layerOf(passenger), passenger.id)
         passenger.tile = transport.tile
         passenger.transportId = transport.id
         passenger.movesLeft = 0
@@ -288,7 +320,7 @@ object Orders {
         if (!passenger.isLoaded) return false
         val transport = session.unitById(passenger.transportId) ?: return false
         if (session.map.distance(transport.tile, target) > 1) return false
-        if (!session.isTileFree(target, passenger.kind.domain)) return false
+        if (!session.isTileFreeFor(passenger, target)) return false
         val terrain = session.map.terrainAt(target)
         return when (passenger.kind.domain) {
             Domain.LAND -> terrain.isLand && (!passenger.kind.vehicle || terrain.vehiclePassable)
@@ -307,7 +339,7 @@ object Orders {
         transport.cargo.remove(passenger.id)
         passenger.transportId = -1
         passenger.tile = target
-        session.setOccupancy(target, passenger.kind.domain, passenger.id)
+        session.setOccupancy(target, session.layerFor(passenger.kind, target), passenger.id)
         if (passenger.kind.isAmphibious) {
             passenger.movesLeft = 0
             passenger.hasAttacked = false
@@ -416,4 +448,7 @@ object Orders {
     }
 
     const val ATTACK_SUPPLY_COST = 12
+
+    /** 單次受創到這個程度就會動搖士氣。 */
+    const val MORALE_SHOCK = 25
 }

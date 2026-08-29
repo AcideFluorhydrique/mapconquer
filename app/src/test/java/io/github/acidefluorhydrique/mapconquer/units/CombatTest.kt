@@ -24,14 +24,18 @@ class CombatTest {
         attacker: ArmyUnit,
         defender: ArmyUnit,
         distance: Int = 1,
-        defenderTerrain: Int = 0
+        defenderTerrain: Int = 0,
+        attackerAtSea: Boolean = false,
+        defenderAtSea: Boolean = false
     ) = CombatContext(
         attacker, defender,
         defenderTerrainBonus = defenderTerrain,
         attackerTerrainBonus = 0,
         distance = distance,
         attackerTech = 0, defenderTech = 0,
-        attackerAura = 0, defenderAura = 0
+        attackerAura = 0, defenderAura = 0,
+        attackerAtSea = attackerAtSea,
+        defenderAtSea = defenderAtSea
     )
 
     @Test
@@ -167,6 +171,89 @@ class CombatTest {
         u.gainExp(1000)
         assertEquals(ArmyUnit.MAX_LEVEL, u.level)
         assertFalse("滿級之後不該再升", u.gainExp(1000))
+    }
+
+    @Test
+    fun `a submarine is never shot back at`() {
+        val sub = unit(UnitKind.SUBMARINE)
+        val destroyer = unit(UnitKind.DESTROYER, nation = 1)
+        assertFalse("魚雷：潛艇出手時對方來不及反應", Combat.canRetaliate(context(sub, destroyer)))
+        // 反過來就會被還手 —— 潛艇很脆，這是它必須先手的原因。
+        assertTrue(Combat.canRetaliate(context(destroyer, sub)))
+
+        val result = Combat.resolve(context(sub, destroyer), Rng(11))
+        assertEquals(0, result.damageToAttacker)
+    }
+
+    @Test
+    fun `a disrupted unit cannot shoot back`() {
+        val attacker = unit(UnitKind.INFANTRY)
+        val defender = unit(UnitKind.INFANTRY, nation = 1)
+        assertTrue(Combat.canRetaliate(context(attacker, defender)))
+        defender.morale = ArmyUnit.MIN_MORALE
+        assertTrue(defender.isDisrupted)
+        assertFalse("陷入混亂就打不出去了", Combat.canRetaliate(context(attacker, defender)))
+    }
+
+    @Test
+    fun `morale swings the damage both ways`() {
+        val steady = Combat.previewDamage(
+            context(unit(UnitKind.ARMOUR), unit(UnitKind.INFANTRY, nation = 1))
+        )
+        val shaken = Combat.previewDamage(
+            context(unit(UnitKind.ARMOUR).apply { morale = -2 }, unit(UnitKind.INFANTRY, nation = 1))
+        )
+        val eager = Combat.previewDamage(
+            context(unit(UnitKind.ARMOUR).apply { morale = 2 }, unit(UnitKind.INFANTRY, nation = 1))
+        )
+        assertTrue("士氣低落應該打得軟 $shaken vs $steady", shaken < steady)
+        assertTrue("士氣高昂應該打得重 $eager vs $steady", eager > steady)
+        assertEquals(
+            "混亂的部隊完全打不出傷害",
+            0,
+            Combat.previewDamage(
+                context(unit(UnitKind.ARMOUR).apply { morale = ArmyUnit.MIN_MORALE },
+                        unit(UnitKind.INFANTRY, nation = 1))
+            )
+        )
+    }
+
+    @Test
+    fun `land units at sea are helpless`() {
+        val ashore = Combat.previewDamage(
+            context(unit(UnitKind.DESTROYER), unit(UnitKind.INFANTRY, nation = 1))
+        )
+        val afloat = Combat.previewDamage(
+            context(unit(UnitKind.DESTROYER), unit(UnitKind.INFANTRY, nation = 1), defenderAtSea = true)
+        )
+        assertTrue("浮渡的陸軍應該非常好打 $afloat vs $ashore", afloat > ashore * 2)
+        assertFalse(
+            "浮渡的陸軍還不了手",
+            Combat.canRetaliate(
+                context(unit(UnitKind.DESTROYER), unit(UnitKind.INFANTRY, nation = 1), defenderAtSea = true)
+            )
+        )
+
+        val firingAshore = Combat.previewDamage(
+            context(unit(UnitKind.INFANTRY), unit(UnitKind.INFANTRY, nation = 1))
+        )
+        val firingAfloat = Combat.previewDamage(
+            context(unit(UnitKind.INFANTRY), unit(UnitKind.INFANTRY, nation = 1), attackerAtSea = true)
+        )
+        assertTrue("浮渡中的火力大打折扣 $firingAfloat vs $firingAshore", firingAfloat < firingAshore / 2)
+    }
+
+    @Test
+    fun `only tanks get the follow-up attack`() {
+        assertTrue(UnitKind.ARMOUR.isAssault)
+        assertTrue(UnitKind.RECON.isAssault)
+        assertFalse(UnitKind.INFANTRY.isAssault)
+        assertFalse(UnitKind.ARTILLERY.isAssault)
+        for (kind in UnitKind.ALL) {
+            if (kind.isAssault) {
+                assertEquals("$kind: 突擊是陸軍裝甲的專利", Domain.LAND, kind.domain)
+            }
+        }
     }
 
     @Test

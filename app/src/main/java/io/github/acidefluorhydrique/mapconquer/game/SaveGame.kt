@@ -83,6 +83,7 @@ object SaveGame {
                 .append(unit.movesLeft).append(' ')
                 .append(if (unit.hasAttacked) 1 else 0).append(' ')
                 .append(unit.entrenchment).append(' ')
+                .append(unit.morale).append(' ')
                 .append(unit.transportId).append(' ')
                 .append(unit.commanderId.ifEmpty { "-" }).append('\n')
         }
@@ -196,7 +197,7 @@ object SaveGame {
         session.clearAllUnits()
         for (line in unitLines) {
             val p = line.split(' ')
-            if (p.size < 13) continue
+            if (p.size < 14) continue
             val kind = UnitKind.byName(p[1]) ?: continue
             val id = p[0].toIntOrNull() ?: continue
             val nationId = p[2].toIntOrNull() ?: continue
@@ -210,8 +211,10 @@ object SaveGame {
             unit.movesLeft = p[8].toIntOrNull() ?: 0
             unit.hasAttacked = p[9] == "1"
             unit.entrenchment = p[10].toIntOrNull() ?: 0
-            unit.transportId = p[11].toIntOrNull() ?: -1
-            unit.commanderId = if (p[12] == "-") "" else p[12]
+            unit.morale = (p[11].toIntOrNull() ?: 0)
+                .coerceIn(ArmyUnit.MIN_MORALE, ArmyUnit.MAX_MORALE)
+            unit.transportId = p[12].toIntOrNull() ?: -1
+            unit.commanderId = if (p[13] == "-") "" else p[13]
             session.restoreUnit(unit)
         }
         session.rebuildCargoLinks()

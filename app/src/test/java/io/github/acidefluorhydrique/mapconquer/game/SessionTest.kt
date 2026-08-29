@@ -417,6 +417,147 @@ class SessionTest {
     }
 
     @Test
+    fun `land units can put to sea, and it costs a whole turn`() {
+        val s = session(listOf(ScenarioUnit("AAA", 1, 4, "INFANTRY", 1, "")))
+        val infantry = s.units.first()
+        val water = s.map.index(1, 5)
+        assertTrue(s.map.isWater(water))
+
+        val reachable = ArrayList<Int>()
+        Orders.computeReachable(s, infantry, reachable)
+        assertTrue("陸軍應該下得了海", reachable.contains(water))
+
+        // 入海這個「轉換」本身會中斷移動。直接問規則物件最不會誤判 ——
+        // 水格本身仍然是可達的，不能達的是「下海之後繼續前進」。
+        val rules = UnitMoveRules(s, infantry)
+        assertTrue("入陸→海要停", rules.stopsAt(infantry.tile, water))
+        assertFalse("海上繼續航行不必停", rules.stopsAt(water, s.map.index(2, 5)))
+        assertTrue("海→陸登陸也要停", rules.stopsAt(water, s.map.index(1, 4)))
+
+        Orders.move(s, infantry, water, ArrayList())
+        assertEquals(water, infantry.tile)
+        assertTrue("站在水上就是在浮渡", s.isEmbarked(infantry))
+        assertEquals("浮渡的陸軍佔海層", Domain.SEA, s.layerOf(infantry))
+        assertEquals(infantry, s.unitAt(water, Domain.SEA))
+        assertNull("它不該還佔著陸層", s.unitAt(water, Domain.LAND))
+    }
+
+    @Test
+    fun `a warship and an embarked unit cannot share a tile`() {
+        val s = session(
+            listOf(
+                ScenarioUnit("AAA", 1, 4, "INFANTRY", 1, ""),
+                ScenarioUnit("AAA", 1, 5, "DESTROYER", 1, "")
+            )
+        )
+        val infantry = s.units.first { it.kind == UnitKind.INFANTRY }
+        val reachable = ArrayList<Int>()
+        Orders.computeReachable(s, infantry, reachable)
+        assertFalse("驅逐艦佔著的水格，浮渡的陸軍進不去", reachable.contains(s.map.index(1, 5)))
+    }
+
+    @Test
+    fun `landing also costs a turn`() {
+        val s = session(listOf(ScenarioUnit("AAA", 1, 5, "INFANTRY", 1, "")))
+        val infantry = s.units.first()
+        assertTrue(s.isEmbarked(infantry))
+
+        val reachable = ArrayList<Int>()
+        Orders.computeReachable(s, infantry, reachable)
+        val beach = s.map.index(1, 4)
+        assertTrue("應該登得了陸", reachable.contains(beach))
+        assertFalse("登陸之後不能再往內陸推進", reachable.contains(s.map.index(1, 2)))
+
+        Orders.move(s, infantry, beach, ArrayList())
+        assertFalse(s.isEmbarked(infantry))
+        assertEquals(Domain.LAND, s.layerOf(infantry))
+    }
+
+    @Test
+    fun `armour keeps attacking as long as it keeps killing`() {
+        val s = session(
+            listOf(
+                ScenarioUnit("AAA", 2, 2, "ARMOUR", 1, ""),
+                ScenarioUnit("BBB", 3, 2, "INFANTRY", 1, ""),
+                ScenarioUnit("BBB", 2, 1, "INFANTRY", 1, ""),
+                ScenarioUnit("BBB", 1, 2, "INFANTRY", 1, "")
+            )
+        )
+        val armour = s.units.first { it.nationId == 0 }
+        val victims = s.units.filter { it.nationId == 1 }
+        // 前兩個一擊必殺，第三個滿血活得下來。
+        victims[0].hp = 1
+        victims[1].hp = 1
+
+        val first = Orders.attack(s, armour, victims[0].tile)
+        assertTrue("目標應該被擊毀", first!!.defenderDestroyed)
+        assertFalse("突擊：擊毀之後還能再打", armour.hasAttacked)
+
+        val second = Orders.attack(s, armour, victims[1].tile)
+        assertTrue("連鎖應該打得到第二個目標", second!!.defenderDestroyed)
+        assertFalse("連續擊毀就繼續連鎖", armour.hasAttacked)
+
+        val third = Orders.attack(s, armour, victims[2].tile)
+        assertNotNull(third)
+        assertFalse("滿血的目標活了下來", third!!.defenderDestroyed)
+        assertTrue("沒殺掉就停止連鎖", armour.hasAttacked)
+        assertNull("停下來之後不能再打", Orders.attack(s, armour, victims[2].tile))
+    }
+
+    @Test
+    fun `infantry gets no follow-up attack`() {
+        val s = session(
+            listOf(
+                ScenarioUnit("AAA", 2, 2, "INFANTRY", 1, ""),
+                ScenarioUnit("BBB", 3, 2, "INFANTRY", 1, "")
+            )
+        )
+        val attacker = s.units.first { it.nationId == 0 }
+        val victim = s.units.first { it.nationId == 1 }
+        victim.hp = 1
+        val result = Orders.attack(s, attacker, victim.tile)
+        assertTrue(result!!.defenderDestroyed)
+        assertTrue("步兵沒有突擊，打完就結束", attacker.hasAttacked)
+    }
+
+    @Test
+    fun `being surrounded breaks morale, and a broken unit cannot attack`() {
+        val s = session(
+            listOf(
+                ScenarioUnit("AAA", 2, 2, "INFANTRY", 1, ""),
+                ScenarioUnit("BBB", 3, 2, "INFANTRY", 1, ""),
+                ScenarioUnit("BBB", 2, 1, "INFANTRY", 1, ""),
+                ScenarioUnit("BBB", 1, 2, "INFANTRY", 1, ""),
+                ScenarioUnit("BBB", 2, 3, "INFANTRY", 1, "")
+            )
+        )
+        val trapped = s.units.first { it.nationId == 0 }
+        // 開局的 beginNationTurn 已經算過一次士氣，所以這裡不會是 0。
+        assertTrue("一開局就被圍住，士氣應該已經開始掉", trapped.morale < 0)
+
+        // 再跑幾個回合，讓被包圍的一方徹底崩潰。
+        repeat(4) {
+            s.advanceToNextNation()
+            s.advanceToNextNation()
+        }
+        assertTrue("被四面圍住的部隊士氣該垮 (${trapped.morale})", trapped.morale < 0)
+        assertTrue("最後應該陷入混亂", trapped.isDisrupted)
+        assertNull("混亂的部隊打不出去", Orders.attack(s, trapped, s.map.index(3, 2)))
+    }
+
+    @Test
+    fun `morale recovers once the pressure is gone`() {
+        val s = session(listOf(ScenarioUnit("AAA", 1, 1, "INFANTRY", 1, "")))
+        val unit = s.units.first()
+        unit.morale = ArmyUnit.MIN_MORALE
+        repeat(6) {
+            s.advanceToNextNation()
+            s.advanceToNextNation()
+        }
+        assertTrue("脫離接觸之後士氣要回得來 (${unit.morale})", unit.morale >= 0)
+    }
+
+    @Test
     fun `save format survives a round trip through the parser`() {
         // SaveGame 需要 Context，這裡只驗外交關係的編解碼 —— 那是唯一自訂的編碼。
         val s = session()
