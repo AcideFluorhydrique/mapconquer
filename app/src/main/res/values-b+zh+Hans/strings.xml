@@ -151,7 +151,7 @@
     <string name="help_supply">补给线</string>
     <string name="help_supply_body">补给从你自己的城市沿着自己的领土扩散，而越过山脉要付出的代价远高于平原。在补给范围内的部队每回合会回补与整补；范围外的部队会先掉补给、再掉战力，最后饿死。补给车与司令部自带一个小型补给圈，攻势跑赢城市之后就靠它们续命。打开「补给」图层，就看得到自己的后勤到底伸得多远。</string>
     <string name="help_victory">胜利条件</string>
-    <string name="help_victory_body">战役关卡一开始就会说明目标，随时可以打开「目标」面板查看。提早通关可以拿到更多星等，星等换成勋章，勋章用来招募指挥官，而指挥官在之后的每一局都能用。征服模式没有剧本：在世界地图上挑任何一个国家，控制八成的省份就算赢。所有人开局都是和平状态，所以第一场战争由你来宣 —— 或者由你来撑过去。</string>
+    <string name="help_victory_body" formatted="false">战役关卡一开始就会说明目标，随时可以打开「目标」面板查看。提早通关可以拿到更多星等，星等换成勋章，勋章用来招募指挥官，而指挥官在之后的每一局都能用。征服模式没有剧本：在世界地图上挑任何一个国家，控制八成的省份就算赢。所有人开局都是和平状态，所以第一场战争由你来宣 —— 或者由你来撑过去。</string>
 
     <!-- Units -->
     <string name="unit_infantry">步兵</string>
@@ -175,7 +175,7 @@
     <string name="unit_supply_truck">补给车</string>
     <string name="unit_supply_truck_desc">自带一个小型补给圈。攻势能不能持续，全看它跟不跟得上。</string>
     <string name="unit_headquarters">司令部</string>
-    <string name="unit_headquarters_desc">为三格内的友军提供 +10% 攻击力，同时也是移动的补给站。</string>
+    <string name="unit_headquarters_desc" formatted="false">为三格内的友军提供 +10% 攻击力，同时也是移动的补给站。</string>
     <string name="unit_fighter">战斗机</string>
     <string name="unit_fighter_desc">制空无敌。对地面目标几乎无用 —— 这正是它的定位。</string>
     <string name="unit_bomber">轰炸机</string>
@@ -197,25 +197,25 @@
 
     <!-- Commander skills -->
     <string name="skill_offensive">攻势</string>
-    <string name="skill_offensive_desc">攻击力 +12%</string>
+    <string name="skill_offensive_desc" formatted="false">攻击力 +12%</string>
     <string name="skill_defensive">防御</string>
-    <string name="skill_defensive_desc">防御力 +15%</string>
+    <string name="skill_defensive_desc" formatted="false">防御力 +15%</string>
     <string name="skill_blitz">疾行</string>
     <string name="skill_blitz_desc">移动力 +1</string>
     <string name="skill_logistics">后勤</string>
     <string name="skill_logistics_desc">补给回复更快</string>
     <string name="skill_armour_expert">装甲专家</string>
-    <string name="skill_armour_expert_desc">装甲部队攻击 +20%</string>
+    <string name="skill_armour_expert_desc" formatted="false">装甲部队攻击 +20%</string>
     <string name="skill_air_expert">空战专家</string>
-    <string name="skill_air_expert_desc">空军部队攻击 +20%</string>
+    <string name="skill_air_expert_desc" formatted="false">空军部队攻击 +20%</string>
     <string name="skill_naval_expert">海战专家</string>
-    <string name="skill_naval_expert_desc">海军部队攻击 +20%</string>
+    <string name="skill_naval_expert_desc" formatted="false">海军部队攻击 +20%</string>
     <string name="skill_artillery_expert">炮术专家</string>
-    <string name="skill_artillery_expert_desc">火炮部队攻击 +20%</string>
+    <string name="skill_artillery_expert_desc" formatted="false">火炮部队攻击 +20%</string>
     <string name="skill_fortress">堡垒</string>
-    <string name="skill_fortress_desc">筑壕两级以上时防御 +20%</string>
+    <string name="skill_fortress_desc" formatted="false">筑壕两级以上时防御 +20%</string>
     <string name="skill_siege">攻坚</string>
-    <string name="skill_siege_desc">对已筑壕的敌人攻击 +25%</string>
+    <string name="skill_siege_desc" formatted="false">对已筑壕的敌人攻击 +25%</string>
     <string name="skill_veteran">老兵</string>
     <string name="skill_veteran_desc">新部队从二级起跳</string>
     <string name="skill_field_medic">野战医护</string>

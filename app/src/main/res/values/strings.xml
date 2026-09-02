@@ -151,7 +151,7 @@
     <string name="help_supply">Supply lines</string>
     <string name="help_supply_body">Supply spreads out from your own cities along your own territory, and mountains cost more to reach across than plains. A unit inside supply refills and repairs each turn; a unit outside it loses supply, then strength, then dies. Supply trucks and headquarters carry a small supply bubble with them, which is how an offensive keeps moving once it has outrun its cities. Turn on the Supply overlay to see exactly how far your logistics reach.</string>
     <string name="help_victory">Winning</string>
-    <string name="help_victory_body">Campaign missions state their objective up front — check the Goals panel any time. Finishing early earns more stars, and stars pay out medals you spend on commanders, who then serve you in every later game. Conquest has no script: pick any nation on the world map, and win by controlling 80% of its provinces. Everyone starts at peace, so the first war is yours to declare — or to survive.</string>
+    <string name="help_victory_body" formatted="false">Campaign missions state their objective up front — check the Goals panel any time. Finishing early earns more stars, and stars pay out medals you spend on commanders, who then serve you in every later game. Conquest has no script: pick any nation on the world map, and win by controlling 80% of its provinces. Everyone starts at peace, so the first war is yours to declare — or to survive.</string>
 
     <!-- Units -->
     <string name="unit_infantry">Infantry</string>
@@ -175,7 +175,7 @@
     <string name="unit_supply_truck">Supply Truck</string>
     <string name="unit_supply_truck_desc">Carries a small supply bubble with it. This is how an offensive keeps moving.</string>
     <string name="unit_headquarters">Headquarters</string>
-    <string name="unit_headquarters_desc">Grants +10% attack to friendly units within three hexes, and supplies them too.</string>
+    <string name="unit_headquarters_desc" formatted="false">Grants +10% attack to friendly units within three hexes, and supplies them too.</string>
     <string name="unit_fighter">Fighter</string>
     <string name="unit_fighter_desc">Owns the sky. Nearly worthless against ground targets — that is the point.</string>
     <string name="unit_bomber">Bomber</string>
@@ -197,25 +197,25 @@
 
     <!-- Commander skills -->
     <string name="skill_offensive">Offensive</string>
-    <string name="skill_offensive_desc">+12% attack</string>
+    <string name="skill_offensive_desc" formatted="false">+12% attack</string>
     <string name="skill_defensive">Defensive</string>
-    <string name="skill_defensive_desc">+15% defence</string>
+    <string name="skill_defensive_desc" formatted="false">+15% defence</string>
     <string name="skill_blitz">Blitz</string>
     <string name="skill_blitz_desc">+1 movement</string>
     <string name="skill_logistics">Logistics</string>
     <string name="skill_logistics_desc">Faster resupply</string>
     <string name="skill_armour_expert">Armour Expert</string>
-    <string name="skill_armour_expert_desc">+20% attack with armour</string>
+    <string name="skill_armour_expert_desc" formatted="false">+20% attack with armour</string>
     <string name="skill_air_expert">Air Expert</string>
-    <string name="skill_air_expert_desc">+20% attack with aircraft</string>
+    <string name="skill_air_expert_desc" formatted="false">+20% attack with aircraft</string>
     <string name="skill_naval_expert">Naval Expert</string>
-    <string name="skill_naval_expert_desc">+20% attack with ships</string>
+    <string name="skill_naval_expert_desc" formatted="false">+20% attack with ships</string>
     <string name="skill_artillery_expert">Gunnery Expert</string>
-    <string name="skill_artillery_expert_desc">+20% attack with artillery</string>
+    <string name="skill_artillery_expert_desc" formatted="false">+20% attack with artillery</string>
     <string name="skill_fortress">Fortress</string>
-    <string name="skill_fortress_desc">+20% defence when well entrenched</string>
+    <string name="skill_fortress_desc" formatted="false">+20% defence when well entrenched</string>
     <string name="skill_siege">Siege</string>
-    <string name="skill_siege_desc">+25% attack against entrenched enemies</string>
+    <string name="skill_siege_desc" formatted="false">+25% attack against entrenched enemies</string>
     <string name="skill_veteran">Veteran</string>
     <string name="skill_veteran_desc">New units start at level 2</string>
     <string name="skill_field_medic">Field Medic</string>

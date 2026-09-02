@@ -13,6 +13,7 @@
 """
 
 import os
+import re
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -448,6 +449,25 @@ def escape(text):
     return out
 
 
+# lint 的 StringFormatDetector 把字串裡的任何 % 都當成格式指示符的開頭，
+# 所以「攻擊力 +12%」這種純文字百分比會被判成 StringFormatInvalid ——
+# 那是 error 級，會直接擋掉 lintDebug。
+#
+# 不能改寫成 %% 跳脫：這些說明文字是用 getString(id) 直接取的，沒有經過
+# String.format，%% 會原封不動顯示成兩個百分號。官方的出口是宣告
+# formatted="false"，意思正是「這條字串不拿去 format」。
+POSITIONAL = re.compile(r"%(\d+\$[-+ #0,(]*\d*(?:\.\d+)?[a-zA-Z]|%)")
+
+
+def has_literal_percent(text):
+    """扣掉 %1$s 這類指示符與 %% 跳脫之後，還剩下裸的百分號。"""
+    return "%" in POSITIONAL.sub("", text)
+
+
+def is_format_string(text):
+    return bool(re.search(r"%\d+\$", text))
+
+
 def collect(locale_index):
     """locale_index: 0 = English, 1 = 正體, 2 = 简体。"""
     entries = []
@@ -491,7 +511,7 @@ def collect(locale_index):
     return entries
 
 
-def write_locale(directory, entries):
+def write_locale(directory, entries, unformatted):
     os.makedirs(directory, exist_ok=True)
     lines = [
         '<?xml version="1.0" encoding="utf-8"?>',
@@ -509,7 +529,10 @@ def write_locale(directory, entries):
             lines.append("")
             lines.append("    <!-- %s -->" % value)
             continue
-        lines.append('    <string name="%s">%s</string>' % (key, escape(value)))
+        attribute = ' formatted="false"' if key in unformatted else ""
+        lines.append(
+            '    <string name="%s"%s>%s</string>' % (key, attribute, escape(value))
+        )
     lines.append("</resources>")
     path = os.path.join(directory, "strings.xml")
     with open(path, "w", encoding="utf-8") as fh:
@@ -523,11 +546,31 @@ def main():
         (os.path.join(RES, "values-b+zh+Hant"), 1),
         (os.path.join(RES, "values-b+zh+Hans"), 2),
     ]
-    for directory, index in targets:
-        entries = collect(index)
-        path = write_locale(directory, entries)
+    collected = [(directory, collect(index)) for directory, index in targets]
+
+    # 標記是逐鍵而不是逐語系決定的：同一個鍵在三個語系裡要嘛都是格式字串、
+    # 要嘛都不是，不然翻譯一改就會冒出只在某一語系觸發的 lint 錯誤。
+    unformatted = set()
+    for _, entries in collected:
+        for key, value in entries:
+            if key != "__section__" and has_literal_percent(value):
+                unformatted.add(key)
+
+    for _, entries in collected:
+        for key, value in entries:
+            if key in unformatted and is_format_string(value):
+                raise SystemExit(
+                    "%s 同時含有 %%1$s 這類指示符與裸百分號 —— "
+                    "多半是翻譯把指示符打錯了：%s" % (key, value)
+                )
+
+    for directory, entries in collected:
+        path = write_locale(directory, entries, unformatted)
         count = sum(1 for k, _ in entries if k != "__section__")
-        print("%-70s %d strings" % (os.path.relpath(path, ROOT), count))
+        print(
+            "%-70s %d strings（%d 條標為 formatted=\"false\"）"
+            % (os.path.relpath(path, ROOT), count, len(unformatted))
+        )
 
 
 if __name__ == "__main__":
