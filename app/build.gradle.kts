@@ -32,6 +32,16 @@ android {
     kotlinOptions {
         jvmTarget = "17"
     }
+
+    // lint 的報告本來只被打包成 artifact，等於錯誤藏在一個要下載解壓才看得到的
+    // zip 裡。textOutput 指向 stdout 之後，違規內容直接印在 CI log 上，
+    // 讀 log 就知道是哪一條規則，不必為了看一行訊息再跑一次建置。
+    lint {
+        textReport = true
+        textOutput = file("stdout")
+        htmlReport = true
+        xmlReport = true
+    }
 }
 
 dependencies {

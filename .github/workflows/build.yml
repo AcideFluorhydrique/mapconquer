@@ -49,6 +49,8 @@ jobs:
 
       # lint 目前不擋建置，但報告要撈出來看 —— 它抓的是編譯器不管的東西
       # （未使用的資源、無障礙、API 版本誤用），對一個要上 F-Droid 的專案有價值。
+      # 違規內容會直接印在這一步的 log 裡（見 app/build.gradle.kts 的 lint 區塊），
+      # HTML／XML 仍然留成 artifact 給需要點來點去的時候用。
       - name: Lint
         run: ./gradlew lintDebug --stacktrace
         continue-on-error: true
@@ -60,7 +62,6 @@ jobs:
           name: lint-report
           path: |
             app/build/reports/lint-results-debug.html
-            app/build/reports/lint-results-debug.txt
             app/build/reports/lint-results-debug.xml
           if-no-files-found: warn
 
