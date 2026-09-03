@@ -149,11 +149,11 @@ class ConquestSmokeTest {
 
     @Test
     fun `the AI actually does something with its turn`() {
-        val scenario = TestAssets.scenario("campaign_02_desert_supply")
+        val scenario = TestAssets.scenario("campaign_ww2_03_desert")
         val map = TestAssets.map(scenario.mapId)
-        val session = Session(map, scenario, Difficulty.OFFICER, "BLU", 5L)
+        val session = Session(map, scenario, Difficulty.OFFICER, "GBR", 5L)
 
-        val enemy = session.nationByCode("RED")!!
+        val enemy = session.nationByCode("DEU")!!
         val before = session.unitsOf(enemy.id).map { it.tile }.toSet()
         val fundsBefore = enemy.funds
 

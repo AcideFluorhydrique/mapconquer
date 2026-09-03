@@ -250,16 +250,24 @@
     <string name="scn_conquest_modern_desc">Every nation on the map, everyone at peace. Pick one and decide who moves first.</string>
     <string name="scn_conquest_empires">Age of Empires</string>
     <string name="scn_conquest_empires_desc">The same world carved into two dozen sprawling empires. Fewer players, far bigger fronts.</string>
-    <string name="scn_campaign_01_first_contact">Exercise 1 · First Contact</string>
-    <string name="scn_campaign_01_first_contact_desc">Blue Force holds the islands, Red Force the coast opposite. Cross the water and take the two ports.</string>
-    <string name="scn_campaign_02_desert_supply">Exercise 2 · Desert Supply</string>
-    <string name="scn_campaign_02_desert_supply_desc">A long advance across open desert. The enemy is not the problem — the distance is.</string>
-    <string name="scn_campaign_03_island_chain">Exercise 3 · Island Chain</string>
-    <string name="scn_campaign_03_island_chain_desc">Nothing here is reachable on foot. Escort the transports, win the air, then land.</string>
-    <string name="scn_campaign_04_defence_in_depth">Exercise 4 · Defence in Depth</string>
-    <string name="scn_campaign_04_defence_in_depth_desc">Red Force has better armour and more of it. Dig in, hold the two cities, and let the attack burn itself out.</string>
-    <string name="scn_campaign_05_mountain_offensive">Exercise 5 · Mountain Offensive</string>
-    <string name="scn_campaign_05_mountain_offensive_desc">High ground everywhere. Vehicles cannot follow you — this one belongs to the mountain troops.</string>
+    <string name="scn_campaign_00_exercise">Exercise · Mountain March</string>
+    <string name="scn_campaign_00_exercise_desc">Two exercise forces in the high Andes. Learn to move, entrench and take a city before any of it counts.</string>
+    <string name="scn_campaign_ww2_01_poland">1939 · Poland</string>
+    <string name="scn_campaign_ww2_01_poland_desc">You are outnumbered in armour, in aircraft and in men. This one cannot be won — it can be made expensive. Hold Warsaw to turn 20.</string>
+    <string name="scn_campaign_ww2_02_france">1940 · France</string>
+    <string name="scn_campaign_ww2_02_france_desc">Armour does not grind through a line, it pours through the gap. Tear the front open, then keep going — an assault unit that destroys its target can strike again.</string>
+    <string name="scn_campaign_ww2_03_desert">1942 · Western Desert</string>
+    <string name="scn_campaign_ww2_03_desert_desc">No cover out here, and no supply either. Unit for unit the Afrika Korps outclasses you; the distance to Tripoli is what beats it.</string>
+    <string name="scn_campaign_ww2_04_south_seas">1942 · The South Seas</string>
+    <string name="scn_campaign_ww2_04_south_seas_desc">Nothing here is reachable on foot. Carriers buy the sky, transports carry the infantry, and a landing missing either one is a drowning.</string>
+    <string name="scn_campaign_ww2_05_east_front">1943 · Eastern Front</string>
+    <string name="scn_campaign_ww2_05_east_front_desc">The numbers are yours now and the better tanks are still theirs. Do not trade evenly — surround. A unit with enemies on four sides falls apart.</string>
+    <string name="scn_campaign_cw_01_suez">1956 · Suez</string>
+    <string name="scn_campaign_cw_01_suez_desc">The landing arrives from the air before it arrives from the sea. Your tanks are useless against paratroops; your anti-air is not.</string>
+    <string name="scn_campaign_cw_02_indochina">1968 · Indochina</string>
+    <string name="scn_campaign_cw_02_indochina_desc">Every number on their side is bigger, and every one of those things has to fly in. Keep the sky expensive and the jungle handles the rest.</string>
+    <string name="scn_campaign_cw_03_central_front">1985 · Central Front</string>
+    <string name="scn_campaign_cw_03_central_front_desc">Six allied flags, one army you actually command. The others buy you turns — those are to be spent, not saved. Hold three cities to turn 30.</string>
 
     <!-- Nations -->
     <string name="nation_afg">Afghanistan</string>
@@ -372,7 +380,6 @@
     <string name="nation_aut_hu">Danube Empire</string>
     <string name="nation_bel_congo">Congo Company</string>
     <string name="nation_blu">Blue Force</string>
-    <string name="nation_grn">Green Force</string>
     <string name="nation_red">Red Force</string>
 
     <!-- Provinces -->

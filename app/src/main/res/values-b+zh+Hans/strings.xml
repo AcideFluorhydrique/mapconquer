@@ -250,16 +250,24 @@
     <string name="scn_conquest_modern_desc">地图上所有国家，开局全部和平。挑一个，然后决定谁先动手。</string>
     <string name="scn_conquest_empires">帝国时代</string>
     <string name="scn_conquest_empires_desc">同一个世界，被切成二十来个横跨大洋的帝国。玩家更少，战线大得多。</string>
-    <string name="scn_campaign_01_first_contact">演习一 · 初次接敌</string>
-    <string name="scn_campaign_01_first_contact_desc">蓝军据有岛屿，红军在对岸。渡过海峡，拿下对面的两座港口。</string>
-    <string name="scn_campaign_02_desert_supply">演习二 · 沙漠补给</string>
-    <string name="scn_campaign_02_desert_supply_desc">横越开阔沙漠的长程推进。敌人不是问题，距离才是。</string>
-    <string name="scn_campaign_03_island_chain">演习三 · 岛链作战</string>
-    <string name="scn_campaign_03_island_chain_desc">这里没有一个目标走得到。护住运输舰、夺下制空，然后登陆。</string>
-    <string name="scn_campaign_04_defence_in_depth">演习四 · 纵深防御</string>
-    <string name="scn_campaign_04_defence_in_depth_desc">红军的装甲更好也更多。挖好壕沟、守住两座城，让对方的攻势自己耗尽。</string>
-    <string name="scn_campaign_05_mountain_offensive">演习五 · 山地攻势</string>
-    <string name="scn_campaign_05_mountain_offensive_desc">到处都是高地。轮车与履带跟不上来 —— 这一关是山地部队的舞台。</string>
+    <string name="scn_campaign_00_exercise">演习 · 山地行军</string>
+    <string name="scn_campaign_00_exercise_desc">安地斯高地上的两支演习部队。在动真格之前，先学会行军、筑壕、拿下一座城。</string>
+    <string name="scn_campaign_ww2_01_poland">1939 · 波兰</string>
+    <string name="scn_campaign_ww2_01_poland_desc">装甲、飞机、人数，你样样都少。这一关赢不了，但可以让对方付出代价：守住华沙到第 20 回合。</string>
+    <string name="scn_campaign_ww2_02_france">1940 · 法兰西</string>
+    <string name="scn_campaign_ww2_02_france_desc">装甲不是用来磨穿战线的，是用来灌进缺口的。撕开正面，然后别停 —— 突击部队打掉目标之后还能再打一次。</string>
+    <string name="scn_campaign_ww2_03_desert">1942 · 西部沙漠</string>
+    <string name="scn_campaign_ww2_03_desert_desc">这里没有掩蔽，也没有补给。单位对单位你打不赢非洲军，但到的黎波里的距离会替你打赢。</string>
+    <string name="scn_campaign_ww2_04_south_seas">1942 · 南洋</string>
+    <string name="scn_campaign_ww2_04_south_seas_desc">这里没有一个目标走得到。航舰买下天空，运输舰载着步兵，两者缺一的登陆叫溺水。</string>
+    <string name="scn_campaign_ww2_05_east_front">1943 · 东线</string>
+    <string name="scn_campaign_ww2_05_east_front_desc">现在数量在你这边，好坦克还在对面。不要对等交换 —— 包围。四面受敌的部队会崩溃。</string>
+    <string name="scn_campaign_cw_01_suez">1956 · 苏伊士</string>
+    <string name="scn_campaign_cw_01_suez_desc">登陆从天上先来，海上后到。你的坦克对伞兵没用，你的防空有用。</string>
+    <string name="scn_campaign_cw_02_indochina">1968 · 印度支那</string>
+    <string name="scn_campaign_cw_02_indochina_desc">对面每一项数据都比你大，而那些东西都得飞进来。让天空变贵，丛林会处理剩下的。</string>
+    <string name="scn_campaign_cw_03_central_front">1985 · 中欧正面</string>
+    <string name="scn_campaign_cw_03_central_front_desc">六面盟旗，但你只指挥得动一支军队。其他人替你换回合 —— 那是拿来花的，不是拿来存的。守住三座城到第 30 回合。</string>
 
     <!-- Nations -->
     <string name="nation_afg">阿富汗</string>
@@ -372,7 +380,6 @@
     <string name="nation_aut_hu">多瑙帝国</string>
     <string name="nation_bel_congo">刚果公司</string>
     <string name="nation_blu">蓝军</string>
-    <string name="nation_grn">绿军</string>
     <string name="nation_red">红军</string>
 
     <!-- Provinces -->

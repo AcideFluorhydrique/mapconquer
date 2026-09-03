@@ -394,6 +394,24 @@ def write_conquest(built, scenario_id, name_key, desc_key, order, merge, start_y
     return path
 
 
+def campaign_profile(code, mission):
+    """關卡裡一個勢力的（顏色、資金、AI 性格）。
+
+    演習陣營來自 scn.FACTIONS，真實國家直接沿用 places 的設定 —— 兩張表的
+    欄位順序不同（FACTIONS 是資金在前、places 是性格在前），所以在這裡收斂
+    成同一個形狀，呼叫端不必知道這件事。關卡可以用 funds／ai 覆寫，因為
+    同一個國家在 1939 與 1985 的份量差很多。
+    """
+    if code in scn.FACTIONS:
+        _e, _t, _s, colour, funds, profile = scn.FACTIONS[code]
+    else:
+        row = places.NATIONS.get(code) or places.EXTRA_NATIONS[code]
+        _e, _t, _s, colour, profile, funds = row
+    funds = mission.get("funds", {}).get(code, funds)
+    profile = mission.get("ai", {}).get(code, profile)
+    return colour, funds, profile
+
+
 def write_campaign(built, mission):
     """戰役關卡：只有演習部隊，其餘全部中立。"""
     owners = {}
@@ -410,7 +428,7 @@ def write_campaign(built, mission):
     if missing:
         print("  ! %s: 這些省份不在 %s 上：%s" % (mission["id"], built.id, ", ".join(missing)))
 
-    nation_funds = {code: scn.FACTIONS[code][4] for code in owners}
+    nation_funds = {code: campaign_profile(code, mission)[1] for code in owners}
 
     lines = []
     lines.append("# SPDX-FileCopyrightText: 2026 AcideFluorhydrique")
@@ -429,7 +447,7 @@ def write_campaign(built, mission):
     lines.append("")
     lines.append("[nations]")
     for code in owners:
-        english, _t, _s, colour, funds, profile = scn.FACTIONS[code]
+        colour, funds, profile = campaign_profile(code, mission)
         capital = max(owners[code], key=lambda pid: built.provinces[pid][1]) if owners[code] else -1
         lines.append("%s|nation_%s|%s|%d|%s|%d|%s|%s" % (
             code, code.lower(), colour, capital, profile, funds,
@@ -469,44 +487,112 @@ def write_campaign(built, mission):
     return path
 
 
+NAVAL_KINDS = ("DESTROYER", "CRUISER", "TRANSPORT_SHIP", "SUBMARINE",
+               "CARRIER", "BATTLESHIP")
+
+
+def land_pool(built, ids, rings=4):
+    """一個國家全部領土裡可以站人的陸地格，由各省會同時往外展開。
+
+    展開只走自己的省份，所以不會把開局部隊放到別人家裡；同時展開而不是
+    一省一省填完，是為了讓部隊散在各個省會而不是全部擠在首都。
+    """
+    grid = built.grid
+    owned = set(ids)
+    order = []
+    seen = set()
+    frontier = []
+    for pid in ids:
+        capital = built.provinces[pid][3]
+        if capital in seen:
+            continue
+        seen.add(capital)
+        order.append(capital)
+        frontier.append(capital)
+    for _ring in range(rings):
+        nxt = []
+        for tile in frontier:
+            col, row = tile % grid.cols, tile // grid.cols
+            for c, r in grid.neighbours(col, row):
+                j = grid.index(c, r)
+                if j in seen:
+                    continue
+                seen.add(j)
+                if built.province_of[j] not in owned:
+                    continue
+                order.append(j)
+                nxt.append(j)
+        frontier = nxt
+    return [t for t in order if built.terrain[t] not in "~-"]
+
+
+def water_pool(built, ids, rings=3):
+    """國家近岸的海格，給開局的艦艇停泊。"""
+    grid = built.grid
+    owned = set(ids)
+    seen = set()
+    frontier = []
+    order = []
+    for tile in range(len(built.terrain)):
+        if built.province_of[tile] in owned and built.terrain[tile] not in "~-":
+            seen.add(tile)
+            frontier.append(tile)
+    for _ring in range(rings):
+        nxt = []
+        for tile in frontier:
+            col, row = tile % grid.cols, tile // grid.cols
+            for c, r in grid.neighbours(col, row):
+                j = grid.index(c, r)
+                if j in seen:
+                    continue
+                seen.add(j)
+                if built.terrain[j] in "~-":
+                    order.append(j)
+                nxt.append(j)
+        frontier = nxt
+    return order
+
+
 def campaign_units(built, owners, mission):
-    """關卡的開局部隊由 mission 的編制表決定，好讓每一關教一件事。"""
+    """關卡的開局部隊由 mission 的編制表決定，好讓每一關教一件事。
+
+    放不下的部隊會讓產生器直接失敗，不會默默消失 —— 這件事發生過：
+    只有一座城的國家在舊的放置法下丟掉了整批空軍，關卡因此少了一半戰力，
+    而產出的檔案看起來完全正常。
+    """
     lines = []
-    occupied = set()
+    missing = []
     for code, roster in mission["roster"].items():
         ids = owners.get(code, [])
         if not ids:
             continue
-        capital = max(ids, key=lambda pid: built.provinces[pid][1])
-        cursor = 0
-        for kind, level, count in roster:
+        land = land_pool(built, ids)
+        water = water_pool(built, ids)
+        land_at = 0
+        water_at = 0
+        # 司令部先放，才會落在省會上 —— 它的加成是以自己為圓心算的。
+        ordered = sorted(roster, key=lambda entry: entry[0] != "HEADQUARTERS")
+        for kind, level, count in ordered:
             for _ in range(count):
-                if kind in ("DESTROYER", "CRUISER", "TRANSPORT_SHIP", "SUBMARINE", "CARRIER", "BATTLESHIP"):
-                    anchor = built.provinces[ids[cursor % len(ids)]][3]
-                    water = adjacent_water(built, anchor, occupied)
-                    if water is None:
+                if kind in NAVAL_KINDS:
+                    if water_at >= len(water):
+                        missing.append("%s %s（沒有空的近岸海格）" % (code, kind))
                         continue
-                    occupied.add(("sea", water))
-                    col, row = water % built.grid.cols, water // built.grid.cols
-                    lines.append("%s|%d,%d|%s|%d|-" % (code, col, row, kind, level))
-                    cursor += 1
-                    continue
-                pid = ids[cursor % len(ids)] if kind != "HEADQUARTERS" else capital
-                cursor += 1
-                placed = False
-                for tile in free_land_tiles(built, pid, occupied):
-                    occupied.add(tile)
-                    col, row = tile % built.grid.cols, tile // built.grid.cols
-                    lines.append("%s|%d,%d|%s|%d|-" % (code, col, row, kind, level))
-                    placed = True
-                    break
-                if not placed:
-                    # 省會周圍塞滿了就往首都擠，塞不下就放棄這一支。
-                    for tile in free_land_tiles(built, capital, occupied):
-                        occupied.add(tile)
-                        col, row = tile % built.grid.cols, tile // built.grid.cols
-                        lines.append("%s|%d,%d|%s|%d|-" % (code, col, row, kind, level))
-                        break
+                    tile = water[water_at]
+                    water_at += 1
+                else:
+                    if land_at >= len(land):
+                        missing.append("%s %s（領土上沒有空格）" % (code, kind))
+                        continue
+                    tile = land[land_at]
+                    land_at += 1
+                col, row = tile % built.grid.cols, tile // built.grid.cols
+                lines.append("%s|%d,%d|%s|%d|-" % (code, col, row, kind, level))
+    if missing:
+        raise SystemExit(
+            "%s：以下部隊放不下，請縮小編制或多給幾座城 ——\n  %s"
+            % (mission["id"], "\n  ".join(missing))
+        )
     return lines
 
 

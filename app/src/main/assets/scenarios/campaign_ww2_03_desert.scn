@@ -1,0 +1,74 @@
+# SPDX-FileCopyrightText: 2026 AcideFluorhydrique
+# SPDX-License-Identifier: GPL-3.0-or-later
+# 由 tools/genworld.py 產生，請勿手動編輯。
+format 1
+id campaign_ww2_03_desert
+map north_africa
+mode CAMPAIGN
+nameKey scn_campaign_ww2_03_desert
+descKey scn_campaign_ww2_03_desert_desc
+order 3
+turnLimit 35
+startYear 1942
+starTurns 20,28
+
+[nations]
+GBR|nation_gbr|#8C4C4C|8|BALANCED|1300|1,1,1,0,0,1|🇬🇧
+ITA|nation_ita|#5C9E6E|11|BALANCED|800|1,1,1,0,0,1|🇮🇹
+DEU|nation_deu|#6E7A86|12|AGGRESSIVE|1000|1,1,1,0,0,1|🇩🇪
+TUR|nation_tur|#A84C4C|3|TURTLE|500|1,1,1,0,0,1|🇹🇷
+ESP|nation_esp|#B08A3C|0|TURTLE|500|1,1,1,0,0,1|🇪🇸
+
+[relations]
+GBR ITA WAR
+GBR DEU WAR
+
+[owners]
+GBR: 8-10,21
+ITA: 11
+DEU: 12
+TUR: 3-4
+ESP: 0,15
+
+[units]
+GBR|43,10|INFANTRY|2|-
+GBR|41,9|INFANTRY|2|-
+GBR|45,16|INFANTRY|2|-
+GBR|44,25|INFANTRY|2|-
+GBR|44,10|ARMOUR|2|-
+GBR|43,9|ARMOUR|2|-
+GBR|42,9|ARMOUR|2|-
+GBR|42,10|SUPPLY_TRUCK|1|-
+GBR|42,11|SUPPLY_TRUCK|1|-
+GBR|43,11|SUPPLY_TRUCK|1|-
+GBR|40,9|ARTILLERY|2|-
+GBR|41,10|ARTILLERY|2|-
+GBR|46,16|RECON|2|-
+GBR|45,15|RECON|2|-
+GBR|44,15|FIGHTER|2|-
+GBR|36,8|DESTROYER|2|-
+ITA|26,8|INFANTRY|2|-
+ITA|27,8|INFANTRY|2|-
+ITA|25,8|INFANTRY|2|-
+ITA|25,9|INFANTRY|2|-
+ITA|26,9|ANTI_TANK|2|-
+ITA|28,8|ANTI_TANK|2|-
+ITA|27,9|ARTILLERY|1|-
+ITA|24,8|ARTILLERY|1|-
+DEU|20,6|ARMOUR|3|-
+DEU|19,6|ARMOUR|3|-
+DEU|19,7|ARMOUR|3|-
+DEU|20,7|ANTI_TANK|2|-
+DEU|18,6|ANTI_TANK|2|-
+DEU|18,7|RECON|2|-
+DEU|19,8|SUPPLY_TRUCK|1|-
+TUR|47,3|INFANTRY|1|-
+TUR|38,0|INFANTRY|1|-
+ESP|7,2|INFANTRY|1|-
+ESP|6,6|INFANTRY|1|-
+
+[playable]
+GBR
+
+[objectives]
+CAPTURE_PROVINCES|11-12|0

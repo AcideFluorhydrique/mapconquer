@@ -1,0 +1,69 @@
+# SPDX-FileCopyrightText: 2026 AcideFluorhydrique
+# SPDX-License-Identifier: GPL-3.0-or-later
+# 由 tools/genworld.py 產生，請勿手動編輯。
+format 1
+id campaign_ww2_01_poland
+map europe
+mode CAMPAIGN
+nameKey scn_campaign_ww2_01_poland
+descKey scn_campaign_ww2_01_poland_desc
+order 1
+turnLimit 25
+startYear 1939
+starTurns 18,22
+
+[nations]
+POL|nation_pol|#B4535C|23|BALANCED|700|1,1,1,0,0,1|🇵🇱
+DEU|nation_deu|#6E7A86|17|AGGRESSIVE|1500|3,3,2,1,0,2|🇩🇪
+RUS|nation_rus|#8C6E4C|39|TURTLE|600|1,1,1,0,0,1|🇷🇺
+SWE|nation_swe|#4C6E9E|30|TURTLE|400|1,1,1,0,0,1|🇸🇪
+
+[relations]
+DEU POL WAR
+
+[owners]
+POL: 23-24
+DEU: 17-22
+RUS: 34,38-39
+SWE: 30
+
+[units]
+POL|32,14|INFANTRY|2|-
+POL|31,17|INFANTRY|2|-
+POL|33,14|INFANTRY|2|-
+POL|32,13|INFANTRY|2|-
+POL|31,13|INFANTRY|2|-
+POL|31,14|ANTI_TANK|2|-
+POL|31,15|ANTI_TANK|2|-
+POL|32,15|ARTILLERY|1|-
+POL|32,17|ARTILLERY|1|-
+POL|32,16|RECON|1|-
+POL|31,16|ANTI_AIR|1|-
+DEU|25,14|ARMOUR|2|-
+DEU|21,12|ARMOUR|2|-
+DEU|23,20|ARMOUR|2|-
+DEU|18,16|ARMOUR|2|-
+DEU|25,17|INFANTRY|2|-
+DEU|28,20|INFANTRY|2|-
+DEU|26,14|INFANTRY|2|-
+DEU|25,13|INFANTRY|2|-
+DEU|24,13|INFANTRY|2|-
+DEU|24,14|BOMBER|2|-
+DEU|24,15|BOMBER|2|-
+DEU|25,15|FIGHTER|2|-
+DEU|22,12|FIGHTER|2|-
+DEU|20,13|ARTILLERY|1|-
+DEU|21,13|ARTILLERY|1|-
+DEU|24,20|RECON|1|-
+DEU|23,19|RECON|1|-
+RUS|49,9|INFANTRY|1|-
+RUS|39,12|INFANTRY|1|-
+RUS|35,7|INFANTRY|1|-
+SWE|29,3|INFANTRY|1|-
+SWE|30,2|INFANTRY|1|-
+
+[playable]
+POL
+
+[objectives]
+HOLD_PROVINCES|23|20

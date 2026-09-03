@@ -1,0 +1,77 @@
+# SPDX-FileCopyrightText: 2026 AcideFluorhydrique
+# SPDX-License-Identifier: GPL-3.0-or-later
+# 由 tools/genworld.py 產生，請勿手動編輯。
+format 1
+id campaign_ww2_05_east_front
+map east_europe
+mode CAMPAIGN
+nameKey scn_campaign_ww2_05_east_front
+descKey scn_campaign_ww2_05_east_front_desc
+order 5
+turnLimit 40
+startYear 1943
+starTurns 24,32
+
+[nations]
+RUS|nation_rus|#8C6E4C|15|AGGRESSIVE|1800|2,2,1,0,0,2|🇷🇺
+DEU|nation_deu|#6E7A86|3|OPPORTUNIST|1600|3,3,2,1,0,2|🇩🇪
+TUR|nation_tur|#A84C4C|23|TURTLE|500|1,1,1,0,0,1|🇹🇷
+SWE|nation_swe|#4C6E9E|9|TURTLE|400|1,1,1,0,0,1|🇸🇪
+
+[relations]
+RUS DEU WAR
+
+[owners]
+RUS: 15-20
+DEU: 3-4,10-14
+TUR: 23
+SWE: 9
+
+[units]
+RUS|30,7|HEADQUARTERS|1|-
+RUS|21,0|INFANTRY|2|-
+RUS|39,6|INFANTRY|2|-
+RUS|43,5|INFANTRY|2|-
+RUS|45,20|INFANTRY|2|-
+RUS|31,21|INFANTRY|2|-
+RUS|31,7|INFANTRY|2|-
+RUS|31,6|ARMOUR|2|-
+RUS|30,6|ARMOUR|2|-
+RUS|29,7|ARMOUR|2|-
+RUS|30,8|ARMOUR|2|-
+RUS|31,8|ARTILLERY|2|-
+RUS|22,0|ARTILLERY|2|-
+RUS|20,0|ARTILLERY|2|-
+RUS|20,1|ROCKET|2|-
+RUS|21,1|ROCKET|2|-
+RUS|40,6|ANTI_TANK|2|-
+RUS|39,5|ANTI_TANK|2|-
+RUS|38,5|SUPPLY_TRUCK|1|-
+RUS|38,6|SUPPLY_TRUCK|1|-
+RUS|38,7|FIGHTER|2|-
+RUS|39,7|FIGHTER|2|-
+DEU|8,13|ARMOUR|3|-
+DEU|7,16|ARMOUR|3|-
+DEU|12,5|ARMOUR|3|-
+DEU|18,10|ARMOUR|3|-
+DEU|21,16|INFANTRY|3|-
+DEU|22,22|INFANTRY|3|-
+DEU|29,16|INFANTRY|3|-
+DEU|9,13|INFANTRY|3|-
+DEU|9,12|ANTI_TANK|3|-
+DEU|8,12|ANTI_TANK|3|-
+DEU|7,13|ARTILLERY|2|-
+DEU|8,14|ARTILLERY|2|-
+DEU|9,14|FIGHTER|2|-
+DEU|8,16|FIGHTER|2|-
+DEU|7,15|BOMBER|2|-
+TUR|17,31|INFANTRY|1|-
+TUR|18,30|INFANTRY|1|-
+SWE|4,1|INFANTRY|1|-
+SWE|5,0|INFANTRY|1|-
+
+[playable]
+RUS
+
+[objectives]
+CAPTURE_PROVINCES|11,13|0

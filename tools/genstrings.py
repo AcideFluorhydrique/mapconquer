@@ -415,31 +415,53 @@ SCENARIO_TEXT = {
         "同一個世界，被切成二十來個橫跨大洋的帝國。玩家更少，戰線大得多。",
         "同一个世界，被切成二十来个横跨大洋的帝国。玩家更少，战线大得多。"),
 
-    "scn_campaign_01_first_contact": ("Exercise 1 · First Contact", "演習一 · 初次接敵", "演习一 · 初次接敌"),
-    "scn_campaign_01_first_contact_desc": (
-        "Blue Force holds the islands, Red Force the coast opposite. Cross the water and take the two ports.",
-        "藍軍據有島嶼，紅軍在對岸。渡過海峽，拿下對面的兩座港口。",
-        "蓝军据有岛屿，红军在对岸。渡过海峡，拿下对面的两座港口。"),
-    "scn_campaign_02_desert_supply": ("Exercise 2 · Desert Supply", "演習二 · 沙漠補給", "演习二 · 沙漠补给"),
-    "scn_campaign_02_desert_supply_desc": (
-        "A long advance across open desert. The enemy is not the problem — the distance is.",
-        "橫越開闊沙漠的長程推進。敵人不是問題，距離才是。",
-        "横越开阔沙漠的长程推进。敌人不是问题，距离才是。"),
-    "scn_campaign_03_island_chain": ("Exercise 3 · Island Chain", "演習三 · 島鏈作戰", "演习三 · 岛链作战"),
-    "scn_campaign_03_island_chain_desc": (
-        "Nothing here is reachable on foot. Escort the transports, win the air, then land.",
-        "這裡沒有一個目標走得到。護住運輸艦、奪下制空，然後登陸。",
-        "这里没有一个目标走得到。护住运输舰、夺下制空，然后登陆。"),
-    "scn_campaign_04_defence_in_depth": ("Exercise 4 · Defence in Depth", "演習四 · 縱深防禦", "演习四 · 纵深防御"),
-    "scn_campaign_04_defence_in_depth_desc": (
-        "Red Force has better armour and more of it. Dig in, hold the two cities, and let the attack burn itself out.",
-        "紅軍的裝甲更好也更多。挖好壕溝、守住兩座城，讓對方的攻勢自己耗盡。",
-        "红军的装甲更好也更多。挖好壕沟、守住两座城，让对方的攻势自己耗尽。"),
-    "scn_campaign_05_mountain_offensive": ("Exercise 5 · Mountain Offensive", "演習五 · 山地攻勢", "演习五 · 山地攻势"),
-    "scn_campaign_05_mountain_offensive_desc": (
-        "High ground everywhere. Vehicles cannot follow you — this one belongs to the mountain troops.",
-        "到處都是高地。輪車與履帶跟不上來 —— 這一關是山地部隊的舞台。",
-        "到处都是高地。轮车与履带跟不上来 —— 这一关是山地部队的舞台。"),
+    "scn_campaign_00_exercise": ("Exercise \u00b7 Mountain March", "\u6f14\u7fd2 \u00b7 \u5c71\u5730\u884c\u8ecd", "\u6f14\u4e60 \u00b7 \u5c71\u5730\u884c\u519b"),
+    "scn_campaign_00_exercise_desc": (
+        "Two exercise forces in the high Andes. Learn to move, entrench and take a city before any of it counts.",
+        "\u5b89\u5730\u65af\u9ad8\u5730\u4e0a\u7684\u5169\u652f\u6f14\u7fd2\u90e8\u968a\u3002\u5728\u52d5\u771f\u683c\u4e4b\u524d\uff0c\u5148\u5b78\u6703\u884c\u8ecd\u3001\u7bc9\u58d5\u3001\u62ff\u4e0b\u4e00\u5ea7\u57ce\u3002",
+        "\u5b89\u5730\u65af\u9ad8\u5730\u4e0a\u7684\u4e24\u652f\u6f14\u4e60\u90e8\u961f\u3002\u5728\u52a8\u771f\u683c\u4e4b\u524d\uff0c\u5148\u5b66\u4f1a\u884c\u519b\u3001\u7b51\u58d5\u3001\u62ff\u4e0b\u4e00\u5ea7\u57ce\u3002"),
+
+    "scn_campaign_ww2_01_poland": ("1939 \u00b7 Poland", "1939 \u00b7 \u6ce2\u862d", "1939 \u00b7 \u6ce2\u5170"),
+    "scn_campaign_ww2_01_poland_desc": (
+        "You are outnumbered in armour, in aircraft and in men. This one cannot be won \u2014 it can be made expensive. Hold Warsaw to turn 20.",
+        "\u88dd\u7532\u3001\u98db\u6a5f\u3001\u4eba\u6578\uff0c\u4f60\u6a23\u6a23\u90fd\u5c11\u3002\u9019\u4e00\u95dc\u8d0f\u4e0d\u4e86\uff0c\u4f46\u53ef\u4ee5\u8b93\u5c0d\u65b9\u4ed8\u51fa\u4ee3\u50f9\uff1a\u5b88\u4f4f\u83ef\u6c99\u5230\u7b2c 20 \u56de\u5408\u3002",
+        "\u88c5\u7532\u3001\u98de\u673a\u3001\u4eba\u6570\uff0c\u4f60\u6837\u6837\u90fd\u5c11\u3002\u8fd9\u4e00\u5173\u8d62\u4e0d\u4e86\uff0c\u4f46\u53ef\u4ee5\u8ba9\u5bf9\u65b9\u4ed8\u51fa\u4ee3\u4ef7\uff1a\u5b88\u4f4f\u534e\u6c99\u5230\u7b2c 20 \u56de\u5408\u3002"),
+    "scn_campaign_ww2_02_france": ("1940 \u00b7 France", "1940 \u00b7 \u6cd5\u862d\u897f", "1940 \u00b7 \u6cd5\u5170\u897f"),
+    "scn_campaign_ww2_02_france_desc": (
+        "Armour does not grind through a line, it pours through the gap. Tear the front open, then keep going \u2014 an assault unit that destroys its target can strike again.",
+        "\u88dd\u7532\u4e0d\u662f\u7528\u4f86\u78e8\u7a7f\u6230\u7dda\u7684\uff0c\u662f\u7528\u4f86\u704c\u9032\u7f3a\u53e3\u7684\u3002\u6495\u958b\u6b63\u9762\uff0c\u7136\u5f8c\u5225\u505c \u2014\u2014 \u7a81\u64ca\u90e8\u968a\u6253\u6389\u76ee\u6a19\u4e4b\u5f8c\u9084\u80fd\u518d\u6253\u4e00\u6b21\u3002",
+        "\u88c5\u7532\u4e0d\u662f\u7528\u6765\u78e8\u7a7f\u6218\u7ebf\u7684\uff0c\u662f\u7528\u6765\u704c\u8fdb\u7f3a\u53e3\u7684\u3002\u6495\u5f00\u6b63\u9762\uff0c\u7136\u540e\u522b\u505c \u2014\u2014 \u7a81\u51fb\u90e8\u961f\u6253\u6389\u76ee\u6807\u4e4b\u540e\u8fd8\u80fd\u518d\u6253\u4e00\u6b21\u3002"),
+    "scn_campaign_ww2_03_desert": ("1942 \u00b7 Western Desert", "1942 \u00b7 \u897f\u90e8\u6c99\u6f20", "1942 \u00b7 \u897f\u90e8\u6c99\u6f20"),
+    "scn_campaign_ww2_03_desert_desc": (
+        "No cover out here, and no supply either. Unit for unit the Afrika Korps outclasses you; the distance to Tripoli is what beats it.",
+        "\u9019\u88e1\u6c92\u6709\u63a9\u853d\uff0c\u4e5f\u6c92\u6709\u88dc\u7d66\u3002\u55ae\u4f4d\u5c0d\u55ae\u4f4d\u4f60\u6253\u4e0d\u8d0f\u975e\u6d32\u8ecd\uff0c\u4f46\u5230\u7684\u9ece\u6ce2\u91cc\u7684\u8ddd\u96e2\u6703\u66ff\u4f60\u6253\u8d0f\u3002",
+        "\u8fd9\u91cc\u6ca1\u6709\u63a9\u853d\uff0c\u4e5f\u6ca1\u6709\u8865\u7ed9\u3002\u5355\u4f4d\u5bf9\u5355\u4f4d\u4f60\u6253\u4e0d\u8d62\u975e\u6d32\u519b\uff0c\u4f46\u5230\u7684\u9ece\u6ce2\u91cc\u7684\u8ddd\u79bb\u4f1a\u66ff\u4f60\u6253\u8d62\u3002"),
+    "scn_campaign_ww2_04_south_seas": ("1942 \u00b7 The South Seas", "1942 \u00b7 \u5357\u6d0b", "1942 \u00b7 \u5357\u6d0b"),
+    "scn_campaign_ww2_04_south_seas_desc": (
+        "Nothing here is reachable on foot. Carriers buy the sky, transports carry the infantry, and a landing missing either one is a drowning.",
+        "\u9019\u88e1\u6c92\u6709\u4e00\u500b\u76ee\u6a19\u8d70\u5f97\u5230\u3002\u822a\u8266\u8cb7\u4e0b\u5929\u7a7a\uff0c\u904b\u8f38\u8266\u8f09\u8457\u6b65\u5175\uff0c\u5169\u8005\u7f3a\u4e00\u7684\u767b\u9678\u53eb\u6eba\u6c34\u3002",
+        "\u8fd9\u91cc\u6ca1\u6709\u4e00\u4e2a\u76ee\u6807\u8d70\u5f97\u5230\u3002\u822a\u8230\u4e70\u4e0b\u5929\u7a7a\uff0c\u8fd0\u8f93\u8230\u8f7d\u7740\u6b65\u5175\uff0c\u4e24\u8005\u7f3a\u4e00\u7684\u767b\u9646\u53eb\u6eba\u6c34\u3002"),
+    "scn_campaign_ww2_05_east_front": ("1943 \u00b7 Eastern Front", "1943 \u00b7 \u6771\u7dda", "1943 \u00b7 \u4e1c\u7ebf"),
+    "scn_campaign_ww2_05_east_front_desc": (
+        "The numbers are yours now and the better tanks are still theirs. Do not trade evenly \u2014 surround. A unit with enemies on four sides falls apart.",
+        "\u73fe\u5728\u6578\u91cf\u5728\u4f60\u9019\u908a\uff0c\u597d\u5766\u514b\u9084\u5728\u5c0d\u9762\u3002\u4e0d\u8981\u5c0d\u7b49\u4ea4\u63db \u2014\u2014 \u5305\u570d\u3002\u56db\u9762\u53d7\u6575\u7684\u90e8\u968a\u6703\u5d29\u6f70\u3002",
+        "\u73b0\u5728\u6570\u91cf\u5728\u4f60\u8fd9\u8fb9\uff0c\u597d\u5766\u514b\u8fd8\u5728\u5bf9\u9762\u3002\u4e0d\u8981\u5bf9\u7b49\u4ea4\u6362 \u2014\u2014 \u5305\u56f4\u3002\u56db\u9762\u53d7\u654c\u7684\u90e8\u961f\u4f1a\u5d29\u6e83\u3002"),
+
+    "scn_campaign_cw_01_suez": ("1956 \u00b7 Suez", "1956 \u00b7 \u8607\u4f0a\u58eb", "1956 \u00b7 \u82cf\u4f0a\u58eb"),
+    "scn_campaign_cw_01_suez_desc": (
+        "The landing arrives from the air before it arrives from the sea. Your tanks are useless against paratroops; your anti-air is not.",
+        "\u767b\u9678\u5f9e\u5929\u4e0a\u5148\u4f86\uff0c\u6d77\u4e0a\u5f8c\u5230\u3002\u4f60\u7684\u5766\u514b\u5c0d\u5098\u5175\u6c92\u7528\uff0c\u4f60\u7684\u9632\u7a7a\u6709\u7528\u3002",
+        "\u767b\u9646\u4ece\u5929\u4e0a\u5148\u6765\uff0c\u6d77\u4e0a\u540e\u5230\u3002\u4f60\u7684\u5766\u514b\u5bf9\u4f1e\u5175\u6ca1\u7528\uff0c\u4f60\u7684\u9632\u7a7a\u6709\u7528\u3002"),
+    "scn_campaign_cw_02_indochina": ("1968 \u00b7 Indochina", "1968 \u00b7 \u5370\u5ea6\u652f\u90a3", "1968 \u00b7 \u5370\u5ea6\u652f\u90a3"),
+    "scn_campaign_cw_02_indochina_desc": (
+        "Every number on their side is bigger, and every one of those things has to fly in. Keep the sky expensive and the jungle handles the rest.",
+        "\u5c0d\u9762\u6bcf\u4e00\u9805\u6578\u64da\u90fd\u6bd4\u4f60\u5927\uff0c\u800c\u90a3\u4e9b\u6771\u897f\u90fd\u5f97\u98db\u9032\u4f86\u3002\u8b93\u5929\u7a7a\u8b8a\u8cb4\uff0c\u53e2\u6797\u6703\u8655\u7406\u5269\u4e0b\u7684\u3002",
+        "\u5bf9\u9762\u6bcf\u4e00\u9879\u6570\u636e\u90fd\u6bd4\u4f60\u5927\uff0c\u800c\u90a3\u4e9b\u4e1c\u897f\u90fd\u5f97\u98de\u8fdb\u6765\u3002\u8ba9\u5929\u7a7a\u53d8\u8d35\uff0c\u4e1b\u6797\u4f1a\u5904\u7406\u5269\u4e0b\u7684\u3002"),
+    "scn_campaign_cw_03_central_front": ("1985 \u00b7 Central Front", "1985 \u00b7 \u4e2d\u6b50\u6b63\u9762", "1985 \u00b7 \u4e2d\u6b27\u6b63\u9762"),
+    "scn_campaign_cw_03_central_front_desc": (
+        "Six allied flags, one army you actually command. The others buy you turns \u2014 those are to be spent, not saved. Hold three cities to turn 30.",
+        "\u516d\u9762\u76df\u65d7\uff0c\u4f46\u4f60\u53ea\u6307\u63ee\u5f97\u52d5\u4e00\u652f\u8ecd\u968a\u3002\u5176\u4ed6\u4eba\u66ff\u4f60\u63db\u56de\u5408 \u2014\u2014 \u90a3\u662f\u62ff\u4f86\u82b1\u7684\uff0c\u4e0d\u662f\u62ff\u4f86\u5b58\u7684\u3002\u5b88\u4f4f\u4e09\u5ea7\u57ce\u5230\u7b2c 30 \u56de\u5408\u3002",
+        "\u516d\u9762\u76df\u65d7\uff0c\u4f46\u4f60\u53ea\u6307\u6325\u5f97\u52a8\u4e00\u652f\u519b\u961f\u3002\u5176\u4ed6\u4eba\u66ff\u4f60\u6362\u56de\u5408 \u2014\u2014 \u90a3\u662f\u62ff\u6765\u82b1\u7684\uff0c\u4e0d\u662f\u62ff\u6765\u5b58\u7684\u3002\u5b88\u4f4f\u4e09\u5ea7\u57ce\u5230\u7b2c 30 \u56de\u5408\u3002"),
 }
 
 

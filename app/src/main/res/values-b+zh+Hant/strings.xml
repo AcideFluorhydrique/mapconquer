@@ -250,16 +250,24 @@
     <string name="scn_conquest_modern_desc">地圖上所有國家，開局全部和平。挑一個，然後決定誰先動手。</string>
     <string name="scn_conquest_empires">帝國時代</string>
     <string name="scn_conquest_empires_desc">同一個世界，被切成二十來個橫跨大洋的帝國。玩家更少，戰線大得多。</string>
-    <string name="scn_campaign_01_first_contact">演習一 · 初次接敵</string>
-    <string name="scn_campaign_01_first_contact_desc">藍軍據有島嶼，紅軍在對岸。渡過海峽，拿下對面的兩座港口。</string>
-    <string name="scn_campaign_02_desert_supply">演習二 · 沙漠補給</string>
-    <string name="scn_campaign_02_desert_supply_desc">橫越開闊沙漠的長程推進。敵人不是問題，距離才是。</string>
-    <string name="scn_campaign_03_island_chain">演習三 · 島鏈作戰</string>
-    <string name="scn_campaign_03_island_chain_desc">這裡沒有一個目標走得到。護住運輸艦、奪下制空，然後登陸。</string>
-    <string name="scn_campaign_04_defence_in_depth">演習四 · 縱深防禦</string>
-    <string name="scn_campaign_04_defence_in_depth_desc">紅軍的裝甲更好也更多。挖好壕溝、守住兩座城，讓對方的攻勢自己耗盡。</string>
-    <string name="scn_campaign_05_mountain_offensive">演習五 · 山地攻勢</string>
-    <string name="scn_campaign_05_mountain_offensive_desc">到處都是高地。輪車與履帶跟不上來 —— 這一關是山地部隊的舞台。</string>
+    <string name="scn_campaign_00_exercise">演習 · 山地行軍</string>
+    <string name="scn_campaign_00_exercise_desc">安地斯高地上的兩支演習部隊。在動真格之前，先學會行軍、築壕、拿下一座城。</string>
+    <string name="scn_campaign_ww2_01_poland">1939 · 波蘭</string>
+    <string name="scn_campaign_ww2_01_poland_desc">裝甲、飛機、人數，你樣樣都少。這一關贏不了，但可以讓對方付出代價：守住華沙到第 20 回合。</string>
+    <string name="scn_campaign_ww2_02_france">1940 · 法蘭西</string>
+    <string name="scn_campaign_ww2_02_france_desc">裝甲不是用來磨穿戰線的，是用來灌進缺口的。撕開正面，然後別停 —— 突擊部隊打掉目標之後還能再打一次。</string>
+    <string name="scn_campaign_ww2_03_desert">1942 · 西部沙漠</string>
+    <string name="scn_campaign_ww2_03_desert_desc">這裡沒有掩蔽，也沒有補給。單位對單位你打不贏非洲軍，但到的黎波里的距離會替你打贏。</string>
+    <string name="scn_campaign_ww2_04_south_seas">1942 · 南洋</string>
+    <string name="scn_campaign_ww2_04_south_seas_desc">這裡沒有一個目標走得到。航艦買下天空，運輸艦載著步兵，兩者缺一的登陸叫溺水。</string>
+    <string name="scn_campaign_ww2_05_east_front">1943 · 東線</string>
+    <string name="scn_campaign_ww2_05_east_front_desc">現在數量在你這邊，好坦克還在對面。不要對等交換 —— 包圍。四面受敵的部隊會崩潰。</string>
+    <string name="scn_campaign_cw_01_suez">1956 · 蘇伊士</string>
+    <string name="scn_campaign_cw_01_suez_desc">登陸從天上先來，海上後到。你的坦克對傘兵沒用，你的防空有用。</string>
+    <string name="scn_campaign_cw_02_indochina">1968 · 印度支那</string>
+    <string name="scn_campaign_cw_02_indochina_desc">對面每一項數據都比你大，而那些東西都得飛進來。讓天空變貴，叢林會處理剩下的。</string>
+    <string name="scn_campaign_cw_03_central_front">1985 · 中歐正面</string>
+    <string name="scn_campaign_cw_03_central_front_desc">六面盟旗，但你只指揮得動一支軍隊。其他人替你換回合 —— 那是拿來花的，不是拿來存的。守住三座城到第 30 回合。</string>
 
     <!-- Nations -->
     <string name="nation_afg">阿富汗</string>
@@ -372,7 +380,6 @@
     <string name="nation_aut_hu">多瑙帝國</string>
     <string name="nation_bel_congo">剛果公司</string>
     <string name="nation_blu">藍軍</string>
-    <string name="nation_grn">綠軍</string>
     <string name="nation_red">紅軍</string>
 
     <!-- Provinces -->
