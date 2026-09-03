@@ -113,10 +113,15 @@
     <string name="difficulty_officer">Officer</string>
     <string name="difficulty_commander">Commander</string>
     <string name="difficulty_marshal">Marshal</string>
-    <string name="ai_turtle">Defensive</string>
-    <string name="ai_balanced">Balanced</string>
-    <string name="ai_aggressive">Aggressive</string>
-    <string name="ai_opportunist">Opportunist</string>
+    <string name="bloc_axis">Axis</string>
+    <string name="bloc_allies">Allies</string>
+    <string name="bloc_west">Western bloc</string>
+    <string name="bloc_east">Eastern bloc</string>
+    <string name="bloc_nato">NATO</string>
+    <string name="bloc_pact">Warsaw Pact</string>
+    <string name="bloc_blue">Blue Force</string>
+    <string name="bloc_red">Red Force</string>
+    <string name="bloc_neutral">Neutral</string>
     <string name="tech_infantry">Infantry</string>
     <string name="tech_armour">Armour</string>
     <string name="tech_artillery">Artillery</string>
@@ -247,7 +252,7 @@
 
     <!-- Scenarios -->
     <string name="scn_conquest_1939">1939 · The World</string>
-    <string name="scn_conquest_1939_desc">The world as the empires held it: Africa and southern Asia belong to London, Paris and Rome rather than to themselves. Everyone starts at peace. Pick anyone.</string>
+    <string name="scn_conquest_1939_desc">The world as the empires held it: Africa and southern Asia belong to London, Paris and Rome rather than to themselves. Axis and Allies are already at war; everyone else is watching. Pick anyone.</string>
     <string name="scn_conquest_empires">Age of Empires</string>
     <string name="scn_conquest_empires_desc">The same world carved into two dozen sprawling empires. Fewer players, far bigger fronts.</string>
     <string name="scn_campaign_00_exercise">Exercise · Mountain March</string>

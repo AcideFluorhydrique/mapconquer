@@ -81,6 +81,42 @@ class ScenarioAssetTest {
         }
     }
 
+    /**
+     * 陣營是關係表的來源，不是關係表的註解。
+     *
+     * 交戰關係由陣營推導出來（見 tools/genworld.py 的 bloc_wars），所以這裡
+     * 反過來驗：同陣營之間不該有任何 WAR，不同陣營之間每一對都要有。
+     * 手寫關係表最典型的漏就是「對法國宣戰了但忘了對比利時宣戰」。
+     */
+    @Test
+    fun `blocs and declared wars agree with each other`() {
+        for (id in TestAssets.scenarioIds()) {
+            val scenario = TestAssets.scenario(id)
+            val bloc = scenario.nations.associate { it.code to it.bloc }
+            val atWar = HashSet<String>()
+            for ((a, b, relation) in scenario.relations) {
+                if (relation != Relation.WAR) continue
+                atWar.add(if (a < b) "$a|$b" else "$b|$a")
+                val blocA = bloc[a].orEmpty()
+                val blocB = bloc[b].orEmpty()
+                assertTrue(
+                    "$id: $a 與 $b 同屬 $blocA 卻在交戰",
+                    blocA.isEmpty() || blocA != blocB
+                )
+            }
+            val aligned = scenario.nations.filter { it.bloc.isNotEmpty() }
+            for (x in aligned) {
+                for (y in aligned) {
+                    if (x.code >= y.code || x.bloc == y.bloc) continue
+                    assertTrue(
+                        "$id: ${x.code}(${x.bloc}) 與 ${y.code}(${y.bloc}) 分屬敵對陣營卻沒有交戰",
+                        atWar.contains("${x.code}|${y.code}")
+                    )
+                }
+            }
+        }
+    }
+
     @Test
     fun `campaign missions declare objectives and a turn limit`() {
         for (id in TestAssets.scenarioIds().filter { it.startsWith("campaign") }) {

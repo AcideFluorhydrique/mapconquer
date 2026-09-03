@@ -198,6 +198,15 @@ def main():
             problems.append(f"{rel(path)}: 大括號不平衡 {code.count('{')} vs {code.count('}')}")
         if code.count("(") != code.count(")"):
             problems.append(f"{rel(path)}: 小括號不平衡 {code.count('(')} vs {code.count(')')}")
+        # Kotlin 沒有 # 註解。這一行是在 Python 與 Kotlin 之間來回改檔時漏掉的
+        # 手誤，編譯器會擋，但要等到 CI 跑完才知道 —— 這裡兩秒就抓到。
+        # 看的是剝掉字串與註解之後的碼，所以 "#FFD98A" 這種顏色值不會誤報。
+        for number, line in enumerate(code.splitlines(), 1):
+            if line.lstrip().startswith("#"):
+                problems.append(
+                    f"{rel(path)}:{number}: 這一行以 # 開頭 —— "
+                    f"Kotlin 的註解是 //，# 是從 Python 帶過來的"
+                )
         if "app/src/main/java" in path:
             package = re.search(r"^package\s+([\w.]+)", code, re.M)
             if package:

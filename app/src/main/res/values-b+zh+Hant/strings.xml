@@ -113,10 +113,15 @@
     <string name="difficulty_officer">軍官</string>
     <string name="difficulty_commander">指揮官</string>
     <string name="difficulty_marshal">元帥</string>
-    <string name="ai_turtle">固守</string>
-    <string name="ai_balanced">穩健</string>
-    <string name="ai_aggressive">侵略</string>
-    <string name="ai_opportunist">投機</string>
+    <string name="bloc_axis">軸心國</string>
+    <string name="bloc_allies">同盟國</string>
+    <string name="bloc_west">西方陣營</string>
+    <string name="bloc_east">東方陣營</string>
+    <string name="bloc_nato">北約</string>
+    <string name="bloc_pact">華約</string>
+    <string name="bloc_blue">藍方</string>
+    <string name="bloc_red">紅方</string>
+    <string name="bloc_neutral">中立</string>
     <string name="tech_infantry">步兵</string>
     <string name="tech_armour">裝甲</string>
     <string name="tech_artillery">火炮</string>
@@ -247,7 +252,7 @@
 
     <!-- Scenarios -->
     <string name="scn_conquest_1939">1939 · 全球</string>
-    <string name="scn_conquest_1939_desc">帝國手中的世界：非洲與南亞不屬於自己，屬於倫敦、巴黎與羅馬。開局全部和平，想選誰都行。</string>
+    <string name="scn_conquest_1939_desc">帝國手中的世界：非洲與南亞不屬於自己，屬於倫敦、巴黎與羅馬。軸心與同盟已經開戰，其餘國家在旁邊看。想選誰都行。</string>
     <string name="scn_conquest_empires">帝國時代</string>
     <string name="scn_conquest_empires_desc">同一個世界，被切成二十來個橫跨大洋的帝國。玩家更少，戰線大得多。</string>
     <string name="scn_campaign_00_exercise">演習 · 山地行軍</string>

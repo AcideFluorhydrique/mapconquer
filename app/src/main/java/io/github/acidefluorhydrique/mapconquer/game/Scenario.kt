@@ -62,7 +62,14 @@ class ScenarioNation(
     val funds: Int,
     val tech: IntArray,
     /** 區域指示符 emoji，交給系統字型畫。空字串代表沒有國旗。 */
-    val flag: String = ""
+    val flag: String = "",
+    /**
+     * 陣營代碼（AXIS、ALLIES、NATO、PACT）。空字串代表中立。
+     *
+     * 陣營是「這一年誰跟誰站在一起」，跟 [aiProfile] 是兩回事：性格決定
+     * 一個國家怎麼打，陣營決定它會不會對某個對象開打。
+     */
+    val bloc: String = ""
 )
 
 class ScenarioUnit(

@@ -304,10 +304,12 @@ class MenuRenderer {
                 inner.centerX(), inner.top + Ui.dp(48f), Ui.dp(9.5f), cardWidth - Ui.dp(10f),
                 color = Colors.of(Widgets.INK_DIM)
             )
+            // 陣營而不是 AI 性格。玩家要決定的是「我站哪一邊」，
+            // 「侵略」「穩健」這種詞描述的是對手怎麼打，那是打起來之後的事。
             Widgets.centeredFit(
-                canvas, Strings.byName("ai_" + nation.aiProfile.name.lowercase()),
+                canvas, Strings.byName(Palette.blocNameKey(nation.bloc)),
                 inner.centerX(), inner.top + Ui.dp(60f), Ui.dp(9f), cardWidth - Ui.dp(10f),
-                color = Colors.of("#7F93A6")
+                bold = true, color = Palette.blocColour(nation.bloc)
             )
             buttons.add(ID_NATION, inner, payload = i)
         }

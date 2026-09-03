@@ -107,6 +107,9 @@ class AiPlayer(private val session: Session, private val nationId: Int) {
             if (other == nationId) continue
             val candidate = session.nations[other]
             if (candidate.eliminated) continue
+            // 同陣營不互打。沒有這一條，1939 年的德國會因為義大利弱而吃掉它 ——
+            // 玩家看到的是一張標著「軸心」卻在內鬥的地圖。
+            if (session.sameBloc(nationId, other)) continue
             if (session.diplomacy.relation(nationId, other) != Relation.PEACE) continue
             if (session.diplomacy.truceLeft(nationId, other) > 0) continue
 

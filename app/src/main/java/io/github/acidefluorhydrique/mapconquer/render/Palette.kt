@@ -29,6 +29,24 @@ object Palette {
     val ATTACK_RANGE: Int get() = Colors.of("#59E86A4C")
     val SUPPLY_HINT: Int get() = Colors.of("#3358C08A")
 
+    /**
+     * 陣營色。
+     *
+     * 刻意不用國色：陣營的重點是「站在哪一邊」，而國色的重點是「是哪一國」，
+     * 兩者要能同時讀出來。所以陣營只用四個高辨識度的色，跟一百多個國色分開。
+     */
+    fun blocColour(bloc: String): Int = when (bloc) {
+        "AXIS" -> Colors.of("#C9922F")
+        "ALLIES" -> Colors.of("#5A93C4")
+        "NATO" -> Colors.of("#5A93C4")
+        "PACT" -> Colors.of("#C4565A")
+        else -> Colors.of("#7F93A6")
+    }
+
+    /** 陣營的翻譯鍵；空字串（中立）也有自己的字串。 */
+    fun blocNameKey(bloc: String): String =
+        if (bloc.isEmpty()) "bloc_neutral" else "bloc_" + bloc.lowercase()
+
     /** 依格子索引做一點明暗抖動，成本只有一次乘法與位移。 */
     fun terrainColour(terrain: Terrain, tile: Int): Int {
         val base = Colors.of(terrain.fill)

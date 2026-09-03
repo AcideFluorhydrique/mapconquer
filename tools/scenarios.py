@@ -10,6 +10,10 @@
 開頭留了一關演習，用藍軍／紅軍。那一關的目的是教操作而不是講故事，
 掛上真實國名反而會讓人以為它在重演某場戰役。
 
+陣營就是原版的那兩邊：二戰是軸心對盟國，冷戰的代理人戰爭是西方對東方，
+1985 年是北約對華約。交戰關係由陣營推導，不逐對手寫 —— 手寫的版本
+遲早會出現「德國對法國宣戰但忘了對比利時宣戰」這種漏。
+
 每一關都挑一件事來教，並且盡量讓史實本身就是那件事的最佳範例：
 1939 波蘭是寡不敵眾的縱深防禦，1940 法國是裝甲突破，1942 南洋是航艦與
 兩棲，1956 蘇伊士是空降加防空，1968 印度支那是拿防空吃制空。
@@ -17,11 +21,6 @@
 中立國照史實擺進去（瑞士、瑞典、西班牙、土耳其、愛爾蘭、奧地利）：
 它們有城市、有守軍、不宣戰，但擋在路上 —— 繞過去還是打過去是玩家的選擇。
 """
-
-
-def versus(left, right):
-    """兩個陣營之間全部互相宣戰。"""
-    return [(a, b) for a in left for b in right]
 
 
 # 代碼 → (English, 正體, 简体, 顏色, 開局資金, AI 性格)
@@ -50,7 +49,7 @@ CAMPAIGN = [
             "BLU": ["prov_lima", "prov_cusco", "prov_quito", "prov_guayaquil"],
             "RED": ["prov_santiago", "prov_la_paz", "prov_antofagasta"],
         },
-        "wars": [("BLU", "RED")],
+        "blocs": {"BLUE": ["BLU"], "RED": ["RED"]},
         "roster": {
             "BLU": [("MOUNTAIN_INFANTRY", 2, 4), ("ARTILLERY", 1, 2),
                     ("SUPPLY_TRUCK", 1, 1), ("RECON", 1, 1)],
@@ -78,7 +77,7 @@ CAMPAIGN = [
             "RUS": ["prov_moscow", "prov_minsk", "prov_riga"],
             "SWE": ["prov_stockholm"],
         },
-        "wars": [("DEU", "POL")],
+        "blocs": {"AXIS": ["DEU"], "ALLIES": ["POL"]},
         "funds": {"POL": 700, "DEU": 1500, "RUS": 600, "SWE": 400},
         "ai": {"DEU": "AGGRESSIVE", "RUS": "TURTLE", "SWE": "TURTLE"},
         "tech": {"DEU": [3, 3, 2, 1, 0, 2], "POL": [1, 1, 1, 0, 0, 1]},
@@ -110,7 +109,7 @@ CAMPAIGN = [
             "CHE": ["prov_zurich"],
             "ESP": ["prov_madrid", "prov_barcelona"],
         },
-        "wars": versus(["DEU"], ["FRA", "GBR", "BEL", "NLD"]),
+        "blocs": {"AXIS": ["DEU"], "ALLIES": ["FRA", "GBR", "BEL", "NLD"]},
         "funds": {"DEU": 1600, "FRA": 1100, "GBR": 1000, "BEL": 400, "NLD": 400,
                   "CHE": 500, "ESP": 500},
         "ai": {"FRA": "TURTLE", "GBR": "BALANCED", "CHE": "TURTLE", "ESP": "TURTLE"},
@@ -146,7 +145,7 @@ CAMPAIGN = [
             "TUR": ["prov_ankara", "prov_izmir"],
             "ESP": ["prov_seville", "prov_casablanca"],
         },
-        "wars": versus(["GBR"], ["ITA", "DEU"]),
+        "blocs": {"AXIS": ["ITA", "DEU"], "ALLIES": ["GBR"]},
         "funds": {"GBR": 1300, "ITA": 800, "DEU": 1000, "TUR": 500, "ESP": 500},
         "ai": {"DEU": "AGGRESSIVE", "ITA": "BALANCED", "TUR": "TURTLE", "ESP": "TURTLE"},
         "roster": {
@@ -178,7 +177,7 @@ CAMPAIGN = [
             "NLD": ["prov_jakarta", "prov_surabaya", "prov_medan"],
             "THA": ["prov_bangkok", "prov_chiang_mai"],
         },
-        "wars": versus(["JPN"], ["USA", "GBR", "NLD"]),
+        "blocs": {"AXIS": ["JPN"], "ALLIES": ["USA", "GBR", "NLD"]},
         "funds": {"JPN": 1700, "USA": 1100, "GBR": 1100, "NLD": 600, "THA": 500},
         "ai": {"USA": "BALANCED", "GBR": "TURTLE", "NLD": "TURTLE", "THA": "TURTLE"},
         "tech": {"JPN": [2, 1, 3, 3, 0, 2]},
@@ -212,7 +211,7 @@ CAMPAIGN = [
             "TUR": ["prov_istanbul"],
             "SWE": ["prov_stockholm"],
         },
-        "wars": [("RUS", "DEU")],
+        "blocs": {"AXIS": ["DEU"], "ALLIES": ["RUS"]},
         "funds": {"RUS": 1800, "DEU": 1600, "TUR": 500, "SWE": 400},
         "ai": {"DEU": "OPPORTUNIST", "TUR": "TURTLE", "SWE": "TURTLE"},
         "tech": {"RUS": [2, 2, 1, 0, 0, 2], "DEU": [3, 3, 2, 1, 0, 2]},
@@ -246,7 +245,7 @@ CAMPAIGN = [
             "ISR": ["prov_jerusalem"],
             "SAU": ["prov_jeddah"],
         },
-        "wars": versus(["EGY"], ["FRA", "ISR"]),
+        "blocs": {"WEST": ["FRA", "ISR"], "EAST": ["EGY"]},
         "funds": {"EGY": 1100, "FRA": 1400, "ISR": 900, "SAU": 500},
         "ai": {"FRA": "AGGRESSIVE", "ISR": "AGGRESSIVE", "SAU": "TURTLE"},
         "tech": {"FRA": [2, 2, 3, 2, 0, 2], "EGY": [1, 1, 1, 3, 0, 1]},
@@ -275,7 +274,7 @@ CAMPAIGN = [
             "THA": ["prov_bangkok", "prov_chiang_mai"],
             "KHM": ["prov_phnom_penh"],
         },
-        "wars": versus(["VNM"], ["USA", "THA"]),
+        "blocs": {"WEST": ["USA", "THA"], "EAST": ["VNM"]},
         "funds": {"VNM": 1200, "USA": 2000, "THA": 600, "KHM": 400},
         "ai": {"USA": "AGGRESSIVE", "THA": "TURTLE", "KHM": "TURTLE"},
         "tech": {"USA": [3, 3, 3, 2, 0, 3], "VNM": [1, 1, 1, 3, 0, 1]},
@@ -316,7 +315,7 @@ CAMPAIGN = [
             "SWE": ["prov_stockholm"],
             "IRL": ["prov_dublin"],
         },
-        "wars": versus(PACT_85, NATO_85),
+        "blocs": {"NATO": NATO_85, "PACT": PACT_85},
         "funds": {"DEU": 1600, "FRA": 1200, "GBR": 1200, "NLD": 500, "BEL": 500,
                   "DNK": 500, "RUS": 2200, "POL": 800, "CZE": 600, "HUN": 500,
                   "CHE": 500, "AUT": 400, "SWE": 500, "IRL": 300},

@@ -88,7 +88,7 @@ class Session(
         scenario.nations.forEachIndexed { index, sn ->
             val nation = Nation(
                 index, sn.code, sn.nameKey, sn.colour,
-                sn.aiProfile, sn.capitalProvince, sn.flag
+                sn.aiProfile, sn.capitalProvince, sn.flag, sn.bloc
             )
             nation.funds = sn.funds
             for (i in sn.tech.indices) {
@@ -665,6 +665,17 @@ class Session(
     // ------------------------------------------------------------------
     // 劇本展開
     // ------------------------------------------------------------------
+
+    /**
+     * 兩國是否同一陣營。
+     *
+     * 中立（空字串）不算陣營：兩個中立國之間沒有任何默契，瑞士不會因為
+     * 瑞典也中立就不打它。只有具名的陣營才互相約束。
+     */
+    fun sameBloc(a: Int, b: Int): Boolean {
+        val blocA = nations.getOrNull(a)?.bloc ?: return false
+        return blocA.isNotEmpty() && blocA == nations.getOrNull(b)?.bloc
+    }
 
     private fun applyScenarioRelations() {
         for ((a, b, relation) in scenario.relations) {

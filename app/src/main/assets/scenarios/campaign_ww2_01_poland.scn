@@ -13,10 +13,10 @@ startYear 1939
 starTurns 18,22
 
 [nations]
-POL|nation_pol|#B4535C|23|BALANCED|700|1,1,1,0,0,1|🇵🇱
-DEU|nation_deu|#6E7A86|17|AGGRESSIVE|1500|3,3,2,1,0,2|🇩🇪
-RUS|nation_rus|#8C6E4C|39|TURTLE|600|1,1,1,0,0,1|🇷🇺
-SWE|nation_swe|#4C6E9E|30|TURTLE|400|1,1,1,0,0,1|🇸🇪
+POL|nation_pol|#B4535C|23|BALANCED|700|1,1,1,0,0,1|🇵🇱|ALLIES
+DEU|nation_deu|#6E7A86|17|AGGRESSIVE|1500|3,3,2,1,0,2|🇩🇪|AXIS
+RUS|nation_rus|#8C6E4C|39|TURTLE|600|1,1,1,0,0,1|🇷🇺|
+SWE|nation_swe|#4C6E9E|30|TURTLE|400|1,1,1,0,0,1|🇸🇪|
 
 [relations]
 DEU POL WAR

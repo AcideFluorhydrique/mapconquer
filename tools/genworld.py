@@ -329,7 +329,7 @@ def garrison_lines(built, owners, nation_funds):
 
 
 def write_conquest(built, scenario_id, name_key, desc_key, order, merge,
-                   start_year, turtle=None):
+                   start_year, turtle=None, blocs=None):
     """把 places 的國家分佈展開成一份征服劇本。"""
     owners = {}
     for pid, (_key, _tier, nation, _tile) in enumerate(built.provinces):
@@ -373,11 +373,17 @@ def write_conquest(built, scenario_id, name_key, desc_key, order, merge,
             profile = "TURTLE"
         funds = nation_funds[code]
         capital = max(owners[code], key=lambda pid: built.provinces[pid][1])
-        lines.append("%s|nation_%s|%s|%d|%s|%d|%s|%s" % (
+        lines.append("%s|nation_%s|%s|%d|%s|%d|%s|%s|%s" % (
             code, code.lower(), colour, capital, profile, funds,
             ",".join(str(v) for v in tech_for(funds)),
             places.FLAGS.get(code, ""),
+            bloc_of(code, blocs),
         ))
+    wars = bloc_wars(blocs, set(ordered))
+    if wars:
+        lines.append("")
+        lines.append("[relations]")
+        lines.extend(wars)
     lines.append("")
     lines.append("[owners]")
     for code in ordered:
@@ -397,6 +403,31 @@ def write_conquest(built, scenario_id, name_key, desc_key, order, merge,
     with open(path, "w", encoding="utf-8") as fh:
         fh.write("\n".join(lines) + "\n")
     return path
+
+
+def bloc_of(code, blocs):
+    """一個國家屬於哪個陣營；沒列到的是中立。"""
+    if not blocs:
+        return ""
+    for name, members in blocs.items():
+        if code in members:
+            return name
+    return ""
+
+
+def bloc_wars(blocs, present):
+    """不同陣營之間全部互相宣戰；同陣營與中立維持和平。"""
+    if not blocs:
+        return []
+    names = [n for n in blocs]
+    lines = []
+    for i, a in enumerate(names):
+        for b in names[i + 1:]:
+            for x in blocs[a]:
+                for y in blocs[b]:
+                    if x in present and y in present:
+                        lines.append("%s %s WAR" % (x, y))
+    return lines
 
 
 def campaign_profile(code, mission):
@@ -454,15 +485,15 @@ def write_campaign(built, mission):
     for code in owners:
         colour, funds, profile = campaign_profile(code, mission)
         capital = max(owners[code], key=lambda pid: built.provinces[pid][1]) if owners[code] else -1
-        lines.append("%s|nation_%s|%s|%d|%s|%d|%s|%s" % (
+        lines.append("%s|nation_%s|%s|%d|%s|%d|%s|%s|%s" % (
             code, code.lower(), colour, capital, profile, funds,
             ",".join(str(v) for v in mission.get("tech", {}).get(code, [1, 1, 1, 0, 0, 1])),
             places.FLAGS.get(code, ""),
+            bloc_of(code, mission["blocs"]),
         ))
     lines.append("")
     lines.append("[relations]")
-    for a, b in mission["wars"]:
-        lines.append("%s %s WAR" % (a, b))
+    lines.extend(bloc_wars(mission["blocs"], set(owners)))
     lines.append("")
     lines.append("[owners]")
     for code, ids in owners.items():
@@ -620,7 +651,7 @@ def main():
                          "scn_conquest_empires_desc", 10, places.EMPIRE_MERGE, 1900))
     print(write_conquest(world, "conquest_1939", "scn_conquest_1939",
                          "scn_conquest_1939_desc", 20, places.WW2_MERGE, 1939,
-                         turtle=places.WW2_NEUTRALS))
+                         turtle=places.WW2_NEUTRALS, blocs=places.WW2_BLOCS))
 
     for mission in scn.CAMPAIGN:
         built = built_maps[mission["map"]]

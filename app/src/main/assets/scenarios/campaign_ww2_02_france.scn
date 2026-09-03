@@ -13,13 +13,13 @@ startYear 1940
 starTurns 16,22
 
 [nations]
-DEU|nation_deu|#6E7A86|17|AGGRESSIVE|1600|3,3,2,1,0,2|🇩🇪
-FRA|nation_fra|#4C5C9E|4|TURTLE|1100|2,1,2,0,0,1|🇫🇷
-GBR|nation_gbr|#8C4C4C|0|BALANCED|1000|1,1,1,0,0,1|🇬🇧
-BEL|nation_bel|#9E8C4C|7|TURTLE|400|1,1,1,0,0,1|🇧🇪
-NLD|nation_nld|#C4813C|8|TURTLE|400|1,1,1,0,0,1|🇳🇱
-CHE|nation_che|#B45C5C|16|TURTLE|500|1,1,1,0,0,1|🇨🇭
-ESP|nation_esp|#B08A3C|9|TURTLE|500|1,1,1,0,0,1|🇪🇸
+DEU|nation_deu|#6E7A86|17|AGGRESSIVE|1600|3,3,2,1,0,2|🇩🇪|AXIS
+FRA|nation_fra|#4C5C9E|4|TURTLE|1100|2,1,2,0,0,1|🇫🇷|ALLIES
+GBR|nation_gbr|#8C4C4C|0|BALANCED|1000|1,1,1,0,0,1|🇬🇧|ALLIES
+BEL|nation_bel|#9E8C4C|7|TURTLE|400|1,1,1,0,0,1|🇧🇪|ALLIES
+NLD|nation_nld|#C4813C|8|TURTLE|400|1,1,1,0,0,1|🇳🇱|ALLIES
+CHE|nation_che|#B45C5C|16|TURTLE|500|1,1,1,0,0,1|🇨🇭|
+ESP|nation_esp|#B08A3C|9|TURTLE|500|1,1,1,0,0,1|🇪🇸|
 
 [relations]
 DEU FRA WAR

@@ -5,7 +5,10 @@ package io.github.acidefluorhydrique.mapconquer.game
 
 import io.github.acidefluorhydrique.mapconquer.units.TechBranch
 
-/** AI 性格。同一張劇本因為性格分佈不同，每次開局的世界局勢就會不一樣。 */
+/**
+ * AI 性格：一個國家**怎麼**打。它不決定**跟誰**打 —— 那是陣營的事，
+ * 見 [Nation.bloc]。
+ */
 enum class AiProfile {
     /** 守成：只在被打時反擊，優先補防線。 */
     TURTLE,
@@ -41,7 +44,15 @@ class Nation(
      * APK 裡不必放任何素材，而在缺 emoji 字型的裝置上會退化成兩個字母 DE，
      * 仍然認得出是哪一國 —— 等於免費附帶一個合理的 fallback。
      */
-    val flag: String = ""
+    val flag: String = "",
+    /**
+     * 陣營代碼，空字串代表中立。
+     *
+     * 這是玩家看得懂的那一層：「軸心」「同盟」「北約」「華約」。
+     * [aiProfile] 只描述打法，講不出立場 —— 一張 1939 年的地圖上，
+     * 德國與義大利都可以是侵略性格，但它們不會互相宣戰。
+     */
+    val bloc: String = ""
 ) {
     var funds: Int = 0
 

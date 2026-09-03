@@ -168,10 +168,15 @@ UI = {
     "difficulty_marshal": ("Marshal", "元帥", "元帅"),
 
     # AI 性格
-    "ai_turtle": ("Defensive", "固守", "固守"),
-    "ai_balanced": ("Balanced", "穩健", "稳健"),
-    "ai_aggressive": ("Aggressive", "侵略", "侵略"),
-    "ai_opportunist": ("Opportunist", "投機", "投机"),
+    "bloc_axis":    ("Axis",         "軸心國",   "轴心国"),
+    "bloc_allies":  ("Allies",       "同盟國",   "同盟国"),
+    "bloc_west":    ("Western bloc", "西方陣營", "西方阵营"),
+    "bloc_east":    ("Eastern bloc", "東方陣營", "东方阵营"),
+    "bloc_nato":    ("NATO",         "北約",     "北约"),
+    "bloc_pact":    ("Warsaw Pact",  "華約",     "华约"),
+    "bloc_blue":    ("Blue Force",   "藍方",     "蓝方"),
+    "bloc_red":     ("Red Force",    "紅方",     "红方"),
+    "bloc_neutral": ("Neutral",      "中立",     "中立"),
 
     # 研發分支
     "tech_infantry": ("Infantry", "步兵", "步兵"),
@@ -406,9 +411,9 @@ COMMANDERS = {
 SCENARIO_TEXT = {
     "scn_conquest_1939": ("1939 · The World", "1939 · 全球", "1939 · 全球"),
     "scn_conquest_1939_desc": (
-        "The world as the empires held it: Africa and southern Asia belong to London, Paris and Rome rather than to themselves. Everyone starts at peace. Pick anyone.",
-        "帝國手中的世界：非洲與南亞不屬於自己，屬於倫敦、巴黎與羅馬。開局全部和平，想選誰都行。",
-        "帝国手中的世界：非洲与南亚不属于自己，属于伦敦、巴黎与罗马。开局全部和平，想选谁都行。"),
+        "The world as the empires held it: Africa and southern Asia belong to London, Paris and Rome rather than to themselves. Axis and Allies are already at war; everyone else is watching. Pick anyone.",
+        "帝國手中的世界：非洲與南亞不屬於自己，屬於倫敦、巴黎與羅馬。軸心與同盟已經開戰，其餘國家在旁邊看。想選誰都行。",
+        "帝国手中的世界：非洲与南亚不属于自己，属于伦敦、巴黎与罗马。轴心与同盟已经开战，其余国家在旁边看。想选谁都行。"),
     "scn_conquest_empires": ("Age of Empires", "帝國時代", "帝国时代"),
     "scn_conquest_empires_desc": (
         "The same world carved into two dozen sprawling empires. Fewer players, far bigger fronts.",
