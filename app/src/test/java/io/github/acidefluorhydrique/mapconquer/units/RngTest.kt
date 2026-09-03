@@ -45,7 +45,7 @@ class RngTest {
 
     @Test
     fun `string seeds are stable`() {
-        assertEquals(Rng.seedOf("conquest_modern"), Rng.seedOf("conquest_modern"))
+        assertEquals(Rng.seedOf("conquest_1939"), Rng.seedOf("conquest_1939"))
         assertTrue(Rng.seedOf("a") != Rng.seedOf("b"))
     }
 }

@@ -404,11 +404,11 @@ COMMANDERS = {
 }
 
 SCENARIO_TEXT = {
-    "scn_conquest_modern": ("Modern World", "現代世界", "现代世界"),
-    "scn_conquest_modern_desc": (
-        "Every nation on the map, everyone at peace. Pick one and decide who moves first.",
-        "地圖上所有國家，開局全部和平。挑一個，然後決定誰先動手。",
-        "地图上所有国家，开局全部和平。挑一个，然后决定谁先动手。"),
+    "scn_conquest_1939": ("1939 · The World", "1939 · 全球", "1939 · 全球"),
+    "scn_conquest_1939_desc": (
+        "The world as the empires held it: Africa and southern Asia belong to London, Paris and Rome rather than to themselves. Everyone starts at peace. Pick anyone.",
+        "帝國手中的世界：非洲與南亞不屬於自己，屬於倫敦、巴黎與羅馬。開局全部和平，想選誰都行。",
+        "帝国手中的世界：非洲与南亚不属于自己，属于伦敦、巴黎与罗马。开局全部和平，想选谁都行。"),
     "scn_conquest_empires": ("Age of Empires", "帝國時代", "帝国时代"),
     "scn_conquest_empires_desc": (
         "The same world carved into two dozen sprawling empires. Fewer players, far bigger fronts.",

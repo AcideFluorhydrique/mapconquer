@@ -97,7 +97,7 @@ class ConquestSmokeTest {
 
     @Test
     fun `the modern world scenario runs for several full turns`() {
-        val scenario = TestAssets.scenario("conquest_modern")
+        val scenario = TestAssets.scenario("conquest_1939")
         val map = TestAssets.map(scenario.mapId)
         val session = Session(map, scenario, Difficulty.OFFICER, "USA", 20260828L)
 
@@ -168,7 +168,7 @@ class ConquestSmokeTest {
 
     @Test
     fun `supply reaches a nation's own cities and runs out far away`() {
-        val scenario = TestAssets.scenario("conquest_modern")
+        val scenario = TestAssets.scenario("conquest_1939")
         val map = TestAssets.map(scenario.mapId)
         val session = Session(map, scenario, Difficulty.OFFICER, "USA", 3L)
 

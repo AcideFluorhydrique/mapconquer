@@ -419,6 +419,62 @@ EMPIRE_MERGE = {
     "GRL": "DNK", "ISL": "DNK", "NOR": "SWE",
 }
 
+# 1939 年的世界。非洲與南亞在這一年幾乎沒有主權國家 —— 它們是英、法、
+# 義、比、葡的屬地，所以那些省份直接算在宗主國名下。這不只是為了貼近史實：
+# 把非洲攤成三十一個各擁一城的國家，等於在地圖上多放三十一個沒有戲份的
+# 玩家，AI 要跑、顏色要分、玩家要認，換來的是零。
+#
+# 南美洲維持原樣。那裡確實是一堆各自獨立的小國，但它們全部中立，
+# 不會有人被迫記住誰是誰 —— 中立的碎片不礙事，交戰的碎片才礙事。
+WW2_MERGE = {
+    # 大英帝國：自治領、印度、東南亞殖民地、非洲屬地、中東託管地。
+    "CAN": "GBR", "AUS": "GBR", "NZL": "GBR", "ZAF": "GBR", "NAM": "GBR",
+    "IND": "GBR", "PAK": "GBR", "BGD": "GBR", "LKA": "GBR", "NPL": "GBR",
+    "MMR": "GBR", "MYS": "GBR", "SGP": "GBR",
+    "EGY": "GBR", "SDN": "GBR", "KEN": "GBR", "UGA": "GBR", "TZA": "GBR",
+    "NGA": "GBR", "GHA": "GBR", "ZMB": "GBR", "ZWE": "GBR",
+    "ISR": "GBR", "IRQ": "GBR", "ARE": "GBR", "OMN": "GBR", "YEM": "GBR",
+
+    # 法蘭西：北非、西非、印度支那、敘利亞託管地。
+    "DZA": "FRA", "MAR": "FRA", "TUN": "FRA", "SEN": "FRA", "MLI": "FRA",
+    "CIV": "FRA", "TCD": "FRA", "MDG": "FRA", "SYR": "FRA",
+    "VNM": "FRA", "KHM": "FRA",
+
+    # 義大利：利比亞、東非（衣索比亞 1936 年被占領）。
+    "LBY": "ITA", "ETH": "ITA", "SOM": "ITA",
+
+    # 其餘歐洲宗主國。
+    "COD": "BEL",
+    "AGO": "PRT", "MOZ": "PRT",
+    "IDN": "NLD",
+    "GRL": "DNK", "ISL": "DNK",
+    "PNG": "GBR",  # 1939 年是澳洲代管地，不是 1914 年以前的德屬新幾內亞。
+
+    # 美國：菲律賓與加勒比。
+    "PHL": "USA", "CUB": "USA", "DOM": "USA", "PAN": "USA",
+
+    # 日本：朝鮮與臺灣是併入的領土。
+    "KOR": "JPN", "PRK": "JPN", "TWN": "JPN",
+
+    # 蘇聯：加盟共和國與蒙古。
+    "BLR": "RUS", "UKR": "RUS", "KAZ": "RUS", "UZB": "RUS", "TKM": "RUS",
+    "AZE": "RUS", "GEO": "RUS", "LVA": "RUS", "MNG": "RUS",
+
+    # 德國：1938 年的奧地利與 1939 年的捷克。
+    "AUT": "DEU", "CZE": "DEU",
+}
+
+
+# 1939 年不參戰的國家。它們有城市、有守軍、也擋在路上，但 AI 走 TURTLE：
+# 不主動宣戰，被打會還手。瑞士、瑞典、葡萄牙、西班牙、土耳其、愛爾蘭整場
+# 中立；南美洲多數國家要到 1942 年之後才象徵性宣戰，在棋盤上等於不參戰。
+WW2_NEUTRALS = {
+    "CHE", "SWE", "PRT", "ESP", "IRL", "TUR", "IRN", "AFG", "SAU",
+    "BRA", "ARG", "CHL", "COL", "PER", "VEN", "ECU", "BOL", "PRY", "URY",
+    "GTM", "MEX",
+}
+
+
 # 合併後才出現的新勢力，需要自己的名字。
 EXTRA_NATIONS = {
     "AUT_HU":    ("Danube Empire", "多瑙帝國", "多瑙帝国", "#A0A6AC", "OPPORTUNIST", 900),

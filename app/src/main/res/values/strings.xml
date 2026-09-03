@@ -246,8 +246,8 @@
     <string name="cmd_alvarez">Mar. Alvarez</string>
 
     <!-- Scenarios -->
-    <string name="scn_conquest_modern">Modern World</string>
-    <string name="scn_conquest_modern_desc">Every nation on the map, everyone at peace. Pick one and decide who moves first.</string>
+    <string name="scn_conquest_1939">1939 · The World</string>
+    <string name="scn_conquest_1939_desc">The world as the empires held it: Africa and southern Asia belong to London, Paris and Rome rather than to themselves. Everyone starts at peace. Pick anyone.</string>
     <string name="scn_conquest_empires">Age of Empires</string>
     <string name="scn_conquest_empires_desc">The same world carved into two dozen sprawling empires. Fewer players, far bigger fronts.</string>
     <string name="scn_campaign_00_exercise">Exercise · Mountain March</string>

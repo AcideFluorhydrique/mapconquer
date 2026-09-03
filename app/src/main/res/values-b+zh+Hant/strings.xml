@@ -246,8 +246,8 @@
     <string name="cmd_alvarez">阿爾瓦雷斯元帥</string>
 
     <!-- Scenarios -->
-    <string name="scn_conquest_modern">現代世界</string>
-    <string name="scn_conquest_modern_desc">地圖上所有國家，開局全部和平。挑一個，然後決定誰先動手。</string>
+    <string name="scn_conquest_1939">1939 · 全球</string>
+    <string name="scn_conquest_1939_desc">帝國手中的世界：非洲與南亞不屬於自己，屬於倫敦、巴黎與羅馬。開局全部和平，想選誰都行。</string>
     <string name="scn_conquest_empires">帝國時代</string>
     <string name="scn_conquest_empires_desc">同一個世界，被切成二十來個橫跨大洋的帝國。玩家更少，戰線大得多。</string>
     <string name="scn_campaign_00_exercise">演習 · 山地行軍</string>

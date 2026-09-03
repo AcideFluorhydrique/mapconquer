@@ -328,7 +328,8 @@ def garrison_lines(built, owners, nation_funds):
     return lines
 
 
-def write_conquest(built, scenario_id, name_key, desc_key, order, merge, start_year):
+def write_conquest(built, scenario_id, name_key, desc_key, order, merge,
+                   start_year, turtle=None):
     """把 places 的國家分佈展開成一份征服劇本。"""
     owners = {}
     for pid, (_key, _tier, nation, _tile) in enumerate(built.provinces):
@@ -366,6 +367,10 @@ def write_conquest(built, scenario_id, name_key, desc_key, order, merge, start_y
     ordered = sorted(owners.keys(), key=lambda c: (-nation_funds[c], c))
     for code in ordered:
         english, _t, _s, colour, profile, _funds = nation_row(code)
+        # 中立國的性格不是國情，是年代 —— 同一個西班牙在 1900 與 1939 的
+        # 意願差很多，所以由劇本指定，而不是寫死在國家表裡。
+        if turtle and code in turtle:
+            profile = "TURTLE"
         funds = nation_funds[code]
         capital = max(owners[code], key=lambda pid: built.provinces[pid][1])
         lines.append("%s|nation_%s|%s|%d|%s|%d|%s|%s" % (
@@ -611,10 +616,11 @@ def main():
                  len(built.provinces), land, os.path.relpath(path, ROOT)))
 
     world = built_maps["world"]
-    print(write_conquest(world, "conquest_modern", "scn_conquest_modern",
-                         "scn_conquest_modern_desc", 10, None, 2026))
     print(write_conquest(world, "conquest_empires", "scn_conquest_empires",
-                         "scn_conquest_empires_desc", 20, places.EMPIRE_MERGE, 1900))
+                         "scn_conquest_empires_desc", 10, places.EMPIRE_MERGE, 1900))
+    print(write_conquest(world, "conquest_1939", "scn_conquest_1939",
+                         "scn_conquest_1939_desc", 20, places.WW2_MERGE, 1939,
+                         turtle=places.WW2_NEUTRALS))
 
     for mission in scn.CAMPAIGN:
         built = built_maps[mission["map"]]
