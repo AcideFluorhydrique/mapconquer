@@ -280,8 +280,8 @@ class MapRenderer(private val session: Session) {
     /**
      * 城市。
      *
-     * 用幾何圖形而不是點陣圖示：一來 APK 裡不必放素材（F-Droid 上這是加分的），
-     * 二來向量在任何縮放下都清楚，三來城市等級可以直接用「幾個方塊」表達，
+     * 一枚國旗徽章加上等級點。旗幟是 emoji，由系統字型畫，APK 裡不必放素材
+     * （F-Droid 上這是加分的），而且在任何縮放下都清楚。等級用點的數量表達，
      * 玩家不必記圖示對應表。
      */
     private fun drawCities(canvas: Canvas, camera: Camera) {
@@ -300,25 +300,47 @@ class MapRenderer(private val session: Session) {
             val cy = camera.screenY(layout.centerYOffset(row))
             val owner = session.provinceOwner[province.id]
             val plate = if (owner >= 0) Palette.nationColour(session, owner) else Colors.of("#8A94A0")
+            val flag = if (owner < 0) "" else session.nations.getOrNull(owner)?.flag.orEmpty()
 
-            val half = size * 0.30f
-            rect.set(cx - half, cy - half, cx + half, cy + half)
+            // 城市是一枚旗幟徽章。顏色本身認不了人 —— 一張世界地圖上有一百多個
+            // 國家，色相根本不夠分，玩家不該被迫先把顏色背回國名。所以底色只當
+            // 襯底，識別交給旗幟。做成扁的圓角矩形而不是圓形，是因為旗幟 emoji
+            // 本來就是長方的，塞進圓裡會左右溢出。
+            val plateW = size * 0.76f
+            val plateH = size * 0.54f
+            val corner = plateH * 0.24f
+            rect.set(cx - plateW / 2f, cy - plateH / 2f, cx + plateW / 2f, cy + plateH / 2f)
             paint.style = Paint.Style.FILL
             paint.color = Colors.of("#B3000000")
-            canvas.drawRoundRect(rect, half * 0.35f, half * 0.35f, paint)
+            rect.offset(0f, size * 0.035f)
+            canvas.drawRoundRect(rect, corner, corner, paint)
+            rect.offset(0f, -size * 0.035f)
             paint.color = Colors.scale(plate, 1.15f)
-            rect.inset(size * 0.055f, size * 0.055f)
-            canvas.drawRoundRect(rect, half * 0.3f, half * 0.3f, paint)
+            canvas.drawRoundRect(rect, corner, corner, paint)
+            paint.style = Paint.Style.STROKE
+            paint.strokeWidth = size * 0.045f
+            paint.color = Colors.of("#E6F2F6FA")
+            canvas.drawRoundRect(rect, corner, corner, paint)
+            paint.style = Paint.Style.FILL
 
-            // 城市等級：中央疊上等級數量的小方塊。
-            paint.color = Colors.of("#F5F8FB")
-            val pip = size * 0.075f
-            val gap = pip * 2.2f
-            val startX = cx - gap * (province.cityTier - 1) / 2f
-            val pipY = cy
-            for (i in 0 until province.cityTier) {
-                rect.set(startX + gap * i - pip, pipY - pip, startX + gap * i + pip, pipY + pip)
-                canvas.drawRect(rect, paint)
+            if (flag.isNotEmpty() && plateH >= Ui.dp(7f)) {
+                Widgets.centeredFit(
+                    canvas, flag, cx, cy + plateH * 0.36f,
+                    plateH * 0.94f, plateW * 0.86f,
+                    color = Colors.of("#FFF2F6FA")
+                )
+            }
+
+            // 城市等級：徽章下方的小點，不跟旗幟搶位置。
+            if (size >= Ui.dp(9f)) {
+                paint.color = Colors.of("#E6F5F8FB")
+                val pip = size * 0.055f
+                val gap = pip * 2.6f
+                val startX = cx - gap * (province.cityTier - 1) / 2f
+                val pipY = cy + plateH / 2f + pip * 2.1f
+                for (i in 0 until province.cityTier) {
+                    canvas.drawCircle(startX + gap * i, pipY, pip, paint)
+                }
             }
 
             if (showNames) {
@@ -428,7 +450,7 @@ class MapRenderer(private val session: Session) {
         // 國旗：左上角，只在放得夠大時才畫。emoji 由系統字型負責，
         // 缺字型的裝置會退化成兩個字母，仍然認得出國別。
         val flag = session.nations.getOrNull(unit.nationId)?.flag.orEmpty()
-        if (flag.isNotEmpty() && size >= Ui.dp(15f)) {
+        if (flag.isNotEmpty() && size >= Ui.dp(11f)) {
             Widgets.centered(
                 canvas, flag, cx - w / 2f + size * 0.13f, top + size * 0.2f,
                 size * 0.30f, color = Colors.of("#FFFFFFFF")
