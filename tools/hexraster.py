@@ -7,16 +7,70 @@ import math
 import geodata
 
 
-class Grid:
-    """一張等距圓柱投影的六角格。奇數列偏移，與遊戲端的座標約定一致。"""
+def axis_map(low, high, bands):
+    """
+    回傳 f(t)：把 [0,1] 的畫面比例映射到座標值，並且單調遞增。
 
-    def __init__(self, cols, rows, lon_min, lon_max, lat_max, lat_min):
+    bands 是 [(起, 迄, 權重), ...]。權重是「每一度分到幾格」的相對值，
+    所以權重 2 的區段在畫面上佔的格子是權重 1 的兩倍。沒被涵蓋的區段
+    自動補權重 1。bands 為 None 就是等距，跟原本的行為一樣。
+
+    這是為了讓地圖能玩：等距圓柱投影把 360 度平均分給格子，結果太平洋
+    佔掉三分之一的螢幕，而整個西歐 —— 遊戲真正發生的地方 —— 只有幾格寬，
+    英國小到放不下一個城市徽章。真實比例在這裡不是優點。
+    """
+    if not bands:
+        return lambda t: low + t * (high - low)
+
+    segments = []
+    cursor = low
+    for start, end, weight in sorted(bands):
+        start = max(start, low)
+        end = min(end, high)
+        if end <= start:
+            continue
+        if start > cursor:
+            segments.append((cursor, start, 1.0))
+        segments.append((start, end, weight))
+        cursor = end
+    if cursor < high:
+        segments.append((cursor, high, 1.0))
+
+    total = sum((e - s) * w for s, e, w in segments)
+    table = []
+    acc = 0.0
+    for s, e, w in segments:
+        share = (e - s) * w / total
+        table.append((acc, acc + share, s, e))
+        acc += share
+
+    def f(t):
+        t = min(max(t, 0.0), 1.0)
+        for t0, t1, s, e in table:
+            if t <= t1:
+                return s if t1 <= t0 else s + (t - t0) / (t1 - t0) * (e - s)
+        return high
+
+    return f
+
+
+class Grid:
+    """
+    一張圓柱投影的六角格。奇數列偏移，與遊戲端的座標約定一致。
+
+    經緯度到格子的對映可以分段加權（見 [axis_map]），預設仍是等距。
+    """
+
+    def __init__(self, cols, rows, lon_min, lon_max, lat_max, lat_min,
+                 lon_bands=None, lat_bands=None):
         self.cols = cols
         self.rows = rows
         self.lon_min = lon_min
         self.lon_max = lon_max
         self.lat_max = lat_max
         self.lat_min = lat_min
+        self._lon = axis_map(lon_min, lon_max, lon_bands)
+        self._lat = axis_map(lat_min, lat_max, lat_bands)
 
     def lonlat(self, col, row):
         # 奇數列在畫面上往右偏半格，取樣點也要跟著偏，
@@ -24,9 +78,8 @@ class Grid:
         shift = 0.5 if row % 2 == 1 else 0.0
         fx = (col + shift + 0.5) / self.cols
         fy = (row + 0.5) / self.rows
-        lon = self.lon_min + fx * (self.lon_max - self.lon_min)
-        lat = self.lat_max - fy * (self.lat_max - self.lat_min)
-        return lon, lat
+        # fy = 0 是畫面上緣，對應 lat_max，所以要反過來查。
+        return self._lon(fx), self._lat(1.0 - fy)
 
     def index(self, col, row):
         return row * self.cols + col

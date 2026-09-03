@@ -119,8 +119,6 @@
     <string name="bloc_east">東方陣營</string>
     <string name="bloc_nato">北約</string>
     <string name="bloc_pact">華約</string>
-    <string name="bloc_blue">藍方</string>
-    <string name="bloc_red">紅方</string>
     <string name="bloc_neutral">中立</string>
     <string name="tech_infantry">步兵</string>
     <string name="tech_armour">裝甲</string>
@@ -255,8 +253,6 @@
     <string name="scn_conquest_1939_desc">帝國手中的世界：非洲與南亞不屬於自己，屬於倫敦、巴黎與羅馬。軸心與同盟已經開戰，其餘國家在旁邊看。想選誰都行。</string>
     <string name="scn_conquest_empires">帝國時代</string>
     <string name="scn_conquest_empires_desc">同一個世界，被切成二十來個橫跨大洋的帝國。玩家更少，戰線大得多。</string>
-    <string name="scn_campaign_00_exercise">演習 · 山地行軍</string>
-    <string name="scn_campaign_00_exercise_desc">安地斯高地上的兩支演習部隊。在動真格之前，先學會行軍、築壕、拿下一座城。</string>
     <string name="scn_campaign_ww2_01_poland">1939 · 波蘭</string>
     <string name="scn_campaign_ww2_01_poland_desc">裝甲、飛機、人數，你樣樣都少。這一關贏不了，但可以讓對方付出代價：守住華沙到第 20 回合。</string>
     <string name="scn_campaign_ww2_02_france">1940 · 法蘭西</string>
@@ -384,8 +380,7 @@
     <string name="nation_zwe">辛巴威</string>
     <string name="nation_aut_hu">多瑙帝國</string>
     <string name="nation_bel_congo">剛果公司</string>
-    <string name="nation_blu">藍軍</string>
-    <string name="nation_red">紅軍</string>
+    <string name="nation_roc">中華民國</string>
 
     <!-- Provinces -->
     <string name="prov_london">倫敦</string>

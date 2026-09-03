@@ -174,8 +174,6 @@ UI = {
     "bloc_east":    ("Eastern bloc", "東方陣營", "东方阵营"),
     "bloc_nato":    ("NATO",         "北約",     "北约"),
     "bloc_pact":    ("Warsaw Pact",  "華約",     "华约"),
-    "bloc_blue":    ("Blue Force",   "藍方",     "蓝方"),
-    "bloc_red":     ("Red Force",    "紅方",     "红方"),
     "bloc_neutral": ("Neutral",      "中立",     "中立"),
 
     # 研發分支
@@ -419,12 +417,6 @@ SCENARIO_TEXT = {
         "The same world carved into two dozen sprawling empires. Fewer players, far bigger fronts.",
         "同一個世界，被切成二十來個橫跨大洋的帝國。玩家更少，戰線大得多。",
         "同一个世界，被切成二十来个横跨大洋的帝国。玩家更少，战线大得多。"),
-
-    "scn_campaign_00_exercise": ("Exercise \u00b7 Mountain March", "\u6f14\u7fd2 \u00b7 \u5c71\u5730\u884c\u8ecd", "\u6f14\u4e60 \u00b7 \u5c71\u5730\u884c\u519b"),
-    "scn_campaign_00_exercise_desc": (
-        "Two exercise forces in the high Andes. Learn to move, entrench and take a city before any of it counts.",
-        "\u5b89\u5730\u65af\u9ad8\u5730\u4e0a\u7684\u5169\u652f\u6f14\u7fd2\u90e8\u968a\u3002\u5728\u52d5\u771f\u683c\u4e4b\u524d\uff0c\u5148\u5b78\u6703\u884c\u8ecd\u3001\u7bc9\u58d5\u3001\u62ff\u4e0b\u4e00\u5ea7\u57ce\u3002",
-        "\u5b89\u5730\u65af\u9ad8\u5730\u4e0a\u7684\u4e24\u652f\u6f14\u4e60\u90e8\u961f\u3002\u5728\u52a8\u771f\u683c\u4e4b\u524d\uff0c\u5148\u5b66\u4f1a\u884c\u519b\u3001\u7b51\u58d5\u3001\u62ff\u4e0b\u4e00\u5ea7\u57ce\u3002"),
 
     "scn_campaign_ww2_01_poland": ("1939 \u00b7 Poland", "1939 \u00b7 \u6ce2\u862d", "1939 \u00b7 \u6ce2\u5170"),
     "scn_campaign_ww2_01_poland_desc": (

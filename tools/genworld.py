@@ -23,14 +23,49 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 MAPS_DIR = os.path.join(ROOT, "app", "src", "main", "assets", "maps")
 SCEN_DIR = os.path.join(ROOT, "app", "src", "main", "assets", "scenarios")
 
-# (id, cols, rows, lon_min, lon_max, lat_max, lat_min)
+# 世界地圖的分段權重。權重是「每一度分到幾格」的相對值。
+#
+# 等距投影在遊戲上是行不通的：太平洋吃掉三分之一的寬度，而歐洲 ——
+# 整個戰役與大半征服的舞台 —— 窄到英國放不下一枚城市徽章。原版遊戲也不是
+# 等距的，它把歐洲與日本放大、把兩大洋壓扁。這裡照做。
+#
+# 代價是誠實的：巴西與北大西洋共用一個經度帶，壓掉大西洋就會一起壓到巴西。
+# 選擇是把權重放在遊戲會發生的地方。
+WORLD_LON_BANDS = [
+    (-180.0, -170.0, 0.40),  # 太平洋東緣
+    (-170.0, -125.0, 0.50),  # 太平洋、阿拉斯加
+    (-125.0,  -65.0, 1.15),  # 北美
+    ( -65.0,  -32.0, 0.88),  # 南美、西大西洋
+    ( -32.0,  -12.0, 0.45),  # 大西洋
+    ( -12.0,   45.0, 1.95),  # 歐洲、西非、中東西緣
+    (  45.0,   72.0, 1.00),  # 中東、中亞
+    (  72.0,  100.0, 1.10),  # 印度、中國西部
+    ( 100.0,  146.0, 1.70),  # 東亞、日本
+    ( 146.0,  180.0, 0.40),  # 太平洋西緣
+]
+
+WORLD_LAT_BANDS = [
+    ( -56.0, -35.0, 0.60),  # 南半球高緯
+    ( -35.0,   0.0, 0.85),  # 南美南部、南非、澳洲
+    (   0.0,  30.0, 1.00),  # 熱帶
+    (  30.0,  60.0, 1.75),  # 歐洲、日本、美國、中國
+    (  60.0,  78.0, 0.70),  # 北極圈
+]
+
 MAP_DEFS = [
-    ("world",       96, 60, -180.0, 180.0,  78.0, -56.0),
-    ("europe",      54, 42,  -12.0,  42.0,  62.0,  34.0),
-    ("north_africa", 54, 36, -14.0,  42.0,  40.0,   6.0),
-    ("sea_asia",    54, 40,   94.0, 152.0,  26.0, -12.0),
-    ("east_europe", 48, 34,   14.0,  50.0,  60.0,  40.0),
-    ("andes",       40, 50,  -84.0, -48.0,  10.0, -44.0),
+    dict(map_id="world", cols=120, rows=76,
+         lon_min=-180.0, lon_max=180.0, lat_max=78.0, lat_min=-56.0,
+         lon_bands=WORLD_LON_BANDS, lat_bands=WORLD_LAT_BANDS),
+    dict(map_id="europe", cols=54, rows=42,
+         lon_min=-12.0, lon_max=42.0, lat_max=62.0, lat_min=34.0),
+    dict(map_id="north_africa", cols=54, rows=36,
+         lon_min=-14.0, lon_max=42.0, lat_max=40.0, lat_min=6.0),
+    dict(map_id="sea_asia", cols=54, rows=40,
+         lon_min=94.0, lon_max=152.0, lat_max=26.0, lat_min=-12.0),
+    dict(map_id="east_europe", cols=48, rows=34,
+         lon_min=14.0, lon_max=50.0, lat_max=60.0, lat_min=40.0),
+    dict(map_id="andes", cols=40, rows=50,
+         lon_min=-84.0, lon_max=-48.0, lat_max=10.0, lat_min=-44.0),
 ]
 
 
@@ -43,6 +78,7 @@ class BuiltMap:
         self.terrain = terrain
         self.is_land = is_land
         self.provinces = provinces           # [(key, tier, nation, tile)]
+        self.dropped = []                    # [(key, 原因)]，放不下的省份
         self.index_by_key = {p[0]: i for i, p in enumerate(provinces)}
         self.province_of = None              # 逐格的省份 id
 
@@ -128,8 +164,10 @@ def run_length(values):
     return " ".join(out)
 
 
-def build_map(map_id, cols, rows, lon_min, lon_max, lat_max, lat_min):
-    grid = hexraster.Grid(cols, rows, lon_min, lon_max, lat_max, lat_min)
+def build_map(map_id, cols, rows, lon_min, lon_max, lat_max, lat_min,
+              lon_bands=None, lat_bands=None):
+    grid = hexraster.Grid(cols, rows, lon_min, lon_max, lat_max, lat_min,
+                          lon_bands, lat_bands)
     terrain, is_land = hexraster.build_terrain(grid)
 
     # 只收落在這張地圖範圍內的省份。
@@ -143,15 +181,21 @@ def build_map(map_id, cols, rows, lon_min, lon_max, lat_max, lat_min):
     seeds = []
     provinces = []
     used = set()
+    # 放不下的省份要講出來。這件事本來是靜悄悄發生的：臺灣在世界地圖上
+    # 只有一格，兩座城搶同一格，高雄就從地圖上消失了，而產出的檔案看起來
+    # 完全正常。省份數少一個，沒有任何一行輸出提到它。
+    dropped = []
     for key, lon, lat, tier, nation, *_names in candidates:
         tile, dist = nearest_land_tile(grid, is_land, lon, lat)
         if tile is None:
+            dropped.append((key, "這張地圖上沒有陸地"))
             continue
         # 吸得太遠代表這座城市在這張地圖上其實沒有陸地可放，跳過。
         if dist > 36.0:
+            dropped.append((key, "離最近的陸地 %.0f 度" % dist))
             continue
         if tile in used:
-            # 同一格擠了兩座城：讓給等級高的那一座，另一座往外挪一格。
+            # 同一格擠了兩座城：讓給先到的那一座，另一座往外挪一格。
             moved = False
             col, row = tile % cols, tile // cols
             for c, r in grid.neighbours(col, row):
@@ -161,6 +205,7 @@ def build_map(map_id, cols, rows, lon_min, lon_max, lat_max, lat_min):
                     moved = True
                     break
             if not moved:
+                dropped.append((key, "同一格已被佔用，四周也沒有空的陸地"))
                 continue
         used.add(tile)
         seeds.append(tile)
@@ -169,6 +214,7 @@ def build_map(map_id, cols, rows, lon_min, lon_max, lat_max, lat_min):
     province_of = assign_provinces(grid, is_land, seeds)
     built = BuiltMap(map_id, grid, terrain, is_land, provinces)
     built.province_of = province_of
+    built.dropped = dropped
     return built
 
 
@@ -638,13 +684,15 @@ def main():
 
     built_maps = {}
     for definition in MAP_DEFS:
-        built = build_map(*definition)
+        built = build_map(**definition)
         built_maps[built.id] = built
         path = write_map(built)
         land = sum(1 for t in built.terrain if t not in "~-")
         print("map %-13s %3dx%-3d  provinces %3d  land %4d  -> %s"
               % (built.id, built.grid.cols, built.grid.rows,
                  len(built.provinces), land, os.path.relpath(path, ROOT)))
+        for key, reason in built.dropped:
+            print("    - %s 放不下：%s" % (key, reason))
 
     world = built_maps["world"]
     print(write_conquest(world, "conquest_empires", "scn_conquest_empires",

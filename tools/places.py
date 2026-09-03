@@ -428,7 +428,9 @@ EMPIRE_MERGE = {
 # 不會有人被迫記住誰是誰 —— 中立的碎片不礙事，交戰的碎片才礙事。
 WW2_MERGE = {
     # 大英帝國：自治領、印度、東南亞殖民地、非洲屬地、中東託管地。
-    "CAN": "GBR", "AUS": "GBR", "NZL": "GBR", "ZAF": "GBR", "NAM": "GBR",
+    # 加拿大與澳洲不併：整個帝國算成一國之後，英國強到沒有對手可言。
+    # 兩者當年也是有自己的軍隊與指揮體系的自治領。紐西蘭與南非留在英國名下。
+    "NZL": "GBR", "ZAF": "GBR", "NAM": "GBR",
     "IND": "GBR", "PAK": "GBR", "BGD": "GBR", "LKA": "GBR", "NPL": "GBR",
     "MMR": "GBR", "MYS": "GBR", "SGP": "GBR",
     "EGY": "GBR", "SDN": "GBR", "KEN": "GBR", "UGA": "GBR", "TZA": "GBR",
@@ -448,7 +450,7 @@ WW2_MERGE = {
     "AGO": "PRT", "MOZ": "PRT",
     "IDN": "NLD",
     "GRL": "DNK", "ISL": "DNK",
-    "PNG": "GBR",  # 1939 年是澳洲代管地，不是 1914 年以前的德屬新幾內亞。
+    "PNG": "AUS",  # 1939 年是澳洲代管地，不是 1914 年以前的德屬新幾內亞。
 
     # 美國：菲律賓與加勒比。
     "PHL": "USA", "CUB": "USA", "DOM": "USA", "PAN": "USA",
@@ -462,6 +464,10 @@ WW2_MERGE = {
 
     # 德國：1938 年的奧地利與 1939 年的捷克。
     "AUT": "DEU", "CZE": "DEU",
+
+    # 1939 年在南京與重慶的是中華民國，旗是 🇹🇼。臺灣此時是日本領土，
+    # 所以 TWN 併進 JPN、CHN 換成 ROC，兩件事必須一起做才自洽。
+    "CHN": "ROC",
 }
 
 
@@ -470,7 +476,7 @@ WW2_MERGE = {
 # 攤成一張逐對關係表，玩家看到的就不再是「兩邊」而是一團線。這裡選簡單。
 WW2_BLOCS = {
     "AXIS": ["DEU", "ITA", "JPN"],
-    "ALLIES": ["GBR", "FRA", "POL", "CHN"],
+    "ALLIES": ["GBR", "FRA", "POL", "ROC", "CAN", "AUS"],
 }
 
 
@@ -487,6 +493,9 @@ WW2_NEUTRALS = {
 # 合併後才出現的新勢力，需要自己的名字。
 EXTRA_NATIONS = {
     "AUT_HU":    ("Danube Empire", "多瑙帝國", "多瑙帝国", "#A0A6AC", "OPPORTUNIST", 900),
+    # 基準壓到 1100：省份多會被資金公式放大（十五個省乘 1.75），照 2400 算
+    # 出來是全球最有錢的國家。1939 年的中華民國正在打一場守勢戰爭，不是首富。
+    "ROC":       ("Republic of China", "中華民國", "中华民国", "#B4454C", "BALANCED", 1100),
     "BEL_CONGO": ("Congo Company", "剛果公司", "刚果公司", "#9E8C4C", "TURTLE",      400),
 }
 
@@ -496,6 +505,7 @@ EXTRA_NATIONS = {
 # 併出來的歷史勢力沿用最接近的現代國旗。
 FLAGS = {
     "AFG": "🇦🇫",
+    "ROC": "🇹🇼",
     "AGO": "🇦🇴",
     "ARE": "🇦🇪",
     "ARG": "🇦🇷",

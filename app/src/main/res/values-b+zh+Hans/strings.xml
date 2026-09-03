@@ -119,8 +119,6 @@
     <string name="bloc_east">东方阵营</string>
     <string name="bloc_nato">北约</string>
     <string name="bloc_pact">华约</string>
-    <string name="bloc_blue">蓝方</string>
-    <string name="bloc_red">红方</string>
     <string name="bloc_neutral">中立</string>
     <string name="tech_infantry">步兵</string>
     <string name="tech_armour">装甲</string>
@@ -255,8 +253,6 @@
     <string name="scn_conquest_1939_desc">帝国手中的世界：非洲与南亚不属于自己，属于伦敦、巴黎与罗马。轴心与同盟已经开战，其余国家在旁边看。想选谁都行。</string>
     <string name="scn_conquest_empires">帝国时代</string>
     <string name="scn_conquest_empires_desc">同一个世界，被切成二十来个横跨大洋的帝国。玩家更少，战线大得多。</string>
-    <string name="scn_campaign_00_exercise">演习 · 山地行军</string>
-    <string name="scn_campaign_00_exercise_desc">安地斯高地上的两支演习部队。在动真格之前，先学会行军、筑壕、拿下一座城。</string>
     <string name="scn_campaign_ww2_01_poland">1939 · 波兰</string>
     <string name="scn_campaign_ww2_01_poland_desc">装甲、飞机、人数，你样样都少。这一关赢不了，但可以让对方付出代价：守住华沙到第 20 回合。</string>
     <string name="scn_campaign_ww2_02_france">1940 · 法兰西</string>
@@ -384,8 +380,7 @@
     <string name="nation_zwe">津巴布韦</string>
     <string name="nation_aut_hu">多瑙帝国</string>
     <string name="nation_bel_congo">刚果公司</string>
-    <string name="nation_blu">蓝军</string>
-    <string name="nation_red">红军</string>
+    <string name="nation_roc">中华民国</string>
 
     <!-- Provinces -->
     <string name="prov_london">伦敦</string>

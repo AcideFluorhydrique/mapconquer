@@ -119,8 +119,6 @@
     <string name="bloc_east">Eastern bloc</string>
     <string name="bloc_nato">NATO</string>
     <string name="bloc_pact">Warsaw Pact</string>
-    <string name="bloc_blue">Blue Force</string>
-    <string name="bloc_red">Red Force</string>
     <string name="bloc_neutral">Neutral</string>
     <string name="tech_infantry">Infantry</string>
     <string name="tech_armour">Armour</string>
@@ -255,8 +253,6 @@
     <string name="scn_conquest_1939_desc">The world as the empires held it: Africa and southern Asia belong to London, Paris and Rome rather than to themselves. Axis and Allies are already at war; everyone else is watching. Pick anyone.</string>
     <string name="scn_conquest_empires">Age of Empires</string>
     <string name="scn_conquest_empires_desc">The same world carved into two dozen sprawling empires. Fewer players, far bigger fronts.</string>
-    <string name="scn_campaign_00_exercise">Exercise · Mountain March</string>
-    <string name="scn_campaign_00_exercise_desc">Two exercise forces in the high Andes. Learn to move, entrench and take a city before any of it counts.</string>
     <string name="scn_campaign_ww2_01_poland">1939 · Poland</string>
     <string name="scn_campaign_ww2_01_poland_desc">You are outnumbered in armour, in aircraft and in men. This one cannot be won — it can be made expensive. Hold Warsaw to turn 20.</string>
     <string name="scn_campaign_ww2_02_france">1940 · France</string>
@@ -384,8 +380,7 @@
     <string name="nation_zwe">Zimbabwe</string>
     <string name="nation_aut_hu">Danube Empire</string>
     <string name="nation_bel_congo">Congo Company</string>
-    <string name="nation_blu">Blue Force</string>
-    <string name="nation_red">Red Force</string>
+    <string name="nation_roc">Republic of China</string>
 
     <!-- Provinces -->
     <string name="prov_london">London</string>
