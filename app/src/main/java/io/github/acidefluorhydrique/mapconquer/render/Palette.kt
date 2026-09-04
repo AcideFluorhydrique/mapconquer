@@ -43,6 +43,10 @@ object Palette {
         else -> Colors.of("#7F93A6")
     }
 
+    /** 城防血條的顏色。跟部隊血條同一套語彙，玩家不必學第二組。 */
+    fun cityHealthColour(hp: Int, max: Int): Int =
+        healthColour(if (max <= 0) 1f else hp / max.toFloat())
+
     /** 陣營的翻譯鍵；空字串（中立）也有自己的字串。 */
     fun blocNameKey(bloc: String): String =
         if (bloc.isEmpty()) "bloc_neutral" else "bloc_" + bloc.lowercase()

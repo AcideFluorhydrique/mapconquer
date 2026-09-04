@@ -46,6 +46,14 @@ class Session(
     /** 省份 → 擁有國 id；-1 = 中立。 */
     val provinceOwner: IntArray = IntArray(map.provinces.size) { -1 }
 
+    /**
+     * 逐省的城防值。無城的省份恆為 0。
+     *
+     * 這是可變的局面狀態，所以放在 Session 而不是地圖上 —— 地圖是唯讀的，
+     * 同一張圖要能被許多局共用。
+     */
+    val cityHp: IntArray = IntArray(map.provinces.size) { map.provinces[it].maxCityHp }
+
     /** 省份的地形產值總和，開局算一次。 */
     private val provinceTerrainIncome: IntArray = IntArray(map.provinces.size)
 
@@ -267,6 +275,9 @@ class Session(
         provinceOwner[provinceId] = newOwner
         if (newOwner in nations.indices) nations[newOwner].provincesTaken++
         val province = map.provinces[provinceId]
+        // 接手的是一座殘城。全滿會讓易主的城市立刻變成新的堡壘，
+        // 反覆爭奪的城市就永遠打不下來。
+        cityHp[provinceId] = province.maxCityHp * CITY_HP_AFTER_CAPTURE_PERCENT / 100
         pushEvent(
             if (province.hasCity) "event_city_captured" else "event_province_captured",
             listOf(province.nameKey, nations[newOwner].nameKey),
@@ -320,6 +331,8 @@ class Session(
         collectIncome(nation)
         computeSupply(nation.id)
         refreshUnits(nation)
+        repairCities(nation.id)
+        pressCities(nation.id)
     }
 
     private fun endNationTurn(nation: Nation) {
@@ -692,6 +705,79 @@ class Session(
      * 有人對它動手，它在棋盤上就是地形的一部分。1939 年的瑞士不會因為
      * 鄰居打起來就開始擴軍。
      */
+    /** 這一格是不是某個省的城市所在。 */
+    fun cityProvinceAt(tile: Int): Int {
+        val province = map.provinceAt(tile) ?: return -1
+        return if (province.hasCity && province.capitalTile == tile) province.id else -1
+    }
+
+    /**
+     * 這支部隊是否正受到城防保護。
+     *
+     * 只有站在城市格上的陸軍算數：飛機在天上，船在水裡，兩者都不在城牆後面。
+     * 城防歸零之後也不再保護 —— 那就是「城破了」的定義。
+     */
+    fun cityShields(unit: ArmyUnit): Boolean {
+        if (unit.kind.domain != Domain.LAND) return false
+        val pid = cityProvinceAt(unit.tile)
+        return pid >= 0 && cityHp[pid] > 0
+    }
+
+    /** 對城市造成傷害，回傳實際扣掉的量。 */
+    fun damageCity(provinceId: Int, amount: Int): Int {
+        if (provinceId !in cityHp.indices || amount <= 0) return 0
+        val before = cityHp[provinceId]
+        cityHp[provinceId] = (before - amount).coerceAtLeast(0)
+        return before - cityHp[provinceId]
+    }
+
+    /**
+     * 城防每回合自行修復，但只在沒有敵人貼著的時候。
+     *
+     * 有敵人在旁邊還能修，等於防守方可以靠時間拖垮攻勢；沒有這條限制，
+     * 攻城會變成「傷害要大於修復速度」的數值檢定，而不是一場圍攻。
+     */
+    private fun repairCities(nationId: Int) {
+        for (province in map.provinces) {
+            if (!province.hasCity) continue
+            if (provinceOwner[province.id] != nationId) continue
+            val max = province.maxCityHp
+            if (cityHp[province.id] >= max) continue
+            // 城裡站著敵人也算被威脅 —— 不然圍攻期間城防還會一邊自修，
+            // 攻城就變成「傷害要跑得比修復快」的數值檢定。
+            var threatened = hasHostileAt(province.capitalTile, nationId)
+            if (!threatened) {
+                val count = map.neighbours(province.capitalTile, neighbourBuf)
+                for (i in 0 until count) {
+                    if (hasHostileAt(neighbourBuf[i], nationId)) { threatened = true; break }
+                }
+            }
+            if (threatened) continue
+            cityHp[province.id] = (cityHp[province.id] + CITY_REPAIR_PER_TURN).coerceAtMost(max)
+        }
+    }
+
+    /**
+     * 圍攻：站在敵方城市格上的陸軍，每回合削掉一截城防，歸零就易主。
+     *
+     * 沒有這一條，「城防歸零才能佔領」會把無人防守的城市變成永遠打不下來 ——
+     * 城裡沒有部隊可以攻擊，城防就永遠不會掉。圍攻讓佔領從「走到就拿」
+     * 變成「站住並且守得夠久」，這也正是城防該表達的意思。
+     */
+    private fun pressCities(nationId: Int) {
+        for (province in map.provinces) {
+            if (!province.hasCity || cityHp[province.id] <= 0) continue
+            val owner = provinceOwner[province.id]
+            if (owner == nationId) continue
+            if (owner >= 0 && !isHostile(owner, nationId)) continue
+            val besieger = unitAt(province.capitalTile, Domain.LAND) ?: continue
+            if (besieger.nationId != nationId || !besieger.isAlive) continue
+            if (damageCity(province.id, SIEGE_PER_TURN) > 0 && cityHp[province.id] <= 0) {
+                captureProvince(province.id, nationId)
+            }
+        }
+    }
+
     fun isBystander(nationId: Int): Boolean {
         val nation = nations.getOrNull(nationId) ?: return false
         if (nation.bloc.isNotEmpty()) return false
@@ -781,6 +867,15 @@ class Session(
         const val FIELD_REPAIR = 6
 
         const val CONQUEST_VICTORY_PERCENT = 80
+
+        /** 城防每回合的自修量。 */
+        const val CITY_REPAIR_PER_TURN = 8
+
+        /** 佔住城市格的敵軍每回合削掉的城防。 */
+        const val SIEGE_PER_TURN = 50
+
+        /** 易主之後城防剩下的比例：新主人接手的是一座殘城。 */
+        const val CITY_HP_AFTER_CAPTURE_PERCENT = 35
         const val MAX_EVENTS = 40
     }
 }

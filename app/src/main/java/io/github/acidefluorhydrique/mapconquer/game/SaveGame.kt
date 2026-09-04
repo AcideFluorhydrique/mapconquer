@@ -58,6 +58,15 @@ object SaveGame {
         }
         sb.append('\n')
 
+        // 城防是局面狀態，跟省份歸屬一樣要存 —— 不然讀檔之後每座城都回滿血，
+        // 存檔前打了三回合的攻城就白打了。
+        sb.append("cityhp ")
+        for (i in session.cityHp.indices) {
+            if (i > 0) sb.append(',')
+            sb.append(session.cityHp[i])
+        }
+        sb.append('\n')
+
         for (nation in session.nations) {
             sb.append("nation ")
                 .append(nation.code).append(' ')
@@ -138,6 +147,7 @@ object SaveGame {
         var rngState = 1L
         var diplomacy = ""
         var owners = ""
+        var cityHp = ""
         val nationLines = ArrayList<String>()
         val unitLines = ArrayList<String>()
 
@@ -157,6 +167,7 @@ object SaveGame {
                 "rng" -> rngState = value.toLongOrNull() ?: 1L
                 "diplomacy" -> diplomacy = value
                 "owners" -> owners = value
+                "cityhp" -> cityHp = value
                 "nation" -> nationLines.add(value)
                 "unit" -> unitLines.add(value)
             }
@@ -177,6 +188,16 @@ object SaveGame {
             for (i in parts.indices) {
                 if (i >= session.provinceOwner.size) break
                 session.provinceOwner[i] = parts[i].trim().toIntOrNull() ?: -1
+            }
+        }
+
+        // 舊存檔沒有這一行，那就維持劇本的初始城防。
+        if (cityHp.isNotEmpty()) {
+            val parts = cityHp.split(',')
+            for (i in parts.indices) {
+                if (i >= session.cityHp.size) break
+                val max = session.map.provinces[i].maxCityHp
+                session.cityHp[i] = (parts[i].trim().toIntOrNull() ?: max).coerceIn(0, max)
             }
         }
 

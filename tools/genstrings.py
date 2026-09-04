@@ -77,6 +77,7 @@ UI = {
     "hud_toggle_grid": ("Grid", "格線", "格线"),
     "hud_toggle_supply": ("Supply", "補給", "补给"),
     "hud_neutral": ("Neutral", "中立", "中立"),
+    "hud_city_defence": ("City defence %1$d/%2$d", "城防 %1$d/%2$d", "城防 %1$d/%2$d"),
     "hud_terrain_line": ("%1$s · defence +%2$d%%", "%1$s · 防禦 +%2$d%%", "%1$s · 防御 +%2$d%%"),
     "hud_unit_level": ("Level %1$d · moves %2$d/%3$d", "等級 %1$d · 移動 %2$d/%3$d", "等级 %1$d · 移动 %2$d/%3$d"),
     "hud_entrenched": ("Entrenched %1$d", "築壕 %1$d 級", "筑壕 %1$d 级"),

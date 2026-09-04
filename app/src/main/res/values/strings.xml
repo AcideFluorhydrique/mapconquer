@@ -46,6 +46,7 @@
     <string name="hud_toggle_grid">Grid</string>
     <string name="hud_toggle_supply">Supply</string>
     <string name="hud_neutral">Neutral</string>
+    <string name="hud_city_defence">City defence %1$d/%2$d</string>
     <string name="hud_terrain_line">%1$s · defence +%2$d%%</string>
     <string name="hud_unit_level">Level %1$d · moves %2$d/%3$d</string>
     <string name="hud_entrenched">Entrenched %1$d</string>

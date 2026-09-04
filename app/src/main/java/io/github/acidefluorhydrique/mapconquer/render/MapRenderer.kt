@@ -331,6 +331,18 @@ class MapRenderer(private val session: Session) {
                 )
             }
 
+            // 城防：只在破損時畫。滿血的城市不需要佔用視覺注意力，
+            // 而一條掉了一半的血條就是「這裡正在被攻」最直接的說法。
+            val maxHp = province.maxCityHp
+            val hp = session.cityHp[province.id]
+            if (maxHp > 0 && hp < maxHp && size >= Ui.dp(9f)) {
+                rect.set(
+                    cx - plateW / 2f, cy - plateH / 2f - size * 0.18f,
+                    cx + plateW / 2f, cy - plateH / 2f - size * 0.06f
+                )
+                Widgets.bar(canvas, rect, hp / maxHp.toFloat(), Palette.cityHealthColour(hp, maxHp))
+            }
+
             // 城市等級：徽章下方的小點，不跟旗幟搶位置。
             if (size >= Ui.dp(9f)) {
                 paint.color = Colors.of("#E6F5F8FB")

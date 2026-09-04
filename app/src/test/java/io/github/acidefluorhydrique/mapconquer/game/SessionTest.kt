@@ -161,6 +161,8 @@ class SessionTest {
         val unit = s.units.first()
         val enemyCapital = s.map.provinces[1].capitalTile
         assertEquals(1, s.provinceOwner[1])
+        // 城防先打光，這個測試看的是「城破之後整省易主」那一步。
+        s.cityHp[1] = 0
 
         val reachable = ArrayList<Int>()
         Orders.computeReachable(s, unit, reachable)
@@ -170,6 +172,51 @@ class SessionTest {
         assertEquals("整省易主", 0, s.provinceOwner[1])
         assertEquals(2, s.provincesOf(0))
         for (tile in s.map.provinces[1].tiles) assertEquals(0, s.ownerOfTile(tile))
+        assertTrue("接手的該是殘城", s.cityHp[1] in 1 until s.map.provinces[1].maxCityHp)
+    }
+
+    @Test
+    fun `a city does not change hands until its defence is gone`() {
+        val s = session(listOf(ScenarioUnit("AAA", 5, 1, "INFANTRY", 1, "")))
+        val unit = s.units.first()
+        val enemyCapital = s.map.provinces[1].capitalTile
+        assertTrue("測試地圖的 B 省要有城", s.map.provinces[1].maxCityHp > 0)
+
+        Orders.computeReachable(s, unit, ArrayList())
+        Orders.move(s, unit, enemyCapital, ArrayList())
+        assertEquals("站上去不算佔領", 1, s.provinceOwner[1])
+
+        // 圍攻：每輪己方回合削一截，歸零就易主。
+        var guard = 0
+        while (s.provinceOwner[1] == 1 && guard < 20) {
+            repeat(s.nations.size) { s.advanceToNextNation() }
+            guard++
+        }
+        assertEquals("圍攻夠久就該拿下", 0, s.provinceOwner[1])
+        assertTrue("不該一回合就結束", guard > 1)
+    }
+
+    @Test
+    fun `a garrison in a city takes half, and the city takes the rest`() {
+        val s = session(
+            listOf(
+                ScenarioUnit("AAA", 5, 1, "INFANTRY", 1, ""),
+                ScenarioUnit("BBB", 6, 1, "INFANTRY", 1, "")
+            )
+        )
+        val attacker = s.units.first { it.nationId == 0 }
+        val defender = s.units.first { it.nationId == 1 }
+        assertEquals("守軍應該就站在 B 省的城上", s.map.provinces[1].capitalTile, defender.tile)
+
+        val hpBefore = defender.hp
+        val cityBefore = s.cityHp[1]
+        val result = Orders.attack(s, attacker, defender.tile)
+        assertNotNull(result)
+
+        val toUnit = hpBefore - defender.hp
+        val toCity = cityBefore - s.cityHp[1]
+        assertTrue("城市要跟著挨打", toCity > 0)
+        assertTrue("城市挨的比部隊多", toCity > toUnit)
     }
 
     @Test
@@ -351,6 +398,7 @@ class SessionTest {
         )
         assertEquals(SessionStatus.PLAYING, s.status)
         val unit = s.units.first { it.nationId == 0 }
+        s.cityHp[1] = 0
         Orders.computeReachable(s, unit, ArrayList())
         Orders.move(s, unit, s.map.provinces[1].capitalTile, ArrayList())
         assertEquals(SessionStatus.VICTORY, s.status)

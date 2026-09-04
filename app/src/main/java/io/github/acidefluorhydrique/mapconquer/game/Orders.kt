@@ -174,6 +174,9 @@ object Orders {
         val owner = session.provinceOwner[province.id]
         if (owner == unit.nationId) return false
         if (owner >= 0 && !session.isHostile(owner, unit.nationId)) return false
+        // 城要先被打垮才易主。站上去不算佔領 —— 一座還在還手的城市，
+        // 不會因為有人走到門口就換旗。
+        if (province.hasCity && session.cityHp[province.id] > 0) return false
         return session.captureProvince(province.id, unit.nationId)
     }
 
@@ -258,6 +261,10 @@ object Orders {
             defender.kind.domain == Domain.LAND
         ) defenderProvince.cityDefenceBonus else 0
 
+        // 城防已經被打光的城市不再替駐軍擋傷害 —— 那才是「城破了」的意思。
+        val defenderInCity = session.cityShields(defender)
+        val attackerInCity = session.cityShields(attacker)
+
         // 空中單位不吃地形加成：它在天上，底下是山還是平原都一樣。
         val defenderTerrain =
             if (defender.kind.domain == Domain.AIR) 0 else map.terrainAt(defender.tile).defenceBonus
@@ -277,7 +284,9 @@ object Orders {
             attackerAtSea = session.isEmbarked(attacker),
             defenderAtSea = session.isEmbarked(defender),
             attackerMorale = session.moraleOf(attacker),
-            defenderMorale = session.moraleOf(defender)
+            defenderMorale = session.moraleOf(defender),
+            attackerInCity = attackerInCity,
+            defenderInCity = defenderInCity
         )
     }
 
@@ -289,6 +298,10 @@ object Orders {
         val defender = findTarget(session, attacker, targetTile) ?: return null
         val ctx = buildContext(session, attacker, defender)
         val result = Combat.resolve(ctx, session.rng)
+
+        // 城市替駐軍擋下的那一層，扣在城防上。
+        session.damageCity(session.cityProvinceAt(defender.tile), result.damageToDefenderCity)
+        session.damageCity(session.cityProvinceAt(attacker.tile), result.damageToAttackerCity)
 
         // 開火即定身：本回合不能再走。這讓「移動到哪裡開火」變成一個真正的抉擇。
         attacker.movesLeft = 0

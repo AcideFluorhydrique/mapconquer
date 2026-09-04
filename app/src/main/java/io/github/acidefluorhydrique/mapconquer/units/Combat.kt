@@ -39,7 +39,16 @@ class CombatContext(
     val defenderAtSea: Boolean = false,
     /** 士氣等級，由 Session 依當下態勢推導後傳進來（+1 高昂 … −3 混亂）。 */
     val attackerMorale: Int = 0,
-    val defenderMorale: Int = 0
+    val defenderMorale: Int = 0,
+    /**
+     * 這一方是否站在城市格上。
+     *
+     * 站在城裡的部隊由城防替它挨一部分：部隊只吃 50%，城市另外吃 70%。
+     * 兩者加起來大於 100 是刻意的 —— 城市不是把傷害轉走，是替駐軍多擋一層，
+     * 代價是自己會被打垮。所以攻城的節奏是先磨掉城防，再解決守軍。
+     */
+    val attackerInCity: Boolean = false,
+    val defenderInCity: Boolean = false
 )
 
 /** 一次交戰的結果。UI 用它播動畫，AI 用它評估要不要打。 */
@@ -49,7 +58,10 @@ class CombatResult(
     val defenderDestroyed: Boolean,
     val attackerDestroyed: Boolean,
     val attackerLevelled: Boolean,
-    val defenderLevelled: Boolean
+    val defenderLevelled: Boolean,
+    /** 分攤到守方／攻方所在城市的傷害，由 Orders 套用到該省的城防上。 */
+    val damageToDefenderCity: Int = 0,
+    val damageToAttackerCity: Int = 0
 )
 
 /**
@@ -88,6 +100,12 @@ object Combat {
 
     /** 反擊只有正面攻擊的六成 —— 主動出手必須是划算的。 */
     private const val RETALIATION_SCALE = 0.6f
+
+    /** 站在城裡的部隊實際吃到的傷害比例。 */
+    const val UNIT_DAMAGE_IN_CITY_PERCENT = 50
+
+    /** 同一次攻擊另外扣在城防上的比例。兩者相加大於 100 是刻意的。 */
+    const val CITY_DAMAGE_PERCENT = 70
 
     fun attackPower(ctx: CombatContext): Float {
         val u = ctx.attacker
@@ -154,16 +172,27 @@ object Combat {
         return d.kind.attackAgainst(ctx.attacker.kind.targetClass) > 0
     }
 
+    /** 站在城裡的部隊只吃這一部分的傷害。 */
+    private fun shielded(damage: Int, inCity: Boolean): Int =
+        if (inCity) (damage * UNIT_DAMAGE_IN_CITY_PERCENT / 100).coerceAtLeast(1) else damage
+
+    /** 城市替駐軍多擋的那一層，扣在城防上。 */
+    private fun cityShare(damage: Int, inCity: Boolean): Int =
+        if (inCity) damage * CITY_DAMAGE_PERCENT / 100 else 0
+
     fun resolve(ctx: CombatContext, rng: Rng): CombatResult {
         val a = attackPower(ctx)
         val d = defencePower(ctx)
         val rawDamage = if (a <= 0f) 0f else DAMAGE_SCALE * a / (a + d)
-        val toDefender = jitter(rawDamage, rng).coerceIn(if (a > 0f) 1 else 0, ArmyUnit.MAX_HP)
+        val landed = jitter(rawDamage, rng).coerceIn(if (a > 0f) 1 else 0, ArmyUnit.MAX_HP)
+        val toDefender = shielded(landed, ctx.defenderInCity)
+        val toDefenderCity = cityShare(landed, ctx.defenderInCity)
 
         ctx.defender.damage(toDefender)
         val defenderDead = !ctx.defender.isAlive
 
         var toAttacker = 0
+        var toAttackerCity = 0
         if (!defenderDead && canRetaliate(ctx)) {
             // 反擊 = 角色互換之後的同一支公式，再乘上折扣。
             val counter = CombatContext(
@@ -179,13 +208,17 @@ object Combat {
                 attackerTech = ctx.defenderTech,
                 defenderTech = ctx.attackerTech,
                 attackerAura = ctx.defenderAura,
-                defenderAura = ctx.attackerAura
+                defenderAura = ctx.attackerAura,
+                attackerInCity = ctx.defenderInCity,
+                defenderInCity = ctx.attackerInCity
             )
             val ca = attackPower(counter)
             val cd = defencePower(counter)
             if (ca > 0f) {
                 val raw = DAMAGE_SCALE * RETALIATION_SCALE * ca / (ca + cd)
-                toAttacker = jitter(raw, rng).coerceIn(1, ArmyUnit.MAX_HP)
+                val counterLanded = jitter(raw, rng).coerceIn(1, ArmyUnit.MAX_HP)
+                toAttacker = shielded(counterLanded, ctx.attackerInCity)
+                toAttackerCity = cityShare(counterLanded, ctx.attackerInCity)
                 ctx.attacker.damage(toAttacker)
             }
         }
@@ -200,6 +233,8 @@ object Combat {
             damageToAttacker = toAttacker,
             defenderDestroyed = defenderDead,
             attackerDestroyed = attackerDead,
+            damageToDefenderCity = toDefenderCity,
+            damageToAttackerCity = toAttackerCity,
             attackerLevelled = attackerLevelled,
             defenderLevelled = defenderLevelled
         )

@@ -229,6 +229,17 @@ class HudRenderer(private val session: Session) {
             }
             Widgets.leftFit(canvas, ownerName, x, top + Ui.dp(45f), Ui.dp(10.5f), Ui.dp(130f),
                 if (owner >= 0) Palette.nationColour(session, owner) else dim)
+
+            // 城防：玩家得看得到還要磨幾回合，不然「打不下來」會像是壞掉。
+            if (province.hasCity) {
+                val hp = session.cityHp[province.id]
+                val max = province.maxCityHp
+                Widgets.leftFit(
+                    canvas, Strings.format(R.string.hud_city_defence, hp, max),
+                    x, top + Ui.dp(59f), Ui.dp(10.5f), Ui.dp(130f),
+                    Palette.cityHealthColour(hp, max)
+                )
+            }
         }
     }
 
