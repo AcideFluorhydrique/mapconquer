@@ -5,7 +5,6 @@ package io.github.acidefluorhydrique.mapconquer.ai
 
 import io.github.acidefluorhydrique.mapconquer.game.AiProfile
 import io.github.acidefluorhydrique.mapconquer.game.Orders
-import io.github.acidefluorhydrique.mapconquer.game.Relation
 import io.github.acidefluorhydrique.mapconquer.game.Session
 import io.github.acidefluorhydrique.mapconquer.game.UnitMoveRules
 import io.github.acidefluorhydrique.mapconquer.units.ArmyUnit
@@ -34,9 +33,9 @@ import io.github.acidefluorhydrique.mapconquer.units.UnitKind
  */
 class AiPlayer(private val session: Session, private val nationId: Int) {
 
-    private enum class Phase { DIPLOMACY, RESEARCH, PRODUCTION, UNITS, DONE }
+    private enum class Phase { RESEARCH, PRODUCTION, UNITS, DONE }
 
-    private var phase = Phase.DIPLOMACY
+    private var phase = Phase.RESEARCH
     private val queue = ArrayDeque<Int>()
     private val reachable = ArrayList<Int>(128)
     private val targets = ArrayList<Int>(32)
@@ -47,13 +46,20 @@ class AiPlayer(private val session: Session, private val nationId: Int) {
 
     val isDone: Boolean get() = phase == Phase.DONE
 
+    // AI 沒有外交階段。誰跟誰打由陣營決定，開局就寫在劇本裡 ——
+    // 原本會依「接壤 + 國力比」挑弱鄰宣戰，結果是幾十個國家互相亂打，
+    // 玩家看到一張跟陣營完全對不上的地圖：軸心內鬥、誰都在打中立國。
+    // 宣戰是玩家的權利，不是 AI 的日常行為。
+
     /** 做一件事。回傳 false 代表這個 AI 這回合已經沒事做了。 */
     fun step(): Boolean {
+        // 旁觀者整個回合不做事。守軍留在原地，資金不動，也不研發 ——
+        // 中立不是「暫時還沒開打」，是根本不參加。
+        if (session.isBystander(nationId)) {
+            phase = Phase.DONE
+            return false
+        }
         when (phase) {
-            Phase.DIPLOMACY -> {
-                considerDiplomacy()
-                phase = Phase.RESEARCH
-            }
             Phase.RESEARCH -> {
                 considerResearch()
                 phase = Phase.PRODUCTION
@@ -80,90 +86,6 @@ class AiPlayer(private val session: Session, private val nationId: Int) {
     // ------------------------------------------------------------------
     // 外交
     // ------------------------------------------------------------------
-
-    /**
-     * 宣戰判斷。
-     *
-     * 只看兩件事：接壤，以及國力比。刻意不做長期的敵意累積 ——
-     * 那種模型在幾十個 AI 同時跑的時候會產生一堆玩家看不懂的連鎖反應，
-     * 而「弱的鄰居會被打」是任何人第一眼就能理解的規則。
-     */
-    private fun considerDiplomacy() {
-        if (profile == AiProfile.TURTLE) return
-
-        // 一次掃過整張地圖算出「誰跟我接壤」與「每個國家多強」，
-        // 而不是每考慮一個對象就重掃一次。世界劇本有上百個國家，
-        // 後者是 O(國家² × 省份)，在手機上一個回合就要好幾秒。
-        val neighbours = collectBorderingNations()
-        if (neighbours.isEmpty()) return
-        val strength = strengthTable()
-
-        val myStrength = strength[nationId]
-        if (myStrength <= 0) return
-
-        var bestTarget = -1
-        var bestRatio = 0f
-        for (other in neighbours) {
-            if (other == nationId) continue
-            val candidate = session.nations[other]
-            if (candidate.eliminated) continue
-            // 同陣營不互打。沒有這一條，1939 年的德國會因為義大利弱而吃掉它 ——
-            // 玩家看到的是一張標著「軸心」卻在內鬥的地圖。
-            if (session.sameBloc(nationId, other)) continue
-            if (session.diplomacy.relation(nationId, other) != Relation.PEACE) continue
-            if (session.diplomacy.truceLeft(nationId, other) > 0) continue
-
-            var ratio = myStrength.toFloat() / strength[other].coerceAtLeast(1)
-            // 機會主義者專挑已經在別處交戰的對象。
-            if (profile == AiProfile.OPPORTUNIST && isFightingSomeone(other)) ratio *= 1.6f
-            if (profile == AiProfile.AGGRESSIVE) ratio *= 1.25f
-            if (ratio > bestRatio) {
-                bestRatio = ratio
-                bestTarget = other
-            }
-        }
-        if (bestTarget >= 0 && bestRatio >= DECLARE_WAR_RATIO) {
-            if (session.diplomacy.declareWar(nationId, bestTarget)) {
-                session.pushEvent(
-                    "event_war_declared",
-                    listOf(nation.nameKey, session.nations[bestTarget].nameKey),
-                    -1,
-                    nationId
-                )
-            }
-        }
-    }
-
-    /** 與本國接壤的所有國家 id。 */
-    private fun collectBorderingNations(): List<Int> {
-        val found = HashSet<Int>(8)
-        for (province in session.map.provinces) {
-            if (session.provinceOwner[province.id] != nationId) continue
-            for (n in province.neighbours) {
-                val owner = session.provinceOwner[n]
-                if (owner >= 0 && owner != nationId) found.add(owner)
-            }
-        }
-        return found.toList()
-    }
-
-    /** 一次算出所有國家的戰力，索引就是國家 id。 */
-    private fun strengthTable(): IntArray {
-        val table = IntArray(session.nations.size)
-        for (unit in session.units) {
-            if (!unit.isAlive) continue
-            if (unit.nationId in table.indices) {
-                table[unit.nationId] += unit.kind.cost * unit.hp / 100
-            }
-        }
-        for (owner in session.provinceOwner) {
-            if (owner in table.indices && owner >= 0) table[owner] += 40
-        }
-        return table
-    }
-
-    private fun isFightingSomeone(id: Int): Boolean =
-        session.nations.any { it.id != id && !it.eliminated && session.isHostile(id, it.id) }
 
     // ------------------------------------------------------------------
     // 研發
@@ -444,7 +366,6 @@ class AiPlayer(private val session: Session, private val nationId: Int) {
 
     companion object {
         /** 國力比要到這個倍數才會主動宣戰。 */
-        const val DECLARE_WAR_RATIO = 1.35f
 
         /** 低於這個錢就不研發，留著造兵。 */
         const val RESEARCH_RESERVE = 900

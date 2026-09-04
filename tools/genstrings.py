@@ -159,7 +159,10 @@ UI = {
     "objective_eliminate": ("Eliminate %3$s", "消滅 %3$s", "消灭 %3$s"),
     "objective_survive": ("Survive until turn %2$d", "撐過第 %2$d 回合", "撑过第 %2$d 回合"),
     "objective_control": ("Control %1$d provinces", "控制 %1$d 個省份", "控制 %1$d 个省份"),
-    "objective_conquest": ("Control %1$d%% of the world", "控制世界 %1$d%% 的省份", "控制世界 %1$d%% 的省份"),
+    "objective_conquest": ("Eliminate every nation of the opposing bloc",
+                           "消滅敵對陣營的所有國家", "消灭敌对阵营的所有国家"),
+    "objective_conquest_solo": ("Control %1$d%% of the world",
+                                "控制世界 %1$d%% 的省份", "控制世界 %1$d%% 的省份"),
 
     # 難度
     "difficulty_recruit": ("Recruit", "新兵", "新兵"),
@@ -412,11 +415,6 @@ SCENARIO_TEXT = {
         "The world as the empires held it: Africa and southern Asia belong to London, Paris and Rome rather than to themselves. Axis and Allies are already at war; everyone else is watching. Pick anyone.",
         "帝國手中的世界：非洲與南亞不屬於自己，屬於倫敦、巴黎與羅馬。軸心與同盟已經開戰，其餘國家在旁邊看。想選誰都行。",
         "帝国手中的世界：非洲与南亚不属于自己，属于伦敦、巴黎与罗马。轴心与同盟已经开战，其余国家在旁边看。想选谁都行。"),
-    "scn_conquest_empires": ("Age of Empires", "帝國時代", "帝国时代"),
-    "scn_conquest_empires_desc": (
-        "The same world carved into two dozen sprawling empires. Fewer players, far bigger fronts.",
-        "同一個世界，被切成二十來個橫跨大洋的帝國。玩家更少，戰線大得多。",
-        "同一个世界，被切成二十来个横跨大洋的帝国。玩家更少，战线大得多。"),
 
     "scn_campaign_ww2_01_poland": ("1939 \u00b7 Poland", "1939 \u00b7 \u6ce2\u862d", "1939 \u00b7 \u6ce2\u5170"),
     "scn_campaign_ww2_01_poland_desc": (

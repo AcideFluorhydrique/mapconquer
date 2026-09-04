@@ -108,7 +108,8 @@
     <string name="objective_eliminate">Eliminate %3$s</string>
     <string name="objective_survive">Survive until turn %2$d</string>
     <string name="objective_control">Control %1$d provinces</string>
-    <string name="objective_conquest">Control %1$d%% of the world</string>
+    <string name="objective_conquest">Eliminate every nation of the opposing bloc</string>
+    <string name="objective_conquest_solo">Control %1$d%% of the world</string>
     <string name="difficulty_recruit">Recruit</string>
     <string name="difficulty_officer">Officer</string>
     <string name="difficulty_commander">Commander</string>
@@ -251,8 +252,6 @@
     <!-- Scenarios -->
     <string name="scn_conquest_1939">1939 · The World</string>
     <string name="scn_conquest_1939_desc">The world as the empires held it: Africa and southern Asia belong to London, Paris and Rome rather than to themselves. Axis and Allies are already at war; everyone else is watching. Pick anyone.</string>
-    <string name="scn_conquest_empires">Age of Empires</string>
-    <string name="scn_conquest_empires_desc">The same world carved into two dozen sprawling empires. Fewer players, far bigger fronts.</string>
     <string name="scn_campaign_ww2_01_poland">1939 · Poland</string>
     <string name="scn_campaign_ww2_01_poland_desc">You are outnumbered in armour, in aircraft and in men. This one cannot be won — it can be made expensive. Hold Warsaw to turn 20.</string>
     <string name="scn_campaign_ww2_02_france">1940 · France</string>
@@ -378,8 +377,6 @@
     <string name="nation_zaf">South Africa</string>
     <string name="nation_zmb">Zambia</string>
     <string name="nation_zwe">Zimbabwe</string>
-    <string name="nation_aut_hu">Danube Empire</string>
-    <string name="nation_bel_congo">Congo Company</string>
     <string name="nation_roc">Republic of China</string>
 
     <!-- Provinces -->

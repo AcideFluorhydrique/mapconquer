@@ -108,7 +108,8 @@
     <string name="objective_eliminate">消滅 %3$s</string>
     <string name="objective_survive">撐過第 %2$d 回合</string>
     <string name="objective_control">控制 %1$d 個省份</string>
-    <string name="objective_conquest">控制世界 %1$d%% 的省份</string>
+    <string name="objective_conquest">消滅敵對陣營的所有國家</string>
+    <string name="objective_conquest_solo">控制世界 %1$d%% 的省份</string>
     <string name="difficulty_recruit">新兵</string>
     <string name="difficulty_officer">軍官</string>
     <string name="difficulty_commander">指揮官</string>
@@ -251,8 +252,6 @@
     <!-- Scenarios -->
     <string name="scn_conquest_1939">1939 · 全球</string>
     <string name="scn_conquest_1939_desc">帝國手中的世界：非洲與南亞不屬於自己，屬於倫敦、巴黎與羅馬。軸心與同盟已經開戰，其餘國家在旁邊看。想選誰都行。</string>
-    <string name="scn_conquest_empires">帝國時代</string>
-    <string name="scn_conquest_empires_desc">同一個世界，被切成二十來個橫跨大洋的帝國。玩家更少，戰線大得多。</string>
     <string name="scn_campaign_ww2_01_poland">1939 · 波蘭</string>
     <string name="scn_campaign_ww2_01_poland_desc">裝甲、飛機、人數，你樣樣都少。這一關贏不了，但可以讓對方付出代價：守住華沙到第 20 回合。</string>
     <string name="scn_campaign_ww2_02_france">1940 · 法蘭西</string>
@@ -378,8 +377,6 @@
     <string name="nation_zaf">南非</string>
     <string name="nation_zmb">尚比亞</string>
     <string name="nation_zwe">辛巴威</string>
-    <string name="nation_aut_hu">多瑙帝國</string>
-    <string name="nation_bel_congo">剛果公司</string>
     <string name="nation_roc">中華民國</string>
 
     <!-- Provinces -->

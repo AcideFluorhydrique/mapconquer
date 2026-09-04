@@ -392,33 +392,6 @@ NATIONS = {
 
 # 工業時代劇本：把現代國家併成幾個大勢力，同一張地圖直接變成另一種局。
 # 這是「一張地圖多個劇本」的示範 —— 地形只讀一次，勢力分佈完全由劇本決定。
-EMPIRE_MERGE = {
-    "IRL": "GBR", "IND": "GBR", "PAK": "GBR", "BGD": "GBR", "LKA": "GBR",
-    "MMR": "GBR", "MYS": "GBR", "SGP": "GBR", "NGA": "GBR", "GHA": "GBR",
-    "KEN": "GBR", "UGA": "GBR", "TZA": "GBR", "ZMB": "GBR", "ZWE": "GBR",
-    "ZAF": "GBR", "EGY": "GBR", "SDN": "GBR", "AUS": "GBR", "NZL": "GBR",
-    "CAN": "GBR", "OMN": "GBR", "ARE": "GBR", "YEM": "GBR", "NPL": "GBR",
-    "AFG": "GBR",
-    "DZA": "FRA", "MAR": "FRA", "TUN": "FRA", "SEN": "FRA", "MLI": "FRA",
-    "CIV": "FRA", "TCD": "FRA", "KHM": "FRA", "VNM": "FRA", "MDG": "FRA",
-    "BEL": "FRA", "SYR": "FRA",
-    "AUT": "AUT_HU", "CZE": "AUT_HU", "HUN": "AUT_HU", "SRB": "AUT_HU",
-    "PNG": "DEU", "NAM": "DEU",
-    "BLR": "RUS", "UKR": "RUS", "KAZ": "RUS", "UZB": "RUS", "TKM": "RUS",
-    "AZE": "RUS", "GEO": "RUS", "FIN": "RUS", "LVA": "RUS", "POL": "RUS",
-    "MNG": "RUS",
-    "KOR": "JPN", "PRK": "JPN", "TWN": "JPN",
-    "IDN": "NLD",
-    "BGR": "TUR", "ROU": "TUR", "GRC": "TUR", "ISR": "TUR", "IRQ": "TUR",
-    "SAU": "TUR",
-    "LBY": "ITA", "SOM": "ITA", "ETH": "ITA",
-    "AGO": "PRT", "MOZ": "PRT",
-    "COD": "BEL_CONGO",
-    "GTM": "MEX", "PAN": "USA", "CUB": "USA", "DOM": "USA", "PHL": "USA",
-    "BOL": "PER", "PRY": "ARG", "URY": "ARG", "ECU": "COL", "VEN": "COL",
-    "GRL": "DNK", "ISL": "DNK", "NOR": "SWE",
-}
-
 # 1939 年的世界。非洲與南亞在這一年幾乎沒有主權國家 —— 它們是英、法、
 # 義、比、葡的屬地，所以那些省份直接算在宗主國名下。這不只是為了貼近史實：
 # 把非洲攤成三十一個各擁一城的國家，等於在地圖上多放三十一個沒有戲份的
@@ -492,11 +465,9 @@ WW2_NEUTRALS = {
 
 # 合併後才出現的新勢力，需要自己的名字。
 EXTRA_NATIONS = {
-    "AUT_HU":    ("Danube Empire", "多瑙帝國", "多瑙帝国", "#A0A6AC", "OPPORTUNIST", 900),
     # 基準壓到 1100：省份多會被資金公式放大（十五個省乘 1.75），照 2400 算
     # 出來是全球最有錢的國家。1939 年的中華民國正在打一場守勢戰爭，不是首富。
     "ROC":       ("Republic of China", "中華民國", "中华民国", "#B4454C", "BALANCED", 1100),
-    "BEL_CONGO": ("Congo Company", "剛果公司", "刚果公司", "#9E8C4C", "TURTLE",      400),
 }
 
 

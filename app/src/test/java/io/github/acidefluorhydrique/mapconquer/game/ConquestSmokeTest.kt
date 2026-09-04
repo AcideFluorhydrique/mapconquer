@@ -96,7 +96,7 @@ class ConquestSmokeTest {
     }
 
     @Test
-    fun `the modern world scenario runs for several full turns`() {
+    fun `the 1939 world runs for several full turns`() {
         val scenario = TestAssets.scenario("conquest_1939")
         val map = TestAssets.map(scenario.mapId)
         val session = Session(map, scenario, Difficulty.OFFICER, "USA", 20260828L)
@@ -114,15 +114,38 @@ class ConquestSmokeTest {
         assertTrue("四回合就有人統一世界，平衡出了問題", session.status == SessionStatus.PLAYING)
     }
 
+    /**
+     * 旁觀國不動。它們有城市、有守軍，但沒有陣營也沒有交戰對象 ——
+     * 整局下來不該多出一支部隊，也不該少掉一塊地。
+     */
     @Test
-    fun `the empire scenario runs too`() {
-        val scenario = TestAssets.scenario("conquest_empires")
+    fun `bystanders neither build nor lose ground`() {
+        val scenario = TestAssets.scenario("campaign_ww2_01_poland")
         val map = TestAssets.map(scenario.mapId)
-        val session = Session(map, scenario, Difficulty.MARSHAL, "GBR", 7L)
+        val session = Session(map, scenario, Difficulty.MARSHAL, "POL", 7L)
+
+        val quiet = session.nations.filter { session.isBystander(it.id) }
+        assertTrue("這一關應該有旁觀國", quiet.isNotEmpty())
+        val before = quiet.associate {
+            it.id to Pair(session.unitsOf(it.id).size, session.provincesOf(it.id))
+        }
+
         assertInvariants(session, "start")
-        repeat(3) {
+        repeat(4) {
             playOneTurn(session)
             assertInvariants(session, "turn ${session.turn}")
+        }
+
+        for (nation in quiet) {
+            val (units, provinces) = before.getValue(nation.id)
+            assertEquals(
+                "${nation.code}: 中立國多造了兵",
+                units, session.unitsOf(nation.id).size
+            )
+            assertEquals(
+                "${nation.code}: 中立國掉了省份，有人在沒宣戰的情況下打它",
+                provinces, session.provincesOf(nation.id)
+            )
         }
     }
 

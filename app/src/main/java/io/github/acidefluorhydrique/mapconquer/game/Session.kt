@@ -602,13 +602,26 @@ class Session(
             status = SessionStatus.VICTORY
             return
         }
-        // 征服模式沒寫目標時的預設：拿下地圖上八成的省份。
+        // 征服模式沒寫目標時的預設：打垮敵對陣營。
+        //
+        // 原本是「拿下地圖上八成的省份」，那條規則會逼玩家去打友軍與中立國 ——
+        // 八成的地圖本來就不可能只從敵人身上拿。這個模式是兩大陣營之間的
+        // 戰爭，贏的定義就該是敵人沒了。
         if (objectives.isEmpty()) {
-            val owned = provincesOf(playerNationId)
-            val total = map.provinces.count { it.tiles.isNotEmpty() }
-            if (total > 0 && owned * 100 / total >= CONQUEST_VICTORY_PERCENT) {
-                status = SessionStatus.VICTORY
-                return
+            val enemies = blocEnemiesOf(playerNationId)
+            if (enemies.isNotEmpty()) {
+                if (enemies.all { it.eliminated }) {
+                    status = SessionStatus.VICTORY
+                    return
+                }
+            } else {
+                // 玩家選了中立國：沒有陣營可打垮，回到面積規則。
+                val owned = provincesOf(playerNationId)
+                val total = map.provinces.count { it.tiles.isNotEmpty() }
+                if (total > 0 && owned * 100 / total >= CONQUEST_VICTORY_PERCENT) {
+                    status = SessionStatus.VICTORY
+                    return
+                }
             }
         }
         if (scenario.turnLimit > 0 && turn > scenario.turnLimit) {
@@ -672,6 +685,30 @@ class Session(
      * 中立（空字串）不算陣營：兩個中立國之間沒有任何默契，瑞士不會因為
      * 瑞典也中立就不打它。只有具名的陣營才互相約束。
      */
+    /**
+     * 這個國家是不是「旁觀者」：沒有陣營，而且沒有跟任何人交戰。
+     *
+     * 旁觀者不建軍、不移動、不宣戰。它有城市、有守軍、擋在路上，但除非
+     * 有人對它動手，它在棋盤上就是地形的一部分。1939 年的瑞士不會因為
+     * 鄰居打起來就開始擴軍。
+     */
+    fun isBystander(nationId: Int): Boolean {
+        val nation = nations.getOrNull(nationId) ?: return false
+        if (nation.bloc.isNotEmpty()) return false
+        for (other in nations.indices) {
+            if (other == nationId) continue
+            if (diplomacy.relation(nationId, other) == Relation.WAR) return false
+        }
+        return true
+    }
+
+    /** 與 [nationId] 分屬敵對陣營的國家；兩邊都要有陣營才算數。 */
+    fun blocEnemiesOf(nationId: Int): List<Nation> {
+        val bloc = nations.getOrNull(nationId)?.bloc.orEmpty()
+        if (bloc.isEmpty()) return emptyList()
+        return nations.filter { it.bloc.isNotEmpty() && it.bloc != bloc }
+    }
+
     fun sameBloc(a: Int, b: Int): Boolean {
         val blocA = nations.getOrNull(a)?.bloc ?: return false
         return blocA.isNotEmpty() && blocA == nations.getOrNull(b)?.bloc

@@ -289,7 +289,12 @@ class PanelRenderer(private val session: Session) {
         val objectives = session.scenario.objectives
         if (objectives.isEmpty()) {
             Widgets.leftFit(
-                canvas, Strings.format(R.string.objective_conquest, Session.CONQUEST_VICTORY_PERCENT),
+                canvas,
+                if (session.blocEnemiesOf(session.playerNationId).isEmpty()) {
+                    Strings.format(R.string.objective_conquest_solo, Session.CONQUEST_VICTORY_PERCENT)
+                } else {
+                    Strings.get(R.string.objective_conquest)
+                },
                 panel.left + Ui.dp(16f), y, Ui.dp(11.5f), panel.width() - Ui.dp(32f), ink
             )
             y += Ui.dp(20f)

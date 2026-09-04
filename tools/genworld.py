@@ -526,6 +526,21 @@ def write_campaign(built, mission):
     if missing:
         print("  ! %s: 這些省份不在 %s 上：%s" % (mission["id"], built.id, ", ".join(missing)))
 
+    # 地圖上沒被劇本點名的省份，交還給它們真正的主人，而且是中立的。
+    #
+    # 原本這些省份沒有主人：地圖邊上一整排沒有國旗的空城，AI 走過去就白拿。
+    # 那不是中立國，那是無人區 —— 而歐洲在 1939 年沒有無人區。
+    bystanders = set()
+    claimed = set()
+    for ids in owners.values():
+        claimed.update(ids)
+    for pid, (_key, _tier, nation, _tile) in enumerate(built.provinces):
+        if pid in claimed:
+            continue
+        owners.setdefault(nation, []).append(pid)
+        if nation not in mission["forces"]:
+            bystanders.add(nation)
+
     nation_funds = {code: campaign_profile(code, mission)[1] for code in owners}
 
     lines = []
@@ -546,6 +561,9 @@ def write_campaign(built, mission):
     lines.append("[nations]")
     for code in owners:
         colour, funds, profile = campaign_profile(code, mission)
+        # 補進來的旁觀國一律固守：它們的作用是佔著地方，不是參戰。
+        if code in bystanders:
+            profile = "TURTLE"
         capital = max(owners[code], key=lambda pid: built.provinces[pid][1]) if owners[code] else -1
         lines.append("%s|nation_%s|%s|%d|%s|%d|%s|%s|%s" % (
             code, code.lower(), colour, capital, profile, funds,
@@ -563,6 +581,7 @@ def write_campaign(built, mission):
     lines.append("")
     lines.append("[units]")
     lines.extend(campaign_units(built, owners, mission))
+    lines.extend(garrison_only(built, owners, bystanders))
     lines.append("")
     lines.append("[playable]")
     lines.append(mission["player"])
@@ -651,6 +670,21 @@ def water_pool(built, ids, rings=3):
     return order
 
 
+def garrison_only(built, owners, codes):
+    """旁觀國的守軍：每座城一支步兵。
+
+    有城無兵的中立國等於一張邀請函 —— 玩家與 AI 都會順手拿走。給一支守軍，
+    「繞過去還是打過去」才會是一個真的選擇。
+    """
+    lines = []
+    for code in sorted(codes):
+        for pid in owners.get(code, []):
+            tile = built.provinces[pid][3]
+            col, row = tile % built.grid.cols, tile // built.grid.cols
+            lines.append("%s|%d,%d|INFANTRY|1|-" % (code, col, row))
+    return lines
+
+
 def campaign_units(built, owners, mission):
     """關卡的開局部隊由 mission 的編制表決定，好讓每一關教一件事。
 
@@ -664,8 +698,17 @@ def campaign_units(built, owners, mission):
         ids = owners.get(code, [])
         if not ids:
             continue
-        land = land_pool(built, ids)
-        water = water_pool(built, ids)
+        # 自己的地方擺不下時，往同陣營的領土擺。非洲軍本來就是駐在
+        # 義屬利比亞的 —— 盟友的港口對開局部署來說就是自己的港口。
+        allied = []
+        for other, members in mission["blocs"].items():
+            if code not in members:
+                continue
+            for mate in members:
+                if mate != code:
+                    allied.extend(owners.get(mate, []))
+        land = land_pool(built, ids) + land_pool(built, allied)
+        water = water_pool(built, ids) + water_pool(built, allied)
         land_at = 0
         water_at = 0
         # 司令部先放，才會落在省會上 —— 它的加成是以自己為圓心算的。
@@ -713,8 +756,6 @@ def main():
             print("    - %s 放不下：%s" % (key, reason))
 
     world = built_maps["world"]
-    print(write_conquest(world, "conquest_empires", "scn_conquest_empires",
-                         "scn_conquest_empires_desc", 10, places.EMPIRE_MERGE, 1900))
     print(write_conquest(world, "conquest_1939", "scn_conquest_1939",
                          "scn_conquest_1939_desc", 20, places.WW2_MERGE, 1939,
                          turtle=places.WW2_NEUTRALS, blocs=places.WW2_BLOCS))
