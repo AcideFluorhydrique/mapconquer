@@ -115,6 +115,7 @@
     <string name="difficulty_officer">军官</string>
     <string name="difficulty_commander">指挥官</string>
     <string name="difficulty_marshal">元帅</string>
+    <string name="nation_sun">苏联</string>
     <string name="bloc_axis">轴心国</string>
     <string name="bloc_allies">同盟国</string>
     <string name="bloc_west">西方阵营</string>
@@ -567,6 +568,8 @@
     <string name="prov_los_angeles">洛杉矶</string>
     <string name="prov_san_francisco">旧金山</string>
     <string name="prov_seattle">西雅图</string>
+    <string name="prov_honolulu">檀香山</string>
+    <string name="prov_midway">中途岛</string>
     <string name="prov_anchorage">安克雷奇</string>
     <string name="prov_toronto">多伦多</string>
     <string name="prov_montreal">蒙特利尔</string>

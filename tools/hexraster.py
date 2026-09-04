@@ -161,6 +161,37 @@ def anchor_cells(grid, anchors):
     return out
 
 
+def polyline_cells(grid, points, step=0.12):
+    """沿著折線取樣，回傳沿途最近的格子索引集合。
+
+    用「沿線找最近格」而不是「算點到線的距離再設門檻」：門檻要跟格子大小
+    掛鉤，而這張圖的格子大小是逐區變化的，一個固定門檻在歐洲會挖太寬、
+    在太平洋又挖不斷。沿線取樣得到的一定是一條連續、剛好一格寬的水道。
+    """
+    cells = set()
+    for i in range(len(points) - 1):
+        x0, y0 = points[i]
+        x1, y1 = points[i + 1]
+        span = math.hypot(x1 - x0, y1 - y0)
+        steps = max(2, int(span / step) + 1)
+        for k in range(steps + 1):
+            t = k / steps
+            lon = x0 + (x1 - x0) * t
+            lat = y0 + (y1 - y0) * t
+            best = None
+            best_d = None
+            for row in range(grid.rows):
+                for col in range(grid.cols):
+                    clon, clat = grid.lonlat(col, row)
+                    dlon = (clon - lon + 180.0) % 360.0 - 180.0
+                    d = dlon * dlon + (clat - lat) * (clat - lat)
+                    if best_d is None or d < best_d:
+                        best_d, best = d, grid.index(col, row)
+            if best is not None:
+                cells.add(best)
+    return cells
+
+
 def build_terrain(grid, anchors=()):
     """回傳 (terrain_codes, is_land)，兩者都是逐格的一維串列。"""
     land_polys = list(geodata.LAND.values())
@@ -180,8 +211,15 @@ def build_terrain(grid, anchors=()):
             lonlat[i] = (lon, lat)
             is_land[i] = in_any(lon, lat, land_polys) and not in_any(lon, lat, sea_polys)
 
-    for i in anchor_cells(grid, anchors):
+    kept = anchor_cells(grid, anchors)
+    for i in kept:
         is_land[i] = True
+
+    # 海峽最後挖，但挖不到城市所在的格 —— 伊斯坦堡坐在海峽上。
+    for points in geodata.STRAITS.values():
+        for i in polyline_cells(grid, points):
+            if i not in kept:
+                is_land[i] = False
 
     terrain = ['~'] * count
     for row in range(grid.rows):

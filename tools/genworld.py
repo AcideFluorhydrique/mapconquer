@@ -391,11 +391,15 @@ def garrison_lines(built, owners, nation_funds):
 
 
 def write_conquest(built, scenario_id, name_key, desc_key, order, merge,
-                   start_year, turtle=None, blocs=None):
+                   start_year, turtle=None, blocs=None, overrides=None,
+                   renames=None):
     """把 places 的國家分佈展開成一份征服劇本。"""
     owners = {}
-    for pid, (_key, _tier, nation, _tile) in enumerate(built.provinces):
+    for pid, (key, _tier, nation, _tile) in enumerate(built.provinces):
         code = merge.get(nation, nation) if merge else nation
+        # 逐省覆寫排在合併之後：香港不會因為它在中國境內就跟著中國走。
+        if overrides:
+            code = overrides.get(key, code)
         owners.setdefault(code, []).append(pid)
 
     def nation_row(code):
@@ -435,8 +439,9 @@ def write_conquest(built, scenario_id, name_key, desc_key, order, merge,
             profile = "TURTLE"
         funds = nation_funds[code]
         capital = max(owners[code], key=lambda pid: built.provinces[pid][1])
-        lines.append("%s|nation_%s|%s|%d|%s|%d|%s|%s|%s" % (
-            code, code.lower(), colour, capital, profile, funds,
+        lines.append("%s|%s|%s|%d|%s|%d|%s|%s|%s" % (
+            code, (renames or {}).get(code, "nation_" + code.lower()),
+            colour, capital, profile, funds,
             ",".join(str(v) for v in tech_for(funds)),
             places.FLAGS.get(code, ""),
             bloc_of(code, blocs),
@@ -534,12 +539,15 @@ def write_campaign(built, mission):
     claimed = set()
     for ids in owners.values():
         claimed.update(ids)
-    for pid, (_key, _tier, nation, _tile) in enumerate(built.provinces):
+    merge = mission.get("merge", places.WW2_MERGE)
+    overrides = mission.get("overrides", places.WW2_PROVINCE_OWNERS)
+    for pid, (key, _tier, nation, _tile) in enumerate(built.provinces):
         if pid in claimed:
             continue
-        owners.setdefault(nation, []).append(pid)
-        if nation not in mission["forces"]:
-            bystanders.add(nation)
+        code = overrides.get(key, merge.get(nation, nation))
+        owners.setdefault(code, []).append(pid)
+        if code not in mission["forces"]:
+            bystanders.add(code)
 
     nation_funds = {code: campaign_profile(code, mission)[1] for code in owners}
 
@@ -565,8 +573,10 @@ def write_campaign(built, mission):
         if code in bystanders:
             profile = "TURTLE"
         capital = max(owners[code], key=lambda pid: built.provinces[pid][1]) if owners[code] else -1
-        lines.append("%s|nation_%s|%s|%d|%s|%d|%s|%s|%s" % (
-            code, code.lower(), colour, capital, profile, funds,
+        lines.append("%s|%s|%s|%d|%s|%d|%s|%s|%s" % (
+            code,
+            mission.get("renames", places.WW2_RENAMES).get(code, "nation_" + code.lower()),
+            colour, capital, profile, funds,
             ",".join(str(v) for v in mission.get("tech", {}).get(code, [1, 1, 1, 0, 0, 1])),
             places.FLAGS.get(code, ""),
             bloc_of(code, mission["blocs"]),
@@ -758,7 +768,9 @@ def main():
     world = built_maps["world"]
     print(write_conquest(world, "conquest_1939", "scn_conquest_1939",
                          "scn_conquest_1939_desc", 20, places.WW2_MERGE, 1939,
-                         turtle=places.WW2_NEUTRALS, blocs=places.WW2_BLOCS))
+                         turtle=places.WW2_NEUTRALS, blocs=places.WW2_BLOCS,
+                         overrides=places.WW2_PROVINCE_OWNERS,
+                         renames=places.WW2_RENAMES))
 
     for mission in scn.CAMPAIGN:
         built = built_maps[mission["map"]]

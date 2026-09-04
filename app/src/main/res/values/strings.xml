@@ -115,6 +115,7 @@
     <string name="difficulty_officer">Officer</string>
     <string name="difficulty_commander">Commander</string>
     <string name="difficulty_marshal">Marshal</string>
+    <string name="nation_sun">Soviet Union</string>
     <string name="bloc_axis">Axis</string>
     <string name="bloc_allies">Allies</string>
     <string name="bloc_west">Western bloc</string>
@@ -567,6 +568,8 @@
     <string name="prov_los_angeles">Los Angeles</string>
     <string name="prov_san_francisco">San Francisco</string>
     <string name="prov_seattle">Seattle</string>
+    <string name="prov_honolulu">Honolulu</string>
+    <string name="prov_midway">Midway</string>
     <string name="prov_anchorage">Anchorage</string>
     <string name="prov_toronto">Toronto</string>
     <string name="prov_montreal">Montreal</string>

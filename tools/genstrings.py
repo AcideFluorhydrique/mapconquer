@@ -172,6 +172,8 @@ UI = {
     "difficulty_marshal": ("Marshal", "元帥", "元帅"),
 
     # AI 性格
+    "nation_sun": ("Soviet Union", "蘇聯", "苏联"),
+
     "bloc_axis":    ("Axis",         "軸心國",   "轴心国"),
     "bloc_allies":  ("Allies",       "同盟國",   "同盟国"),
     "bloc_west":    ("Western bloc", "西方陣營", "西方阵营"),

@@ -7,8 +7,8 @@ cols 40
 rows 50
 
 [terrain]
--..jj-~~--h^^^^^hh.......--~~~~~~~~~~~~~
-----.---hh^^^^^^hh........----~~~~~~~~~~
+~~~~--~~--h^^^^^hh.......--~~~~~~~~~~~~~
+~~~-.---hh^^^^^^hh........----~~~~~~~~~~
 ~~~~---hhh^^^^^^hhh...........---~~~~~~~
 ~~~~~-hhh^^^^^^hhh..............---~~~~~
 ~~~~~-hhh^^^^^^hhh.................-~~~~
@@ -18,7 +18,7 @@ rows 50
 ~~~~-h^^^^^^^jjjjjjjjjjjjjjjjjjjjjj..--~
 ~~~-h^^^^^^jjjjjjjjjjjjjjjjjjjjjjjjjjj--
 ~~~-hh^^^^^hjjjjjjjjjjjjjjjjjjjjjjrrrrrr
-~~-hh^^^^^^jjjjjjjjjjjjjjjjjrrrrrrrrrjj.
+~~-hh^^^^^^jjjjjjjjjjjjjjjjjrrrrrrrrrjj-
 ~~~-h^^^^^^jjjjjjjjrrrrrrrrrrrrrrjjjjjjj
 ~~-h^^^^^^hjjjrrrrrrrrrrrjjjjjjjjjjjjjjj
 ~~-h^^^^^^hjjjjrrjjjjjjjjjjjjjjjjjjjjjjj
@@ -59,7 +59,7 @@ rows 50
 ~~~~~~~~~~-^^^^^^^dhh.-~~~~~~~~~~~~~~~~~
 
 [provinces]
-1:-1 4:0 5:-1 1:2 11:1 3:15 15:-1
+10:-1 1:2 11:1 3:15 15:-1
 4:-1 1:0 3:-1 2:2 11:1 5:15 14:-1
 7:-1 3:2 11:1 9:15 10:-1
 6:-1 4:2 11:1 11:15 8:-1
@@ -70,7 +70,7 @@ rows 50
 5:-1 4:3 10:1 14:15 4:16 3:-1
 4:-1 6:3 8:1 14:15 6:16 2:-1
 4:-1 1:4 6:3 7:1 15:15 7:16
-3:-1 3:4 5:3 6:1 16:15 7:16
+3:-1 3:4 5:3 6:1 16:15 6:16 1:-1
 4:-1 3:4 5:3 5:1 1:6 16:15 6:16
 3:-1 4:4 5:3 6:6 15:15 7:16
 3:-1 5:4 2:3 2:5 7:6 15:15 6:16
@@ -111,7 +111,7 @@ rows 50
 11:-1 11:12 18:-1
 
 [meta]
-0|prov_panama|2|4,0
+0|prov_panama|2|4,1
 1|prov_bogota|3|11,4
 2|prov_medellin|2|8,3
 3|prov_quito|1|5,9

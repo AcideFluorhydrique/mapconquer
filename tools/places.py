@@ -219,6 +219,8 @@ PROVINCES = [
     ("prov_los_angeles", -118.2, 34.1, 4, "USA", "Los Angeles",   "洛杉磯",   "洛杉矶"),
     ("prov_san_francisco", -122.4, 37.8, 3, "USA", "San Francisco", "舊金山", "旧金山"),
     ("prov_seattle",    -122.3,  47.6, 2, "USA", "Seattle",       "西雅圖",   "西雅图"),
+    ("prov_honolulu",    -157.8,  21.3, 2, "USA", "Honolulu",      "檀香山",   "檀香山"),
+    ("prov_midway",      -177.4,  28.2, 1, "USA", "Midway",        "中途島",   "中途岛"),
     ("prov_anchorage",  -149.9,  61.2, 1, "USA", "Anchorage",     "安克拉治", "安克雷奇"),
     ("prov_toronto",     -79.4,  43.7, 3, "CAN", "Toronto",       "多倫多",   "多伦多"),
     ("prov_montreal",    -73.6,  45.5, 2, "CAN", "Montreal",      "蒙特婁",   "蒙特利尔"),
@@ -403,7 +405,8 @@ WW2_MERGE = {
     # 大英帝國：自治領、印度、東南亞殖民地、非洲屬地、中東託管地。
     # 加拿大與澳洲不併：整個帝國算成一國之後，英國強到沒有對手可言。
     # 兩者當年也是有自己的軍隊與指揮體系的自治領。紐西蘭與南非留在英國名下。
-    "NZL": "GBR", "ZAF": "GBR", "NAM": "GBR",
+    # 紐西蘭與加拿大、澳洲一樣是自治領，有自己的軍隊與指揮體系。
+    "ZAF": "GBR", "NAM": "GBR",
     "IND": "GBR", "PAK": "GBR", "BGD": "GBR", "LKA": "GBR", "NPL": "GBR",
     "MMR": "GBR", "MYS": "GBR", "SGP": "GBR",
     "EGY": "GBR", "SDN": "GBR", "KEN": "GBR", "UGA": "GBR", "TZA": "GBR",
@@ -449,9 +452,25 @@ WW2_MERGE = {
 # 攤成一張逐對關係表，玩家看到的就不再是「兩邊」而是一團線。這裡選簡單。
 WW2_BLOCS = {
     "AXIS": ["DEU", "ITA", "JPN"],
-    "ALLIES": ["GBR", "FRA", "POL", "ROC", "CAN", "AUS"],
+    "ALLIES": ["GBR", "FRA", "POL", "ROC", "CAN", "AUS", "NZL"],
 }
 
+
+# 逐省的歸屬覆寫，在國家合併之後套用。
+#
+# 合併表是「國家 A 併進國家 B」，講不出「這一省在這一年屬於別人」——
+# 香港在 1939 年是英國的，滿洲是日本的，兩者都不能靠改 CHN 的歸屬來表達。
+WW2_PROVINCE_OWNERS = {
+    "prov_hong_kong": "GBR",
+    "prov_shenyang": "JPN",   # 滿洲國，1932 年起
+    "prov_harbin": "JPN",
+}
+
+# 同一個國家代碼在不同年代的名字。代碼是存檔的鍵，不能改，所以改的是
+# 顯示用的翻譯鍵。蘇聯沒有對應的 emoji 國旗，暫時沿用 🇷🇺。
+WW2_RENAMES = {
+    "RUS": "nation_sun",
+}
 
 # 1939 年不參戰的國家。它們有城市、有守軍、也擋在路上，但 AI 走 TURTLE：
 # 不主動宣戰，被打會還手。瑞士、瑞典、葡萄牙、西班牙、土耳其、愛爾蘭整場
