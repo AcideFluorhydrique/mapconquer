@@ -9,6 +9,7 @@ import io.github.acidefluorhydrique.mapconquer.units.CombatContext
 import io.github.acidefluorhydrique.mapconquer.units.CombatResult
 import io.github.acidefluorhydrique.mapconquer.units.CommanderSkill
 import io.github.acidefluorhydrique.mapconquer.units.Domain
+import io.github.acidefluorhydrique.mapconquer.units.TargetClass
 import io.github.acidefluorhydrique.mapconquer.units.TechBranch
 import io.github.acidefluorhydrique.mapconquer.units.UnitKind
 import io.github.acidefluorhydrique.mapconquer.world.MoveRules
@@ -218,8 +219,48 @@ object Orders {
     // 戰鬥
     // ------------------------------------------------------------------
 
+    /**
+     * 轟擊一座沒有守軍的城市。城防歸零之後城市不會自己易主 ——
+     * 佔領仍然要有人走進去，這一步只是把門打開。
+     */
+    private fun strikeCity(session: Session, attacker: ArmyUnit, targetTile: Int): CombatResult? {
+        val pid = cityTargetAt(session, attacker, targetTile)
+        if (pid < 0) return null
+        val damage = Combat.cityStrike(
+            attacker,
+            session.map.provinces[pid].cityDefenceBonus,
+            session.nations[attacker.nationId].techBonus(attacker.kind.branch),
+            session.commandAura(attacker),
+            session.moraleOf(attacker),
+            session.rng
+        )
+        if (damage <= 0) return null
+        val dealt = session.damageCity(pid, damage)
+        attacker.movesLeft = 0
+        attacker.entrenchment = 0
+        attacker.hasAttacked = true
+        attacker.supply = (attacker.supply - ATTACK_SUPPLY_COST).coerceAtLeast(0)
+        session.pushEvent(
+            "event_city_shelled",
+            listOf(session.map.provinces[pid].nameKey, dealt),
+            targetTile,
+            attacker.nationId
+        )
+        session.refreshOutcome()
+        return CombatResult(
+            damageToDefender = 0,
+            damageToAttacker = 0,
+            defenderDestroyed = false,
+            attackerDestroyed = false,
+            attackerLevelled = false,
+            defenderLevelled = false,
+            damageToDefenderCity = dealt
+        )
+    }
+
     fun canAttack(session: Session, attacker: ArmyUnit, targetTile: Int): Boolean =
-        findTarget(session, attacker, targetTile) != null
+        findTarget(session, attacker, targetTile) != null ||
+            cityTargetAt(session, attacker, targetTile) >= 0
 
     /** 這格上有沒有這支部隊打得到的敵人。 */
     fun findTarget(session: Session, attacker: ArmyUnit, targetTile: Int): ArmyUnit? {
@@ -239,6 +280,28 @@ object Orders {
         return null
     }
 
+    /**
+     * 這一格是不是一座「可以直接轟」的空城，回傳省份 id，不是的話回 -1。
+     *
+     * 沒有守軍的城市也該打得到。城防是易主的門檻，如果只有站上去圍攻
+     * 一條路，那座城在被拿下之前就完全無法互動 —— 砲兵在射程內卻對著它
+     * 沒有任何選項可按。
+     */
+    fun cityTargetAt(session: Session, attacker: ArmyUnit, tile: Int): Int {
+        if (attacker.hasAttacked || !attacker.isAlive || attacker.isLoaded) return -1
+        if (!attacker.kind.canAttack) return -1
+        if (session.isDisrupted(attacker)) return -1
+        if (attacker.kind.attackAgainst(TargetClass.ARMOURED) <= 0) return -1
+        if (!Combat.canReach(attacker, session.map.distance(attacker.tile, tile))) return -1
+        if (session.anyUnitAt(tile)) return -1
+        val pid = session.cityProvinceAt(tile)
+        if (pid < 0 || session.cityHp[pid] <= 0) return -1
+        val owner = session.provinceOwner[pid]
+        if (owner == attacker.nationId) return -1
+        if (owner >= 0 && !session.isHostile(owner, attacker.nationId)) return -1
+        return pid
+    }
+
     fun collectTargets(session: Session, attacker: ArmyUnit, into: MutableList<Int>) {
         into.clear()
         if (attacker.hasAttacked || !attacker.kind.canAttack || attacker.isLoaded) return
@@ -248,7 +311,11 @@ object Orders {
         val tiles = ArrayList<Int>(3 * range * (range + 1) + 1)
         map.collectWithin(attacker.tile, range, tiles)
         for (tile in tiles) {
-            if (findTarget(session, attacker, tile) != null) into.add(tile)
+            if (findTarget(session, attacker, tile) != null ||
+                cityTargetAt(session, attacker, tile) >= 0
+            ) {
+                into.add(tile)
+            }
         }
     }
 
@@ -295,7 +362,8 @@ object Orders {
         Combat.previewDamage(buildContext(session, attacker, defender))
 
     fun attack(session: Session, attacker: ArmyUnit, targetTile: Int): CombatResult? {
-        val defender = findTarget(session, attacker, targetTile) ?: return null
+        val defender = findTarget(session, attacker, targetTile)
+            ?: return strikeCity(session, attacker, targetTile)
         val ctx = buildContext(session, attacker, defender)
         val result = Combat.resolve(ctx, session.rng)
 
@@ -435,7 +503,7 @@ object Orders {
             if (!province.coastal) return BuildBlocker.NOT_COASTAL
             if (navalSpawnTile(session, province.capitalTile) < 0) return BuildBlocker.NO_ROOM
         } else {
-            if (!session.isTileFree(province.capitalTile, kind.domain)) return BuildBlocker.NO_ROOM
+            if (!session.isTileFree(province.capitalTile)) return BuildBlocker.NO_ROOM
         }
         return BuildBlocker.NONE
     }
@@ -446,7 +514,7 @@ object Orders {
         val n = session.map.neighbours(cityTile, buf)
         for (i in 0 until n) {
             val tile = buf[i]
-            if (session.map.isWater(tile) && session.isTileFree(tile, Domain.SEA)) return tile
+            if (session.map.isWater(tile) && session.isTileFree(tile)) return tile
         }
         return -1
     }

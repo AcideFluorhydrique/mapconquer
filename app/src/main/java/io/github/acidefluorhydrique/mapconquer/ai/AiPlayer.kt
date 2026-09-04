@@ -232,7 +232,19 @@ class AiPlayer(private val session: Session, private val nationId: Int) {
         var bestTile = -1
         var bestScore = 0f
         for (tile in targets) {
-            val defender = Orders.findTarget(session, unit, tile) ?: continue
+            val defender = Orders.findTarget(session, unit, tile)
+            if (defender == null) {
+                // 空城：沒有部隊可以評估，用打掉的城防當分數。壓低權重是
+                // 因為拆城防不會直接減少對方的戰力，只是為佔領開路。
+                val pid = Orders.cityTargetAt(session, unit, tile)
+                if (pid < 0) continue
+                val score = session.cityHp[pid].coerceAtMost(30) * 0.4f
+                if (score > bestScore) {
+                    bestScore = score
+                    bestTile = tile
+                }
+                continue
+            }
             val ctx = Orders.buildContext(session, unit, defender)
             val dealt = Combat.previewDamage(ctx)
             val taken = if (Combat.canRetaliate(ctx)) {

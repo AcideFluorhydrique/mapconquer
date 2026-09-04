@@ -621,13 +621,25 @@ class GameView(context: Context) : SurfaceView(context), SurfaceHolder.Callback 
             return
         }
         Audio.play(Sfx.ATTACK)
-        val defenderName = defender?.let { Strings.byName(it.kind.key) } ?: ""
-        toast(
-            Strings.format(
-                R.string.toast_combat,
-                defenderName, result.damageToDefender, result.damageToAttacker
+        if (defender == null) {
+            // 轟的是一座空城：傷害算在城防上，回報也該講城市而不是部隊。
+            val province = active.map.provinceAt(target)
+            toast(
+                Strings.format(
+                    R.string.toast_city_shelled,
+                    province?.let { Strings.byName(it.nameKey) } ?: "",
+                    result.damageToDefenderCity
+                )
             )
-        )
+        } else {
+            toast(
+                Strings.format(
+                    R.string.toast_combat,
+                    Strings.byName(defender.kind.key),
+                    result.damageToDefender, result.damageToAttacker
+                )
+            )
+        }
         overlay?.let {
             if (!unit.isAlive) it.clearSelection() else refreshHighlights(active, it)
         }

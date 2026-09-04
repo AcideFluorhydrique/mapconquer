@@ -46,6 +46,8 @@
     <string name="hud_toggle_grid">格線</string>
     <string name="hud_toggle_supply">補給</string>
     <string name="hud_neutral">中立</string>
+    <string name="toast_city_shelled">%1$s：城防 −%2$d</string>
+    <string name="event_city_shelled">%1$s 的城防被打掉 %2$d</string>
     <string name="hud_city_defence">城防 %1$d/%2$d</string>
     <string name="hud_terrain_line">%1$s · 防禦 +%2$d%%</string>
     <string name="hud_unit_level">等級 %1$d · 移動 %2$d/%3$d</string>

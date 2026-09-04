@@ -107,6 +107,9 @@ object Combat {
     /** 同一次攻擊另外扣在城防上的比例。兩者相加大於 100 是刻意的。 */
     const val CITY_DAMAGE_PERCENT = 70
 
+    /** 空城的等效防禦基準，再乘上該城的守備加成。 */
+    private const val CITY_STRIKE_DEFENCE_BASE = 26f
+
     fun attackPower(ctx: CombatContext): Float {
         val u = ctx.attacker
         val base = u.kind.attackAgainst(ctx.defender.kind.targetClass).toFloat()
@@ -123,6 +126,35 @@ object Combat {
         // 殘血部隊的輸出等比下降，但不會完全消失。
         p *= 0.35f + 0.65f * (u.hp / ArmyUnit.MAX_HP.toFloat())
         return p
+    }
+
+    /**
+     * 直接轟擊一座沒有守軍的城市。
+     *
+     * 城市不還手、沒有士氣、也沒有兵種相剋 —— 它就是一個要被磨掉的數字，
+     * 所以用同一支比值公式，把守方換成城防加成。攻擊力取「對裝甲」那一欄：
+     * 城牆與碉堡是硬目標，反步兵的火力對它幫助有限。
+     */
+    fun cityStrike(
+        attacker: ArmyUnit,
+        cityDefence: Int,
+        techBonus: Int,
+        auraBonus: Int,
+        morale: Int,
+        rng: Rng
+    ): Int {
+        val base = attacker.kind.attackAgainst(TargetClass.ARMOURED).toFloat()
+        if (base <= 0f) return 0
+        var a = base
+        a *= 1f + 0.06f * (attacker.level - 1)
+        a *= 1f + techBonus / 100f
+        a *= 1f + auraBonus / 100f
+        a *= attacker.supplyFactor
+        a *= moraleFactor(morale)
+        a *= 0.35f + 0.65f * (attacker.hp / ArmyUnit.MAX_HP.toFloat())
+        if (a <= 0f) return 0
+        val d = CITY_STRIKE_DEFENCE_BASE * (1f + cityDefence / 100f)
+        return jitter(DAMAGE_SCALE * a / (a + d), rng).coerceAtLeast(1)
     }
 
     fun defencePower(ctx: CombatContext): Float {

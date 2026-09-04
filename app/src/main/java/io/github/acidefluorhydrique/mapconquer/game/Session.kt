@@ -160,9 +160,15 @@ class Session(
 
     fun isHostile(a: Int, b: Int): Boolean = diplomacy.isHostile(a, b)
 
-    /** 陸軍能不能在這格結束移動（地形＋佔位）。 */
-    fun isTileFree(tile: Int, domain: Domain): Boolean =
-        occupancy[domain.ordinal * map.tileCount + tile] < 0
+    /**
+     * 這格能不能站人。
+     *
+     * 一格只容得下一支部隊，敵我與軍種都不例外。分層的索引留著是為了
+     * 「浮渡的陸軍佔海層」那條規則與 [unitAt] 的查詢，但它不再是能不能
+     * 站進去的判準 —— 疊在同一格的戰鬥機與步兵，玩家點下去根本不知道
+     * 自己選到了誰。
+     */
+    fun isTileFree(tile: Int): Boolean = !anyUnitAt(tile)
 
     /**
      * 這支部隊在指定格子上佔哪一層。
@@ -180,8 +186,7 @@ class Session(
     fun isEmbarked(unit: ArmyUnit): Boolean =
         unit.kind.domain == Domain.LAND && !unit.isLoaded && map.isWater(unit.tile)
 
-    fun isTileFreeFor(unit: ArmyUnit, tile: Int): Boolean =
-        isTileFree(tile, layerFor(unit.kind, tile))
+    fun isTileFreeFor(unit: ArmyUnit, tile: Int): Boolean = isTileFree(tile)
 
     /** 這格是不是某國的補給來源（自己的城市）。 */
     fun isSupplySource(tile: Int, nationId: Int): Boolean {
@@ -210,7 +215,7 @@ class Session(
     // ------------------------------------------------------------------
 
     fun spawnUnit(kind: UnitKind, nationId: Int, tile: Int, level: Int = 1, commanderId: String = ""): ArmyUnit? {
-        if (!isTileFree(tile, layerFor(kind, tile))) return null
+        if (!isTileFree(tile)) return null
         val unit = ArmyUnit(nextUnitId++, kind, nationId, tile)
         unit.level = level.coerceIn(1, ArmyUnit.MAX_LEVEL)
         unit.commanderId = commanderId

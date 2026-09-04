@@ -197,6 +197,42 @@ class SessionTest {
     }
 
     @Test
+    fun `a tile holds one unit, whatever its domain`() {
+        val s = session(
+            listOf(
+                ScenarioUnit("AAA", 2, 1, "INFANTRY", 1, ""),
+                ScenarioUnit("AAA", 2, 3, "FIGHTER", 1, "")
+            )
+        )
+        val infantry = s.units.first { it.kind == UnitKind.INFANTRY }
+        val fighter = s.units.first { it.kind == UnitKind.FIGHTER }
+
+        assertFalse("步兵佔著的格子放不下飛機", s.isTileFreeFor(fighter, infantry.tile))
+        val reachable = ArrayList<Int>()
+        Orders.computeReachable(s, fighter, reachable)
+        assertFalse("可達清單不該包含被佔的格子", reachable.contains(infantry.tile))
+        assertEquals(
+            "移動到被佔的格子應該原地不動",
+            fighter.tile, Orders.move(s, fighter, infantry.tile, ArrayList())
+        )
+    }
+
+    @Test
+    fun `an undefended city can be shelled, and shelling alone does not take it`() {
+        val s = session(listOf(ScenarioUnit("AAA", 5, 1, "INFANTRY", 1, "")))
+        val unit = s.units.first()
+        val enemyCapital = s.map.provinces[1].capitalTile
+        assertNull("城裡不該有守軍", s.primaryUnitAt(enemyCapital))
+
+        val before = s.cityHp[1]
+        assertTrue("空城要打得到", Orders.canAttack(s, unit, enemyCapital))
+        assertNotNull(Orders.attack(s, unit, enemyCapital))
+        assertTrue("城防要掉", s.cityHp[1] < before)
+        assertEquals("轟一發不會讓城市易主", 1, s.provinceOwner[1])
+        assertTrue("開火之後這回合不能再動", unit.hasAttacked)
+    }
+
+    @Test
     fun `a garrison in a city takes half, and the city takes the rest`() {
         val s = session(
             listOf(

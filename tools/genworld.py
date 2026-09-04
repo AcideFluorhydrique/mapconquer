@@ -590,8 +590,9 @@ def write_campaign(built, mission):
         lines.append("%s: %s" % (code, compress_ids(ids)))
     lines.append("")
     lines.append("[units]")
-    lines.extend(campaign_units(built, owners, mission))
-    lines.extend(garrison_only(built, owners, bystanders))
+    taken = set()
+    lines.extend(campaign_units(built, owners, mission, taken))
+    lines.extend(garrison_only(built, owners, bystanders, taken))
     lines.append("")
     lines.append("[playable]")
     lines.append(mission["player"])
@@ -680,7 +681,7 @@ def water_pool(built, ids, rings=3):
     return order
 
 
-def garrison_only(built, owners, codes):
+def garrison_only(built, owners, codes, taken):
     """旁觀國的守軍：每座城一支步兵。
 
     有城無兵的中立國等於一張邀請函 —— 玩家與 AI 都會順手拿走。給一支守軍，
@@ -690,12 +691,15 @@ def garrison_only(built, owners, codes):
     for code in sorted(codes):
         for pid in owners.get(code, []):
             tile = built.provinces[pid][3]
+            if tile in taken:
+                continue
+            taken.add(tile)
             col, row = tile % built.grid.cols, tile // built.grid.cols
             lines.append("%s|%d,%d|INFANTRY|1|-" % (code, col, row))
     return lines
 
 
-def campaign_units(built, owners, mission):
+def campaign_units(built, owners, mission, taken):
     """關卡的開局部隊由 mission 的編制表決定，好讓每一關教一件事。
 
     放不下的部隊會讓產生器直接失敗，不會默默消失 —— 這件事發生過：
@@ -704,6 +708,8 @@ def campaign_units(built, owners, mission):
     """
     lines = []
     missing = []
+    # 一格只容得下一支部隊，所以配置要跨國家共用同一份已佔用清單 ——
+    # 各國的近岸海格會重疊，兩支艦隊擠進同一格的話劇本根本載不起來。
     for code, roster in mission["roster"].items():
         ids = owners.get(code, [])
         if not ids:
@@ -726,17 +732,22 @@ def campaign_units(built, owners, mission):
         for kind, level, count in ordered:
             for _ in range(count):
                 if kind in NAVAL_KINDS:
+                    while water_at < len(water) and water[water_at] in taken:
+                        water_at += 1
                     if water_at >= len(water):
                         missing.append("%s %s（沒有空的近岸海格）" % (code, kind))
                         continue
                     tile = water[water_at]
                     water_at += 1
                 else:
+                    while land_at < len(land) and land[land_at] in taken:
+                        land_at += 1
                     if land_at >= len(land):
                         missing.append("%s %s（領土上沒有空格）" % (code, kind))
                         continue
                     tile = land[land_at]
                     land_at += 1
+                taken.add(tile)
                 col, row = tile % built.grid.cols, tile // built.grid.cols
                 lines.append("%s|%d,%d|%s|%d|-" % (code, col, row, kind, level))
     if missing:
