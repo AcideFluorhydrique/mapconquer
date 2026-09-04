@@ -518,6 +518,7 @@ class MenuRenderer {
             R.string.help_combat to R.string.help_combat_body,
             R.string.help_morale to R.string.help_morale_body,
             R.string.help_supply to R.string.help_supply_body,
+            R.string.help_cities to R.string.help_cities_body,
             R.string.help_victory to R.string.help_victory_body
         )
 

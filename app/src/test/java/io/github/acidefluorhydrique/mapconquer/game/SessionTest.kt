@@ -197,6 +197,35 @@ class SessionTest {
     }
 
     @Test
+    fun `a garrison rebuilds the city, and the city heals the garrison`() {
+        val s = session(listOf(ScenarioUnit("AAA", 1, 1, "INFANTRY", 1, "")))
+        val garrison = s.units.first()
+        assertEquals("守軍該站在 A 省的城上", s.map.provinces[0].capitalTile, garrison.tile)
+
+        s.cityHp[0] = 20
+        garrison.damage(40)
+        val cityBefore = s.cityHp[0]
+        val hpBefore = garrison.hp
+
+        repeat(s.nations.size) { s.advanceToNextNation() }
+
+        assertTrue("有守軍就該補城防", s.cityHp[0] > cityBefore)
+        assertTrue("城市也該替守軍回血", garrison.hp > hpBefore)
+    }
+
+    @Test
+    fun `an empty city does not rebuild itself`() {
+        val s = session(listOf(ScenarioUnit("AAA", 3, 2, "INFANTRY", 1, "")))
+        val capital = s.map.provinces[0].capitalTile
+        assertNull("這一關的城裡刻意不放守軍", s.primaryUnitAt(capital))
+
+        s.cityHp[0] = 20
+        repeat(s.nations.size) { s.advanceToNextNation() }
+
+        assertEquals("空城不會自己長回城防", 20, s.cityHp[0])
+    }
+
+    @Test
     fun `a tile holds one unit, whatever its domain`() {
         val s = session(
             listOf(

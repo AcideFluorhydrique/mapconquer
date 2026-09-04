@@ -234,16 +234,40 @@ object Widgets {
         return paint.breakText(text, start, text.length, true, maxWidth, null)
     }
 
-    /** 把一段長文字斷成數行，回傳每行的結束索引（不配置中繼字串）。 */
+    /**
+     * 把一段長文字斷成數行。
+     *
+     * 先照換行字元切段，再逐段依寬度斷行 —— 說明文字需要分段，而
+     * drawText 不認換行，直接畫會變成一個豆腐塊。空白段落保留成空行，
+     * 那就是段落之間的間距。
+     */
     fun wrap(text: String, size: Float, maxWidth: Float, out: MutableList<String>) {
         out.clear()
         if (text.isEmpty() || maxWidth <= 0f) return
-        var i = 0
-        while (i < text.length) {
+        var start = 0
+        while (true) {
+            val found = text.indexOf('\n', start)
+            val end = if (found < 0) text.length else found
+            if (end == start) out.add("") else wrapRun(text, start, end, size, maxWidth, out)
+            if (found < 0) return
+            start = found + 1
+        }
+    }
+
+    private fun wrapRun(
+        text: String,
+        from: Int,
+        to: Int,
+        size: Float,
+        maxWidth: Float,
+        out: MutableList<String>
+    ) {
+        var i = from
+        while (i < to) {
             var n = fitChars(text, i, size, maxWidth)
             if (n <= 0) n = 1
-            var end = i + n
-            if (end < text.length) {
+            var end = (i + n).coerceAtMost(to)
+            if (end < to) {
                 // 英文盡量斷在空白處；中日文沒有空白，直接硬斷。
                 val space = text.lastIndexOf(' ', end - 1)
                 if (space > i) end = space + 1

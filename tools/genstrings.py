@@ -276,6 +276,29 @@ UI = {
         "在补给范围内的部队每回合会回补与整补；范围外的部队会先掉补给、再掉战力，最后饿死。"
         "补给车与司令部自带一个小型补给圈，攻势跑赢城市之后就靠它们续命。"
         "打开「补给」图层，就看得到自己的后勤到底伸得多远。"),
+    "help_cities": ("Cities and sieges", "城市與攻城", "城市与攻城"),
+    "help_cities_body": (
+        "A city has defence points as well as income. While they stand, a unit inside the city takes only half "
+        "the damage of an attack and the city absorbs a further share on top, so a defended capital costs several "
+        "times what the same unit costs in the open. A province with a city does not change hands until its defence "
+        "reaches zero: shell it from range, or stand on it and grind it down, then walk in.\\n\\n"
+        "The relationship runs both ways. A city repairs the garrison standing in it far faster than open ground "
+        "does, and that garrison is what rebuilds the city's defence — an empty city never recovers on its own, "
+        "and neither recovers while an enemy is adjacent. A captured city keeps only a third of its defence, so "
+        "whether you leave someone behind to restore it is the difference between holding a place and passing "
+        "through it.",
+        "城市除了收入之外還有城防。城防還在的時候，城裡的部隊只吃一半傷害，城市再替它多擋一層，"
+        "所以攻下一座有守軍的首都，代價是野戰的好幾倍。有城的省份在城防歸零之前不會易主："
+        "遠遠轟掉它，或是站上去慢慢磨，然後走進去。\\n\\n"
+        "這個關係是雙向的。城市替駐軍回血的速度遠高於野外，而城防也正是靠那支駐軍補回來的 —— "
+        "空城永遠不會自己長回來，而且只要旁邊有敵人，兩邊都停。打下來的城市只剩三分之一的城防，"
+        "所以要不要留一支部隊把它補起來，就是「佔領」與「路過」的差別。",
+        "城市除了收入之外还有城防。城防还在的时候，城里的部队只吃一半伤害，城市再替它多挡一层，"
+        "所以攻下一座有守军的首都，代价是野战的好几倍。有城的省份在城防归零之前不会易主："
+        "远远轰掉它，或是站上去慢慢磨，然后走进去。\\n\\n"
+        "这个关系是双向的。城市替驻军回血的速度远高于野外，而城防也正是靠那支驻军补回来的 —— "
+        "空城永远不会自己长回来，而且只要旁边有敌人，两边都停。打下来的城市只剩三分之一的城防，"
+        "所以要不要留一支部队把它补起来，就是「占领」与「路过」的差别。"),
     "help_victory": ("Winning", "勝利條件", "胜利条件"),
     "help_victory_body": (
         "Campaign missions state their objective up front — check the Goals panel any time. Finishing early earns more stars, "

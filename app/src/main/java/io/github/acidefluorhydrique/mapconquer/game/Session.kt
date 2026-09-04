@@ -737,10 +737,14 @@ class Session(
     }
 
     /**
-     * 城防每回合自行修復，但只在沒有敵人貼著的時候。
+     * 城防每回合自行修復，條件有兩個：城裡有自己的守軍，而且旁邊沒有敵人。
      *
-     * 有敵人在旁邊還能修，等於防守方可以靠時間拖垮攻勢；沒有這條限制，
-     * 攻城會變成「傷害要大於修復速度」的數值檢定，而不是一場圍攻。
+     * 要守軍才修得動，是因為城防不該自己長回來。打下一座城之後城防只剩
+     * 三成五，要不要留一支部隊把它補起來，就是「佔領」與「路過」的差別 ——
+     * 而留下來的那一支，也正好是這座城下次被打時的第一層護盾。
+     *
+     * 有敵人貼著就停修：否則攻城會退化成「傷害要大於修復速度」的數值檢定，
+     * 防守方光靠時間就能拖垮攻勢。
      */
     private fun repairCities(nationId: Int) {
         for (province in map.provinces) {
@@ -748,6 +752,8 @@ class Session(
             if (provinceOwner[province.id] != nationId) continue
             val max = province.maxCityHp
             if (cityHp[province.id] >= max) continue
+            val garrison = unitAt(province.capitalTile, Domain.LAND)
+            if (garrison == null || garrison.nationId != nationId) continue
             // 城裡站著敵人也算被威脅 —— 不然圍攻期間城防還會一邊自修，
             // 攻城就變成「傷害要跑得比修復快」的數值檢定。
             var threatened = hasHostileAt(province.capitalTile, nationId)
@@ -758,7 +764,7 @@ class Session(
                 }
             }
             if (threatened) continue
-            cityHp[province.id] = (cityHp[province.id] + CITY_REPAIR_PER_TURN).coerceAtMost(max)
+            cityHp[province.id] = (cityHp[province.id] + CITY_DEFENCE_REPAIR).coerceAtMost(max)
         }
     }
 
@@ -873,8 +879,16 @@ class Session(
 
         const val CONQUEST_VICTORY_PERCENT = 80
 
-        /** 城防每回合的自修量。 */
-        const val CITY_REPAIR_PER_TURN = 8
+        /**
+         * 有守軍時城防每回合的修復量。
+         *
+         * 比舊值高，因為現在要留一支部隊才修得動 —— 條件變嚴了，速度就該
+         * 補回來一點。仍然低於一次砲擊的傷害，所以圍攻不會被修復追平。
+         *
+         * 注意跟 [CITY_REPAIR] 不是同一件事：那個是「城市替駐軍回血」，
+         * 這個是「駐軍替城市補城防」。兩個方向都有，互為代價。
+         */
+        const val CITY_DEFENCE_REPAIR = 12
 
         /** 佔住城市格的敵軍每回合削掉的城防。 */
         const val SIEGE_PER_TURN = 50
