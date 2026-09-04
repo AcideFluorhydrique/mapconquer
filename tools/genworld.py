@@ -79,6 +79,7 @@ class BuiltMap:
         self.is_land = is_land
         self.provinces = provinces           # [(key, tier, nation, tile)]
         self.dropped = []                    # [(key, 原因)]，放不下的省份
+        self.rescued = 0                     # 靠錨點才站上陸地的城市數
         self.index_by_key = {p[0]: i for i, p in enumerate(provinces)}
         self.province_of = None              # 逐格的省份 id
 
@@ -168,7 +169,6 @@ def build_map(map_id, cols, rows, lon_min, lon_max, lat_max, lat_min,
               lon_bands=None, lat_bands=None):
     grid = hexraster.Grid(cols, rows, lon_min, lon_max, lat_max, lat_min,
                           lon_bands, lat_bands)
-    terrain, is_land = hexraster.build_terrain(grid)
 
     # 只收落在這張地圖範圍內的省份。
     margin = 0.0
@@ -177,6 +177,21 @@ def build_map(map_id, cols, rows, lon_min, lon_max, lat_max, lat_min,
         if lon_min - margin <= p[1] <= lon_max + margin
         and lat_min - margin <= p[2] <= lat_max + margin
     ]
+
+    # 城市座標先於海岸線：每座城市所在的格子一定是陸地。
+    terrain, is_land = hexraster.build_terrain(
+        grid, [(p[1], p[2]) for p in candidates]
+    )
+
+    # 有多少城市是靠錨點才站上陸地的。這個數字是海岸線品質的量尺：
+    # 突然從幾十跳到幾百，代表哪個多邊形被改壞了。
+    land_polys = list(hexraster.geodata.LAND.values())
+    sea_polys = list(hexraster.geodata.SEA.values())
+    rescued = sum(
+        1 for q in candidates
+        if not (hexraster.in_any(q[1], q[2], land_polys)
+                and not hexraster.in_any(q[1], q[2], sea_polys))
+    )
 
     seeds = []
     provinces = []
@@ -215,6 +230,7 @@ def build_map(map_id, cols, rows, lon_min, lon_max, lat_max, lat_min,
     built = BuiltMap(map_id, grid, terrain, is_land, provinces)
     built.province_of = province_of
     built.dropped = dropped
+    built.rescued = rescued
     return built
 
 
@@ -691,6 +707,8 @@ def main():
         print("map %-13s %3dx%-3d  provinces %3d  land %4d  -> %s"
               % (built.id, built.grid.cols, built.grid.rows,
                  len(built.provinces), land, os.path.relpath(path, ROOT)))
+        if built.rescued:
+            print("    海岸線內縮，靠城市錨點補救 %d 座城" % built.rescued)
         for key, reason in built.dropped:
             print("    - %s 放不下：%s" % (key, reason))
 

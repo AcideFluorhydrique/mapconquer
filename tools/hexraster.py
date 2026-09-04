@@ -136,7 +136,32 @@ def in_any(x, y, polygons):
     return any(point_in_polygon(x, y, poly) for poly in polygons)
 
 
-def build_terrain(grid):
+def anchor_cells(grid, anchors):
+    """
+    回傳每個錨點（城市經緯度）所落在的格子索引。
+
+    錨點是真實城市的座標，所以它們**必定**在陸地上。手繪的海岸線只是
+    近似，兩者衝突時以城市為準：這裡把城市所在的那一格標成陸地，一格，
+    不外擴。沒有這一條，海岸線畫得內縮一點，港口城市就會被吸附到內陸
+    幾百公里外，而畫面上完全看不出發生過什麼。
+    """
+    out = {}
+    for lon, lat in anchors:
+        best = None
+        best_d = None
+        for row in range(grid.rows):
+            for col in range(grid.cols):
+                clon, clat = grid.lonlat(col, row)
+                dlon = (clon - lon + 180.0) % 360.0 - 180.0
+                d = dlon * dlon + (clat - lat) * (clat - lat)
+                if best_d is None or d < best_d:
+                    best_d, best = d, grid.index(col, row)
+        if best is not None:
+            out[best] = (lon, lat)
+    return out
+
+
+def build_terrain(grid, anchors=()):
     """回傳 (terrain_codes, is_land)，兩者都是逐格的一維串列。"""
     land_polys = list(geodata.LAND.values())
     sea_polys = list(geodata.SEA.values())
@@ -154,6 +179,9 @@ def build_terrain(grid):
             lon, lat = grid.lonlat(col, row)
             lonlat[i] = (lon, lat)
             is_land[i] = in_any(lon, lat, land_polys) and not in_any(lon, lat, sea_polys)
+
+    for i in anchor_cells(grid, anchors):
+        is_land[i] = True
 
     terrain = ['~'] * count
     for row in range(grid.rows):
