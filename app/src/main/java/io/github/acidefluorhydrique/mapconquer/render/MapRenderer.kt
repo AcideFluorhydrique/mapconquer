@@ -450,6 +450,21 @@ class MapRenderer(private val session: Session) {
             Widgets.bar(canvas, rect, ratio, Palette.healthColour(ratio))
         }
 
+        // 編制：頂邊中央的短直線，一條一個編制 —— 借用軍事地圖上用直線標示
+        // 部隊規模的慣例。單一編制不畫，免得每一支部隊都多一道雜訊。
+        if (unit.size > 1 && size >= Ui.dp(11f)) {
+            paint.color = Colors.of("#F2F6FA")
+            paint.style = Paint.Style.STROKE
+            paint.strokeWidth = Ui.dp(1.6f)
+            val gap = size * 0.08f
+            val startX = cx - gap * (unit.size - 1) / 2f
+            for (i in 0 until unit.size) {
+                val x = startX + gap * i
+                canvas.drawLine(x, top - size * 0.11f, x, top + size * 0.01f, paint)
+            }
+            paint.style = Paint.Style.FILL
+        }
+
         // 等級：右上角的小星點。
         if (unit.level > 1 && size >= Ui.dp(13f)) {
             paint.color = Colors.of("#FFD98A")

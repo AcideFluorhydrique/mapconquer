@@ -161,7 +161,8 @@ object ScenarioLoader {
             row = row,
             kindName = p[2].trim(),
             level = if (p.size >= 4) (p[3].trim().toIntOrNull() ?: 1) else 1,
-            commanderId = if (p.size >= 5) p[4].trim() else ""
+            commanderId = if (p.size >= 5) p[4].trim() else "",
+            size = if (p.size >= 6) (p[5].trim().toIntOrNull() ?: 1) else 1
         )
     }
 

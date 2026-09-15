@@ -256,6 +256,58 @@ class SessionTest {
     }
 
     @Test
+    fun `units of the same kind merge into one formation`() {
+        val s = session(
+            listOf(
+                ScenarioUnit("AAA", 2, 1, "INFANTRY", 1, ""),
+                ScenarioUnit("AAA", 3, 1, "INFANTRY", 1, "")
+            )
+        )
+        val mover = s.units.first { it.tile == s.map.index(2, 1) }
+        val stay = s.units.first { it.tile == s.map.index(3, 1) }
+        val lostBefore = s.nations[0].unitsLost
+
+        Orders.computeReachable(s, mover, ArrayList())
+        assertEquals(stay.tile, Orders.move(s, mover, stay.tile, ArrayList()))
+        assertFalse("移過來的那一支併進去了", mover.isAlive)
+        assertEquals(1, s.unitsOf(0).size)
+        assertEquals(2, stay.size)
+        assertEquals("兩支滿血併起來是滿血的兩編制", ArmyUnit.MAX_HP, stay.hp)
+        assertEquals("併編不算陣亡", lostBefore, s.nations[0].unitsLost)
+    }
+
+    @Test
+    fun `different kinds never merge, and no formation grows past four`() {
+        val s = session(
+            listOf(
+                ScenarioUnit("AAA", 2, 1, "INFANTRY", 1, ""),
+                ScenarioUnit("AAA", 3, 1, "ARTILLERY", 1, ""),
+                ScenarioUnit("AAA", 2, 2, "INFANTRY", 1, "", size = 4)
+            )
+        )
+        val single = s.units.first { it.kind == UnitKind.INFANTRY && it.size == 1 }
+        val gun = s.units.first { it.kind == UnitKind.ARTILLERY }
+        val full = s.units.first { it.size == 4 }
+        assertNull("不同兵種不併", Orders.mergeTargetAt(s, single, gun.tile))
+        assertNull("滿編不能再塞", Orders.mergeTargetAt(s, single, full.tile))
+    }
+
+    @Test
+    fun `a formation is stronger than one unit but weaker than the units it absorbed`() {
+        for (n in 2..ArmyUnit.MAX_SIZE) {
+            assertTrue(ArmyUnit.attackPercent(n) > ArmyUnit.attackPercent(n - 1))
+            assertTrue(ArmyUnit.hpPercent(n) > ArmyUnit.hpPercent(n - 1))
+            assertTrue("攻擊不該追上 $n 支分開的部隊", ArmyUnit.attackPercent(n) < 100 * n)
+            assertTrue("耐打不該追上 $n 支分開的部隊", ArmyUnit.hpPercent(n) < 100 * n)
+        }
+        val small = ArmyUnit(1, UnitKind.INFANTRY, 0, 0)
+        val big = ArmyUnit(2, UnitKind.INFANTRY, 0, 0).apply { size = 3 }
+        small.damage(30)
+        big.damage(30)
+        assertTrue("同一發傷害，大編制掉的比例要比較少", big.hp > small.hp)
+    }
+
+    @Test
     fun `a garrison rebuilds the city, and the city heals the garrison`() {
         val s = session(listOf(ScenarioUnit("AAA", 1, 1, "INFANTRY", 1, "")))
         val garrison = s.units.first()

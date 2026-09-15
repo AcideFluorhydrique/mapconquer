@@ -256,7 +256,8 @@ class HudRenderer(private val session: Session) {
 
         val nameX = x + Ui.dp(30f)
         Widgets.leftFit(
-            canvas, Strings.byName(unit.kind.key), nameX, top + Ui.dp(16f),
+            canvas, Strings.byName(unit.kind.key) + if (unit.size > 1) " ×${unit.size}" else "",
+            nameX, top + Ui.dp(16f),
             Ui.dp(12.5f), Ui.dp(120f), ink, bold = true
         )
         Widgets.leftFit(

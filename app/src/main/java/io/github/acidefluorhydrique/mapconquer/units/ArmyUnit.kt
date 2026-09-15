@@ -21,6 +21,16 @@ class ArmyUnit(
     var tile: Int
 ) {
     var hp: Int = MAX_HP
+
+    /**
+     * 編制數 1..[MAX_SIZE]。
+     *
+     * HP 仍然是 0..100，但它是「這個編制還剩幾成」，不是絕對血量。大編制的
+     * 耐打靠 [scaledDamage] 表達：同一發傷害，三個編制掉的比例比一個編制少。
+     * 這樣補給、整補、血條這些以百分比運作的東西全部不必改。
+     */
+    var size: Int = 1
+
     var level: Int = 1
     var exp: Int = 0
 
@@ -109,7 +119,14 @@ class ArmyUnit(
     }
 
     fun damage(amount: Int) {
-        hp = (hp - amount).coerceAtLeast(0)
+        hp = (hp - scaledDamage(amount)).coerceAtLeast(0)
+    }
+
+    /** 一發原始傷害落在這個編制上，實際會掉幾成。 */
+    fun scaledDamage(raw: Int): Int {
+        if (raw <= 0) return 0
+        val percent = hpPercent(size)
+        return ((raw * 100 + percent - 1) / percent).coerceAtLeast(1)
     }
 
     fun heal(amount: Int) {
@@ -124,6 +141,29 @@ class ArmyUnit(
         const val MAX_HP = 100
         const val MAX_SUPPLY = 100
         const val MAX_LEVEL = 5
+        const val MAX_SIZE = 4
+
+        /**
+         * 編制的攻擊與耐打倍率（百分比）。
+         *
+         * 兩條曲線都遞增、但每一格都追不上「拆開的同樣幾支」：兩個一編制的部隊
+         * 合計 200% 攻擊、200% 耐打，併成一個兩編制只剩 130% 與 160%。所以併編
+         * 永遠有代價 —— 它換到的是「一格裡的集中」，而在一格一支部隊的規則下，
+         * 那是守窄正面、或打動單支部隊打不動的目標唯一的方法。
+         */
+        fun attackPercent(size: Int): Int = when (size.coerceIn(1, MAX_SIZE)) {
+            1 -> 100
+            2 -> 130
+            3 -> 155
+            else -> 175
+        }
+
+        fun hpPercent(size: Int): Int = when (size.coerceIn(1, MAX_SIZE)) {
+            1 -> 100
+            2 -> 160
+            3 -> 215
+            else -> 265
+        }
 
         /** 低於這個補給開始掉戰力。 */
         const val SUPPLY_STRAINED = 40

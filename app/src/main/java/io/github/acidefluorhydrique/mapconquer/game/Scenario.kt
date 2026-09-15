@@ -83,7 +83,9 @@ class ScenarioUnit(
     val row: Int,
     val kindName: String,
     val level: Int,
-    val commanderId: String
+    val commanderId: String,
+    /** 開局編制數，省略就是 1。 */
+    val size: Int = 1
 )
 
 /**

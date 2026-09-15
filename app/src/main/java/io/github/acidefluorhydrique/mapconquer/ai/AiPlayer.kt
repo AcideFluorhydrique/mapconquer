@@ -253,9 +253,14 @@ class AiPlayer(private val session: Session, private val nationId: Int) {
 
             // 價值換算成錢：打掉一支貴的部隊比打掉一支便宜的值錢，
             // 而自己的損失也用同一把尺量，AI 才不會拿戰列艦去換運輸船。
-            var score = dealt * defender.kind.cost / 100f - taken * unit.kind.cost / 100f
-            if (dealt >= defender.hp) score += defender.kind.cost * 0.5f
-            if (taken >= unit.hp) score -= unit.kind.cost * 0.8f
+            // 預測傷害是原始值，要先換算成對方實際會掉的成數再比。一個四編制的
+            // 部隊值四支的錢，也要四支的傷害才打得死。
+            val dealtShare = defender.scaledDamage(dealt)
+            val takenShare = unit.scaledDamage(taken)
+            var score = dealtShare * defender.kind.cost * defender.size / 100f -
+                takenShare * unit.kind.cost * unit.size / 100f
+            if (dealtShare >= defender.hp) score += defender.kind.cost * defender.size * 0.5f
+            if (takenShare >= unit.hp) score -= unit.kind.cost * unit.size * 0.8f
             // 守著城市的敵人優先清掉，那是勝利條件所在。
             if (session.map.provinceAt(defender.tile)?.capitalTile == defender.tile) score *= 1.3f
 

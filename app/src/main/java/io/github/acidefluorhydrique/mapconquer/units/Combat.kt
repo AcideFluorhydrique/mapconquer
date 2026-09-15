@@ -116,6 +116,7 @@ object Combat {
         if (base <= 0f) return 0f
         var p = base
         p *= 1f + 0.06f * (u.level - 1)
+        p *= ArmyUnit.attackPercent(u.size) / 100f
         p *= 1f + ctx.attackerTech / 100f
         p *= 1f + ctx.attackerAura / 100f
         p *= commanderAttackFactor(u, ctx.defender)
@@ -147,6 +148,7 @@ object Combat {
         if (base <= 0f) return 0
         var a = base
         a *= 1f + 0.06f * (attacker.level - 1)
+        a *= ArmyUnit.attackPercent(attacker.size) / 100f
         a *= 1f + techBonus / 100f
         a *= 1f + auraBonus / 100f
         a *= attacker.supplyFactor
@@ -220,7 +222,11 @@ object Combat {
         val toDefender = shielded(landed, ctx.defenderInCity)
         val toDefenderCity = cityShare(landed, ctx.defenderInCity)
 
+        val defenderBefore = ctx.defender.hp
         ctx.defender.damage(toDefender)
+        // 回報的是實際掉了幾成而不是原始傷害 —— 大編制吃同一發會掉得比較少，
+        // 戰報與經驗值都該照實際的算。
+        val defenderLost = defenderBefore - ctx.defender.hp
         val defenderDead = !ctx.defender.isAlive
 
         var toAttacker = 0
@@ -251,17 +257,19 @@ object Combat {
                 val counterLanded = jitter(raw, rng).coerceIn(1, ArmyUnit.MAX_HP)
                 toAttacker = shielded(counterLanded, ctx.attackerInCity)
                 toAttackerCity = cityShare(counterLanded, ctx.attackerInCity)
+                val attackerBefore = ctx.attacker.hp
                 ctx.attacker.damage(toAttacker)
+                toAttacker = attackerBefore - ctx.attacker.hp
             }
         }
 
         val attackerDead = !ctx.attacker.isAlive
-        val attackerLevelled = ctx.attacker.gainExp(expFor(toDefender, defenderDead))
+        val attackerLevelled = ctx.attacker.gainExp(expFor(defenderLost, defenderDead))
         val defenderLevelled =
             if (!defenderDead) ctx.defender.gainExp(expFor(toAttacker, attackerDead)) else false
 
         return CombatResult(
-            damageToDefender = toDefender,
+            damageToDefender = defenderLost,
             damageToAttacker = toAttacker,
             defenderDestroyed = defenderDead,
             attackerDestroyed = attackerDead,

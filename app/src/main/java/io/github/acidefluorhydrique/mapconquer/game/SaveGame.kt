@@ -94,7 +94,8 @@ object SaveGame {
                 .append(unit.entrenchment).append(' ')
                 .append(unit.rumour).append(' ')
                 .append(unit.transportId).append(' ')
-                .append(unit.commanderId.ifEmpty { "-" }).append('\n')
+                .append(unit.commanderId.ifEmpty { "-" }).append(' ')
+                .append(unit.size).append('\n')
         }
 
         file(context).writeText(sb.toString())
@@ -235,6 +236,8 @@ object SaveGame {
             unit.rumour = (p[11].toIntOrNull() ?: 0).coerceIn(0, ArmyUnit.MAX_RUMOUR)
             unit.transportId = p[12].toIntOrNull() ?: -1
             unit.commanderId = if (p[13] == "-") "" else p[13]
+            // 舊存檔沒有編制這一欄，那就是一個編制。
+            unit.size = if (p.size >= 15) (p[14].toIntOrNull() ?: 1).coerceIn(1, ArmyUnit.MAX_SIZE) else 1
             session.restoreUnit(unit)
         }
         session.rebuildCargoLinks()

@@ -96,7 +96,8 @@ class UnitMoveRules(
         return false
     }
 
-    override fun canEndOn(tile: Int): Boolean = session.isTileFreeFor(unit, tile)
+    override fun canEndOn(tile: Int): Boolean =
+        session.isTileFreeFor(unit, tile) || Orders.mergeTargetAt(session, unit, tile) != null
 
     private companion object {
         /**
@@ -126,14 +127,14 @@ object Orders {
         session.pathfinder.explore(unit.tile, unit.movesLeft, UnitMoveRules(session, unit))
         for (tile in session.pathfinder.reached) {
             if (tile == unit.tile) continue
-            if (!session.isTileFreeFor(unit, tile)) continue
+            if (!session.isTileFreeFor(unit, tile) && mergeTargetAt(session, unit, tile) == null) continue
             into.add(tile)
         }
     }
 
     fun canMoveTo(session: Session, unit: ArmyUnit, target: Int): Boolean {
         if (unit.movesLeft <= 0 || unit.isLoaded) return false
-        if (!session.isTileFreeFor(unit, target)) return false
+        if (!session.isTileFreeFor(unit, target) && mergeTargetAt(session, unit, target) == null) return false
         return session.pathfinder.origin == unit.tile && session.pathfinder.isReachable(target)
     }
 
@@ -147,12 +148,56 @@ object Orders {
         if (path.size < 2) return unit.tile
 
         val spent = session.pathfinder.costTo(target)
+        val partner = mergeTargetAt(session, unit, target)
+        if (partner != null) {
+            merge(session, unit, partner, (unit.movesLeft - spent).coerceAtLeast(0))
+            session.refreshOutcome()
+            return target
+        }
         session.relocate(unit, target)
         unit.movesLeft = (unit.movesLeft - spent).coerceAtLeast(0)
         unit.entrenchment = 0
 
         onArrived(session, unit)
         return target
+    }
+
+    /**
+     * 站在 [tile] 上、能跟 [unit] 併編的友軍；沒有就回 null。
+     *
+     * 同國、同兵種、合計不超過四個編制，而且兩邊都沒有載人 —— 運輸艦帶著
+     * 乘客併編的話，乘客算誰的會變成一整串例外，不值得。
+     */
+    fun mergeTargetAt(session: Session, unit: ArmyUnit, tile: Int): ArmyUnit? {
+        if (tile == unit.tile || unit.isLoaded || unit.cargo.isNotEmpty()) return null
+        val other = session.primaryUnitAt(tile) ?: return null
+        if (other === unit || other.nationId != unit.nationId || other.kind != unit.kind) return null
+        if (other.isLoaded || other.cargo.isNotEmpty()) return null
+        if (other.size + unit.size > ArmyUnit.MAX_SIZE) return null
+        return other
+    }
+
+    /**
+     * 併編。留下的是原本站在那一格的部隊，移動過來的那一支併進去。
+     *
+     * 血量照「實際兵力」合併再換算回百分比，所以兩支滿血的一編制併成一支
+     * 兩編制之後是 100% —— 帳面上沒掉血，但總兵力從 200 變成 160，那就是
+     * 併編的代價。等級與補給照編制數加權，移動點取兩者較少的一方。
+     */
+    private fun merge(session: Session, mover: ArmyUnit, target: ArmyUnit, moverMovesLeft: Int) {
+        val sizeT = target.size
+        val sizeM = mover.size
+        val merged = sizeT + sizeM
+        val strength = target.hp * ArmyUnit.hpPercent(sizeT) + mover.hp * ArmyUnit.hpPercent(sizeM)
+        target.hp = (strength / ArmyUnit.hpPercent(merged)).coerceIn(1, ArmyUnit.MAX_HP)
+        target.level = ((target.level * sizeT + mover.level * sizeM) / merged).coerceIn(1, ArmyUnit.MAX_LEVEL)
+        target.supply = (target.supply * sizeT + mover.supply * sizeM) / merged
+        target.rumour = maxOf(target.rumour, mover.rumour)
+        target.movesLeft = minOf(target.movesLeft, moverMovesLeft)
+        target.hasAttacked = target.hasAttacked || mover.hasAttacked
+        if (!target.hasCommander && mover.hasCommander) target.commanderId = mover.commanderId
+        target.size = merged
+        session.removeMerged(mover)
     }
 
     /** 抵達之後的連鎖效果：佔領、視野、勝負重判。 */

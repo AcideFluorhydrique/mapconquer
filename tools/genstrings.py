@@ -76,6 +76,7 @@ UI = {
     "hud_undo": ("Undo", "撤回", "撤回"),
     "hud_declare_war": ("Declare war", "宣戰", "宣战"),
     "hud_confirm_war": ("Confirm", "確認宣戰", "确认宣战"),
+    "toast_merged": ("%1$s merged into a formation of %2$d", "%1$s 併編為 %2$d 個編制", "%1$s 并编为 %2$d 个编制"),
     "toast_war_armed": ("Tap again to declare war on %1$s", "再按一次，對 %1$s 宣戰", "再按一次，对 %1$s 宣战"),
     "hud_toggle_grid": ("Grid", "格線", "格线"),
     "hud_toggle_supply": ("Supply", "補給", "补给"),
@@ -280,6 +281,19 @@ UI = {
         "在补给范围内的部队每回合会回补与整补；范围外的部队会先掉补给、再掉战力，最后饿死。"
         "补给车与司令部自带一个小型补给圈，攻势跑赢城市之后就靠它们续命。"
         "打开「补给」图层，就看得到自己的后勤到底伸得多远。"),
+    "help_formations": ("Formations", "編制", "编制"),
+    "help_formations_body": (
+        "Move a unit onto another of the same kind to merge them, up to four formations in one hex. A bigger "
+        "formation hits harder and loses a smaller share of its strength to each blow, but it is never worth "
+        "as much as the separate units it was made from: two formations of one will out-fight one formation of "
+        "two. Merge when you need weight in a single hex — a narrow front, or a target one unit cannot move — "
+        "and keep units apart when you need to cover ground. A merge cannot be undone.",
+        "把部隊移到同兵種的友軍身上就會併編，一格最多四個編制。編制越大打得越重，每次挨打掉的比例也越少，"
+        "但永遠比不上拆開的那幾支：兩支一編制的部隊，打得贏一支兩編制的。需要在一格裡集中重量時才併 —— "
+        "守窄正面，或是單支部隊打不動的目標；要佔地盤就分開。併編無法撤回。",
+        "把部队移到同兵种的友军身上就会并编，一格最多四个编制。编制越大打得越重，每次挨打掉的比例也越少，"
+        "但永远比不上拆开的那几支：两支一编制的部队，打得赢一支两编制的。需要在一格里集中重量时才并 —— "
+        "守窄正面，或是单支部队打不动的目标；要占地盘就分开。并编无法撤回。"),
     "help_cities": ("Cities and sieges", "城市與攻城", "城市与攻城"),
     "help_cities_body": (
         "A city has defence points as well as income. While they stand, a unit inside the city takes only half "

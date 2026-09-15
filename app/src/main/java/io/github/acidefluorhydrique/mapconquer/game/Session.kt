@@ -253,6 +253,20 @@ class Session(
         if (occupancy[slot] == unitId) occupancy[slot] = -1
     }
 
+    /**
+     * 併編時把移動過來的那一支拿下場。
+     *
+     * 跟 [destroyUnit] 不同的只有一件事：不記成損失。它沒有陣亡，是併進別的
+     * 部隊了 —— 結算畫面上的「損失部隊數」不該因為玩家整編而增加。
+     */
+    internal fun removeMerged(unit: ArmyUnit) {
+        detachFromTransport(unit)
+        if (!unit.isLoaded) clearOccupancy(unit.tile, layerOf(unit), unit.id)
+        unit.hp = 0
+        units.remove(unit)
+        unitsById.remove(unit.id)
+    }
+
     internal fun relocate(unit: ArmyUnit, toTile: Int) {
         // layerOf 讀的是 unit.tile，所以清舊位置要在改座標之前 —— 陸軍
         // 從陸地走到海上時，前後佔的是不同層。
@@ -896,6 +910,7 @@ class Session(
             val kind = UnitKind.byName(su.kindName) ?: continue
             if (!map.inBounds(su.col, su.row)) continue
             spawnUnit(kind, nationId, map.index(su.col, su.row), su.level, su.commanderId)
+                ?.let { it.size = su.size.coerceIn(1, ArmyUnit.MAX_SIZE) }
         }
         // 開局的部隊立刻可以行動。
         for (unit in units) {

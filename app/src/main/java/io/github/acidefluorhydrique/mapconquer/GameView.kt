@@ -609,6 +609,22 @@ class GameView(context: Context) : SurfaceView(context), SurfaceHolder.Callback 
             Audio.play(Sfx.DENIED)
             return
         }
+        // 併編：移動過來的那一支已經不在場上，選取換成留下的那一支。不能撤回 ——
+        // 兩支合成一支之後，沒有辦法拆回原本各自的血量與等級。
+        if (!unit.isAlive) {
+            undoRecord = null
+            Audio.play(Sfx.BUILD)
+            val merged = active.primaryUnitAt(moved)
+            overlay?.let {
+                it.selectedUnit = merged
+                it.selectedTile = moved
+                refreshHighlights(active, it)
+            }
+            if (merged != null) {
+                toast(Strings.format(R.string.toast_merged, Strings.byName(merged.kind.key), merged.size))
+            }
+            return
+        }
         val captured = province >= 0 && active.provinceOwner[province] != ownerBefore
         undoRecord = if (captured) null else record
         Audio.play(Sfx.MOVE)
