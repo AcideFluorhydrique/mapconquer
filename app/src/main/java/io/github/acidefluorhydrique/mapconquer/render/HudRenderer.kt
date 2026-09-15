@@ -28,6 +28,9 @@ class HudRenderer(private val session: Session) {
     private val rect = RectF()
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
 
+    /** 已經按過一次、等待確認的宣戰對象；-1 代表沒有。由 GameView 設定。 */
+    var armedWarTarget: Int = -1
+
     fun draw(
         canvas: Canvas,
         buttons: ButtonLayer,
@@ -320,13 +323,20 @@ class HudRenderer(private val session: Session) {
         var right = Ui.screenWidth - Ui.dp(10f)
         val y = top + Ui.dp(8f)
 
-        fun action(id: String, labelRes: Int, enabled: Boolean, topColour: String, bottomColour: String) {
+        fun action(
+            id: String,
+            labelRes: Int,
+            enabled: Boolean,
+            topColour: String,
+            bottomColour: String,
+            payload: Int = 0
+        ) {
             rect.set(right - buttonWidth, y, right, y + buttonHeight)
             Widgets.button(
                 canvas, rect, Strings.get(labelRes), topColour, bottomColour,
                 enabled = enabled, textSize = Ui.dp(11.5f)
             )
-            buttons.add(id, rect, isEnabled = enabled)
+            buttons.add(id, rect, payload = payload, isEnabled = enabled)
             right -= buttonWidth + Ui.dp(6f)
         }
 
@@ -344,6 +354,17 @@ class HudRenderer(private val session: Session) {
                 province.hasCity
             ) {
                 action(ID_BUILD, R.string.hud_build, true, Widgets.AMBER_TOP, Widgets.AMBER_BOTTOM)
+            }
+
+            // 宣戰：點到別國的領土才出現。要按兩次 —— 宣戰收不回來，
+            // 一次誤觸就把中立國拖進戰爭不該是可能的事。
+            val owner = if (province != null) session.provinceOwner[province.id] else -1
+            if (owner >= 0 && Orders.canDeclareWar(session, session.playerNationId, owner)) {
+                action(
+                    ID_DECLARE_WAR,
+                    if (armedWarTarget == owner) R.string.hud_confirm_war else R.string.hud_declare_war,
+                    true, Widgets.RED_TOP, Widgets.RED_BOTTOM, payload = owner
+                )
             }
             if (unit != null && unit.nationId == session.playerNationId) {
                 if (Orders.canRepair(session, unit)) {
@@ -401,6 +422,7 @@ class HudRenderer(private val session: Session) {
         const val ID_WAIT = "wait"
         const val ID_NEXT_UNIT = "next_unit"
         const val ID_UNDO = "undo"
+        const val ID_DECLARE_WAR = "declare_war"
         const val ID_TOGGLE_GRID = "toggle_grid"
         const val ID_TOGGLE_SUPPLY = "toggle_supply"
 

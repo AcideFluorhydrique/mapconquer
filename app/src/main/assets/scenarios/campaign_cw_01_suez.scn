@@ -13,16 +13,16 @@ startYear 1956
 starTurns 16,22
 
 [nations]
-EGY|nation_egy|#C4A84C|8|BALANCED|1100|1,1,1,3,0,1|🇪🇬|EAST
-FRA|nation_fra|#4C5C9E|13|AGGRESSIVE|1400|2,2,3,2,0,2|🇫🇷|WEST
-ISR|nation_isr|#5C86B4|6|AGGRESSIVE|900|1,1,1,0,0,1|🇮🇱|WEST
-SAU|nation_sau|#4C8C5C|7|TURTLE|500|1,1,1,0,0,1|🇸🇦|
-ESP|nation_esp|#B08A3C|0|TURTLE|560|1,1,1,0,0,1|🇪🇸|
-PRT|nation_prt|#4C8C7A|1|TURTLE|300|1,1,1,0,0,1|🇵🇹|
-GRC|nation_grc|#4C7AA8|2|TURTLE|300|1,1,1,0,0,1|🇬🇷|
-TUR|nation_tur|#A84C4C|3|TURTLE|740|1,1,1,0,0,1|🇹🇷|
-ITA|nation_ita|#5C9E6E|11|TURTLE|700|1,1,1,0,0,1|🇮🇹|
-GBR|nation_gbr|#8C4C4C|18|TURTLE|1100|1,1,1,0,0,1|🇬🇧|
+EGY|nation_egy|#C4A84C|8|BALANCED|1100|1,1,1,3,0,1|🇪🇬|EAST|1
+FRA|nation_fra|#4C5C9E|13|AGGRESSIVE|1400|2,2,3,2,0,2|🇫🇷|WEST|1
+ISR|nation_isr|#5C86B4|6|AGGRESSIVE|900|1,1,1,0,0,1|🇮🇱|WEST|1
+SAU|nation_sau|#4C8C5C|7|TURTLE|500|1,1,1,0,0,1|🇸🇦||1
+ESP|nation_esp|#B08A3C|0|TURTLE|560|1,1,1,0,0,1|🇪🇸||1
+PRT|nation_prt|#4C8C7A|1|TURTLE|300|1,1,1,0,0,1|🇵🇹||1
+GRC|nation_grc|#4C7AA8|2|TURTLE|300|1,1,1,0,0,1|🇬🇷||1
+TUR|nation_tur|#A84C4C|3|TURTLE|740|1,1,1,0,0,1|🇹🇷||1
+ITA|nation_ita|#5C9E6E|11|TURTLE|700|1,1,1,0,0,1|🇮🇹||1
+GBR|nation_gbr|#8C4C4C|18|TURTLE|1100|1,1,1,0,0,1|🇬🇧||1
 
 [relations]
 FRA EGY WAR

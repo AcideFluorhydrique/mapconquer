@@ -196,6 +196,65 @@ class SessionTest {
         assertTrue("不該一回合就結束", guard > 1)
     }
 
+    /** 兩國各有一省的陣營劇本，參戰回合與初始關係自己指定。 */
+    private fun blocSession(
+        blocA: String, turnA: Int, blocB: String, turnB: Int,
+        extra: List<ScenarioNation> = emptyList(),
+        relations: List<Triple<String, String, Relation>> = emptyList()
+    ): Session {
+        val base = scenario(relations = relations)
+        val nations = listOf(
+            ScenarioNation("AAA", "nation_aaa", "#FF0000", 0, AiProfile.BALANCED, 5000, IntArray(6),
+                bloc = blocA, warTurn = turnA),
+            ScenarioNation("BBB", "nation_bbb", "#0000FF", 1, AiProfile.BALANCED, 5000, IntArray(6),
+                bloc = blocB, warTurn = turnB)
+        ) + extra
+        val s = Scenario(
+            id = base.id, mapId = base.mapId, mode = base.mode, nameKey = base.nameKey,
+            descKey = base.descKey, order = base.order, turnLimit = base.turnLimit,
+            startYear = base.startYear, startMonth = base.startMonth, nations = nations,
+            relations = relations, ownership = base.ownership, startingUnits = emptyList(),
+            playable = base.playable, objectives = base.objectives, starTurns = base.starTurns
+        )
+        return Session(testMap(), s, Difficulty.OFFICER, "AAA", 99L)
+    }
+
+    @Test
+    fun `a nation joins its bloc's war on its war turn, not before`() {
+        val s = blocSession("AXIS", 1, "ALLIES", 3)
+        assertFalse("第 1 回合還不該開戰", s.diplomacy.isAtWar(0, 1))
+        while (s.turn < 3) s.advanceToNextNation()
+        assertTrue("第 3 回合該照表參戰", s.diplomacy.isAtWar(0, 1))
+    }
+
+    @Test
+    fun `declaring war on a bystander makes it an enemy that stops sitting still`() {
+        val s = blocSession("", 1, "", 1)
+        assertTrue(s.isBystander(1))
+        assertTrue(Orders.declareWar(s, 0, 1))
+        assertTrue("宣戰之後要能互相攻擊", s.isHostile(0, 1))
+        assertFalse("被宣戰的中立國不再是旁觀者", s.isBystander(1))
+        assertFalse("已經在打就不能再宣一次", Orders.canDeclareWar(s, 0, 1))
+    }
+
+    @Test
+    fun `nobody may declare war on their own bloc`() {
+        val s = blocSession("AXIS", 1, "AXIS", 1)
+        assertFalse(Orders.canDeclareWar(s, 0, 1))
+        assertFalse(Orders.declareWar(s, 0, 1))
+    }
+
+    @Test
+    fun `attacking a late entrant drags its whole bloc war forward`() {
+        val ally = ScenarioNation("CCC", "nation_ccc", "#00FF00", -1, AiProfile.BALANCED, 500, IntArray(6),
+            bloc = "AXIS", warTurn = 1)
+        val s = blocSession("AXIS", 1, "ALLIES", 9, extra = listOf(ally))
+        assertFalse("美國式的晚參戰國開局不在打", s.diplomacy.isAtWar(2, 1))
+
+        assertTrue(Orders.declareWar(s, 0, 1))
+        assertTrue("被打的那一國要跟整個敵對陣營開戰", s.diplomacy.isAtWar(2, 1))
+    }
+
     @Test
     fun `a garrison rebuilds the city, and the city heals the garrison`() {
         val s = session(listOf(ScenarioUnit("AAA", 1, 1, "INFANTRY", 1, "")))

@@ -392,7 +392,7 @@ def garrison_lines(built, owners, nation_funds):
 
 def write_conquest(built, scenario_id, name_key, desc_key, order, merge,
                    start_year, turtle=None, blocs=None, overrides=None,
-                   renames=None):
+                   renames=None, war_turns=None):
     """把 places 的國家分佈展開成一份征服劇本。"""
     owners = {}
     for pid, (key, _tier, nation, _tile) in enumerate(built.provinces):
@@ -439,14 +439,15 @@ def write_conquest(built, scenario_id, name_key, desc_key, order, merge,
             profile = "TURTLE"
         funds = nation_funds[code]
         capital = max(owners[code], key=lambda pid: built.provinces[pid][1])
-        lines.append("%s|%s|%s|%d|%s|%d|%s|%s|%s" % (
+        lines.append("%s|%s|%s|%d|%s|%d|%s|%s|%s|%d" % (
             code, (renames or {}).get(code, "nation_" + code.lower()),
             colour, capital, profile, funds,
             ",".join(str(v) for v in tech_for(funds)),
             places.FLAGS.get(code, ""),
             bloc_of(code, blocs),
+            (war_turns or {}).get(code, 1),
         ))
-    wars = bloc_wars(blocs, set(ordered))
+    wars = bloc_wars(blocs, set(ordered), war_turns)
     if wars:
         lines.append("")
         lines.append("[relations]")
@@ -482,18 +483,26 @@ def bloc_of(code, blocs):
     return ""
 
 
-def bloc_wars(blocs, present):
-    """不同陣營之間全部互相宣戰；同陣營與中立維持和平。"""
+def bloc_wars(blocs, present, war_turns=None):
+    """開局就在打的那些：不同陣營、而且雙方都在第 1 回合參戰。
+
+    參戰回合晚於 1 的國家不寫進關係表 —— 它們的戰爭由遊戲在那一回合
+    自己開啟，劇本檔只描述開局的樣子。
+    """
     if not blocs:
         return []
+    war_turns = war_turns or {}
     names = [n for n in blocs]
     lines = []
     for i, a in enumerate(names):
         for b in names[i + 1:]:
             for x in blocs[a]:
                 for y in blocs[b]:
-                    if x in present and y in present:
-                        lines.append("%s %s WAR" % (x, y))
+                    if x not in present or y not in present:
+                        continue
+                    if war_turns.get(x, 1) > 1 or war_turns.get(y, 1) > 1:
+                        continue
+                    lines.append("%s %s WAR" % (x, y))
     return lines
 
 
@@ -573,17 +582,18 @@ def write_campaign(built, mission):
         if code in bystanders:
             profile = "TURTLE"
         capital = max(owners[code], key=lambda pid: built.provinces[pid][1]) if owners[code] else -1
-        lines.append("%s|%s|%s|%d|%s|%d|%s|%s|%s" % (
+        lines.append("%s|%s|%s|%d|%s|%d|%s|%s|%s|%d" % (
             code,
             mission.get("renames", places.WW2_RENAMES).get(code, "nation_" + code.lower()),
             colour, capital, profile, funds,
             ",".join(str(v) for v in mission.get("tech", {}).get(code, [1, 1, 1, 0, 0, 1])),
             places.FLAGS.get(code, ""),
             bloc_of(code, mission["blocs"]),
+            mission.get("entry", {}).get(code, 1),
         ))
     lines.append("")
     lines.append("[relations]")
-    lines.extend(bloc_wars(mission["blocs"], set(owners)))
+    lines.extend(bloc_wars(mission["blocs"], set(owners), mission.get("entry")))
     lines.append("")
     lines.append("[owners]")
     for code, ids in owners.items():
@@ -781,7 +791,8 @@ def main():
                          "scn_conquest_1939_desc", 20, places.WW2_MERGE, 1939,
                          turtle=places.WW2_NEUTRALS, blocs=places.WW2_BLOCS,
                          overrides=places.WW2_PROVINCE_OWNERS,
-                         renames=places.WW2_RENAMES))
+                         renames=places.WW2_RENAMES,
+                         war_turns=places.WW2_WAR_TURNS))
 
     for mission in scn.CAMPAIGN:
         built = built_maps[mission["map"]]

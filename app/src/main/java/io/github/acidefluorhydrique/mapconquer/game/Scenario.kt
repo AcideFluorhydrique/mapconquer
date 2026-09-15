@@ -69,7 +69,12 @@ class ScenarioNation(
      * 陣營是「這一年誰跟誰站在一起」，跟 [aiProfile] 是兩回事：性格決定
      * 一個國家怎麼打，陣營決定它會不會對某個對象開打。
      */
-    val bloc: String = ""
+    val bloc: String = "",
+    /**
+     * 參戰回合。陣營開局就確定，但交戰時間可以錯開：1939 年的美國屬於同盟，
+     * 卻要到第 10 回合才開戰。1 代表開局就在打；無陣營的國家這一欄沒有意義。
+     */
+    val warTurn: Int = 1
 )
 
 class ScenarioUnit(

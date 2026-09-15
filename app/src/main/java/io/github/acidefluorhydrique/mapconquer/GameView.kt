@@ -110,6 +110,9 @@ class GameView(context: Context) : SurfaceView(context), SurfaceHolder.Callback 
      * 純粹是手滑 —— 沒有理由讓玩家為此賠掉一支部隊的一整個回合。
      * 做了別的事（攻擊、生產、結束回合）就作廢。
      */
+    /** 已經按過一次、等待確認的宣戰對象；-1 代表沒有。 */
+    private var armedWarTarget = -1
+
     private var undoRecord: Orders.MoveRecord? = null
 
     private var toastText: String = ""
@@ -278,6 +281,7 @@ class GameView(context: Context) : SurfaceView(context), SurfaceHolder.Callback 
         val over = overlay ?: return
         canvas.drawColor(Colors.of("#070C12"))
         mapRenderer?.draw(canvas, cam, over)
+        hudRenderer?.armedWarTarget = armedWarTarget
         hudRenderer?.draw(
             canvas, buttons, over,
             aiThinking = !active.isPlayerTurn,
@@ -471,6 +475,7 @@ class GameView(context: Context) : SurfaceView(context), SurfaceHolder.Callback 
             }
 
             HudRenderer.ID_UNDO -> undoLastMove()
+            HudRenderer.ID_DECLARE_WAR -> declareWarOn(payload)
             HudRenderer.ID_END_TURN -> endPlayerTurn()
             HudRenderer.ID_MENU -> panel = Panel.PAUSE
             HudRenderer.ID_TECH -> panel = Panel.TECH
@@ -544,6 +549,8 @@ class GameView(context: Context) : SurfaceView(context), SurfaceHolder.Callback 
         val over = overlay ?: return
         val tile = cam.tileAt(x, y)
         if (tile < 0) return
+        // 點了地圖就代表沒有要確認宣戰了。
+        armedWarTarget = -1
         if (!active.isPlayerTurn) {
             over.selectedTile = tile
             over.selectedUnit = active.primaryUnitAt(tile)
@@ -643,6 +650,29 @@ class GameView(context: Context) : SurfaceView(context), SurfaceHolder.Callback 
         overlay?.let {
             if (!unit.isAlive) it.clearSelection() else refreshHighlights(active, it)
         }
+    }
+
+    /**
+     * 宣戰要按兩次：第一次只是「上膛」並提示對象，第二次才真的開戰。
+     * 開戰之後攻擊範圍會改變（原本不能打的格子變成可以打），所以要重算高亮。
+     */
+    private fun declareWarOn(target: Int) {
+        val active = session ?: return
+        if (!active.isPlayerTurn) return
+        if (armedWarTarget != target) {
+            armedWarTarget = target
+            Audio.play(Sfx.CLICK)
+            toast(Strings.format(R.string.toast_war_armed, Strings.byName(active.nations[target].nameKey)))
+            return
+        }
+        armedWarTarget = -1
+        undoRecord = null
+        if (!Orders.declareWar(active, active.playerNationId, target)) {
+            Audio.play(Sfx.DENIED)
+            return
+        }
+        Audio.play(Sfx.ATTACK)
+        overlay?.let { refreshHighlights(active, it) }
     }
 
     private fun undoLastMove() {

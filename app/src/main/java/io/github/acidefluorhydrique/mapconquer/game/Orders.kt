@@ -281,6 +281,36 @@ object Orders {
     }
 
     /**
+     * 能不能對某國宣戰。
+     *
+     * 同陣營不行 —— 那是打自己人。已經在打、或對方已經亡國也不行。
+     * 中立國可以：旁觀國不動是因為沒人找它麻煩，不是因為它打不得。
+     */
+    fun canDeclareWar(session: Session, declarer: Int, target: Int): Boolean {
+        if (declarer == target) return false
+        val a = session.nations.getOrNull(declarer) ?: return false
+        val b = session.nations.getOrNull(target) ?: return false
+        if (a.eliminated || b.eliminated) return false
+        if (session.sameBloc(declarer, target)) return false
+        return !session.diplomacy.isAtWar(declarer, target)
+    }
+
+    /** 宣戰。對方若屬於敵對陣營，會連同它的整個陣營一起提早參戰。 */
+    fun declareWar(session: Session, declarer: Int, target: Int): Boolean {
+        if (!canDeclareWar(session, declarer, target)) return false
+        session.diplomacy.set(declarer, target, Relation.WAR)
+        session.pushEvent(
+            "event_war_declared",
+            listOf(session.nations[declarer].nameKey, session.nations[target].nameKey),
+            -1,
+            declarer
+        )
+        session.activateBlocWars()
+        session.refreshOutcome()
+        return true
+    }
+
+    /**
      * 這一格是不是一座「可以直接轟」的空城，回傳省份 id，不是的話回 -1。
      *
      * 沒有守軍的城市也該打得到。城防是易主的門檻，如果只有站上去圍攻

@@ -52,7 +52,9 @@ class Nation(
      * [aiProfile] 只描述打法，講不出立場 —— 一張 1939 年的地圖上，
      * 德國與義大利都可以是侵略性格，但它們不會互相宣戰。
      */
-    val bloc: String = ""
+    val bloc: String = "",
+    /** 參戰回合，見 ScenarioNation.warTurn。 */
+    val warTurn: Int = 1
 ) {
     var funds: Int = 0
 

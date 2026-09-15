@@ -13,15 +13,15 @@ startYear 1943
 starTurns 24,32
 
 [nations]
-RUS|nation_sun|#8C6E4C|15|AGGRESSIVE|1800|2,2,1,0,0,2|🇷🇺|ALLIES
-DEU|nation_deu|#6E7A86|3|OPPORTUNIST|1600|3,3,2,1,0,2|🇩🇪|AXIS
-TUR|nation_tur|#A84C4C|23|TURTLE|500|1,1,1,0,0,1|🇹🇷|
-SWE|nation_swe|#4C6E9E|9|TURTLE|400|1,1,1,0,0,1|🇸🇪|
-ITA|nation_ita|#5C9E6E|0|TURTLE|700|1,1,1,0,0,1|🇮🇹|
-HUN|nation_hun|#9E7A4C|5|TURTLE|300|1,1,1,0,0,1|🇭🇺|
-ROU|nation_rou|#8C7A3C|6|TURTLE|320|1,1,1,0,0,1|🇷🇴|
-SRB|nation_srb|#8C5C4C|7|TURTLE|260|1,1,1,0,0,1|🇷🇸|
-BGR|nation_bgr|#6E8C5C|8|TURTLE|240|1,1,1,0,0,1|🇧🇬|
+RUS|nation_sun|#8C6E4C|15|AGGRESSIVE|1800|2,2,1,0,0,2|🇷🇺|ALLIES|1
+DEU|nation_deu|#6E7A86|3|OPPORTUNIST|1600|3,3,2,1,0,2|🇩🇪|AXIS|1
+TUR|nation_tur|#A84C4C|23|TURTLE|500|1,1,1,0,0,1|🇹🇷||1
+SWE|nation_swe|#4C6E9E|9|TURTLE|400|1,1,1,0,0,1|🇸🇪||1
+ITA|nation_ita|#5C9E6E|0|TURTLE|700|1,1,1,0,0,1|🇮🇹||1
+HUN|nation_hun|#9E7A4C|5|TURTLE|300|1,1,1,0,0,1|🇭🇺||1
+ROU|nation_rou|#8C7A3C|6|TURTLE|320|1,1,1,0,0,1|🇷🇴||1
+SRB|nation_srb|#8C5C4C|7|TURTLE|260|1,1,1,0,0,1|🇷🇸||1
+BGR|nation_bgr|#6E8C5C|8|TURTLE|240|1,1,1,0,0,1|🇧🇬||1
 
 [relations]
 DEU RUS WAR

@@ -103,9 +103,9 @@ object ScenarioLoader {
     }
 
     /**
-     * `GER|nation_ger|#6E7A86|12|AGGRESSIVE|900|1,1,1,1,0,1|🇩🇪|AXIS`
+     * `GER|nation_ger|#6E7A86|12|AGGRESSIVE|900|1,1,1,1,0,1|🇩🇪|AXIS|1`
      *
-     * 最後三欄（科技、國旗、陣營）都可以省略，舊劇本不必改。
+     * 最後四欄（科技、國旗、陣營、參戰回合）都可以省略，舊劇本不必改。
      */
     private fun parseNation(line: String): ScenarioNation? {
         val p = line.split('|')
@@ -123,7 +123,8 @@ object ScenarioLoader {
             funds = p[5].trim().toIntOrNull() ?: 500,
             tech = tech,
             flag = if (p.size >= 8) p[7].trim() else "",
-            bloc = if (p.size >= 9) p[8].trim().uppercase() else ""
+            bloc = if (p.size >= 9) p[8].trim().uppercase() else "",
+            warTurn = if (p.size >= 10) (p[9].trim().toIntOrNull() ?: 1).coerceAtLeast(1) else 1
         )
     }
 

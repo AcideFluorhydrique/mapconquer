@@ -74,6 +74,9 @@ UI = {
     "hud_wait": ("Wait", "待命", "待命"),
     "hud_next_unit": ("Next", "下一支", "下一支"),
     "hud_undo": ("Undo", "撤回", "撤回"),
+    "hud_declare_war": ("Declare war", "宣戰", "宣战"),
+    "hud_confirm_war": ("Confirm", "確認宣戰", "确认宣战"),
+    "toast_war_armed": ("Tap again to declare war on %1$s", "再按一次，對 %1$s 宣戰", "再按一次，对 %1$s 宣战"),
     "hud_toggle_grid": ("Grid", "格線", "格线"),
     "hud_toggle_supply": ("Supply", "補給", "补给"),
     "hud_neutral": ("Neutral", "中立", "中立"),
@@ -156,6 +159,7 @@ UI = {
     "event_unit_built": ("%1$s built in %2$s", "%2$s 生產了 %1$s", "%2$s 生产了 %1$s"),
     "event_tech_advanced": ("%2$s advanced its research", "%2$s 完成了一項研發", "%2$s 完成了一项研发"),
     "event_war_declared": ("%1$s declares war on %2$s", "%1$s 向 %2$s 宣戰", "%1$s 向 %2$s 宣战"),
+    "event_war_entered": ("%1$s enters the war", "%1$s 參戰", "%1$s 参战"),
 
     # 目標
     "objective_capture": ("Capture the marked provinces", "攻下指定省份", "攻下指定省份"),
@@ -441,9 +445,9 @@ COMMANDERS = {
 SCENARIO_TEXT = {
     "scn_conquest_1939": ("1939 · The World", "1939 · 全球", "1939 · 全球"),
     "scn_conquest_1939_desc": (
-        "The world as the empires held it: Africa and southern Asia belong to London, Paris and Rome rather than to themselves. Axis and Allies are already at war; everyone else is watching. Pick anyone.",
-        "帝國手中的世界：非洲與南亞不屬於自己，屬於倫敦、巴黎與羅馬。軸心與同盟已經開戰，其餘國家在旁邊看。想選誰都行。",
-        "帝国手中的世界：非洲与南亚不属于自己，属于伦敦、巴黎与罗马。轴心与同盟已经开战，其余国家在旁边看。想选谁都行。"),
+        "The world as the empires held it: Africa and southern Asia belong to London, Paris and Rome rather than to themselves. Axis and Allies are already at war, though the Soviet Union and the United States will not join for some turns yet. Pick anyone.",
+        "帝國手中的世界：非洲與南亞不屬於自己，屬於倫敦、巴黎與羅馬。軸心與同盟已經開戰，蘇聯與美國要再過幾個回合才會加入。想選誰都行。",
+        "帝国手中的世界：非洲与南亚不属于自己，属于伦敦、巴黎与罗马。轴心与同盟已经开战，苏联与美国要再过几个回合才会加入。想选谁都行。"),
 
     "scn_campaign_ww2_01_poland": ("1939 \u00b7 Poland", "1939 \u00b7 \u6ce2\u862d", "1939 \u00b7 \u6ce2\u5170"),
     "scn_campaign_ww2_01_poland_desc": (

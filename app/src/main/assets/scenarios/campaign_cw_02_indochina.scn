@@ -13,15 +13,15 @@ startYear 1968
 starTurns 26,36
 
 [nations]
-VNM|nation_vnm|#B4954C|9|BALANCED|1200|1,1,1,3,0,1|🇻🇳|EAST
-USA|nation_usa|#4C7BA8|10|AGGRESSIVE|2000|3,3,3,2,0,3|🇺🇸|WEST
-THA|nation_tha|#5C86A8|7|TURTLE|600|1,1,1,0,0,1|🇹🇭|WEST
-KHM|nation_khm|#7A8C6E|11|TURTLE|400|1,1,1,0,0,1|🇰🇭|
-ROC|nation_roc|#B4454C|0|TURTLE|1100|1,1,1,0,0,1|🇹🇼|
-GBR|nation_gbr|#8C4C4C|2|TURTLE|1100|1,1,1,0,0,1|🇬🇧|
-JPN|nation_jpn|#C45C5C|3|TURTLE|1200|1,1,1,0,0,1|🇯🇵|
-NLD|nation_nld|#C4813C|15|TURTLE|380|1,1,1,0,0,1|🇳🇱|
-AUS|nation_aus|#C4A05C|22|TURTLE|820|1,1,1,0,0,1|🇦🇺|
+VNM|nation_vnm|#B4954C|9|BALANCED|1200|1,1,1,3,0,1|🇻🇳|EAST|1
+USA|nation_usa|#4C7BA8|10|AGGRESSIVE|2000|3,3,3,2,0,3|🇺🇸|WEST|1
+THA|nation_tha|#5C86A8|7|TURTLE|600|1,1,1,0,0,1|🇹🇭|WEST|1
+KHM|nation_khm|#7A8C6E|11|TURTLE|400|1,1,1,0,0,1|🇰🇭||1
+ROC|nation_roc|#B4454C|0|TURTLE|1100|1,1,1,0,0,1|🇹🇼||1
+GBR|nation_gbr|#8C4C4C|2|TURTLE|1100|1,1,1,0,0,1|🇬🇧||1
+JPN|nation_jpn|#C45C5C|3|TURTLE|1200|1,1,1,0,0,1|🇯🇵||1
+NLD|nation_nld|#C4813C|15|TURTLE|380|1,1,1,0,0,1|🇳🇱||1
+AUS|nation_aus|#C4A05C|22|TURTLE|820|1,1,1,0,0,1|🇦🇺||1
 
 [relations]
 USA VNM WAR

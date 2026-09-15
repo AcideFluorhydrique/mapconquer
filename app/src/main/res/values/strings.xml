@@ -43,6 +43,9 @@
     <string name="hud_wait">Wait</string>
     <string name="hud_next_unit">Next</string>
     <string name="hud_undo">Undo</string>
+    <string name="hud_declare_war">Declare war</string>
+    <string name="hud_confirm_war">Confirm</string>
+    <string name="toast_war_armed">Tap again to declare war on %1$s</string>
     <string name="hud_toggle_grid">Grid</string>
     <string name="hud_toggle_supply">Supply</string>
     <string name="hud_neutral">Neutral</string>
@@ -106,6 +109,7 @@
     <string name="event_unit_built">%1$s built in %2$s</string>
     <string name="event_tech_advanced">%2$s advanced its research</string>
     <string name="event_war_declared">%1$s declares war on %2$s</string>
+    <string name="event_war_entered">%1$s enters the war</string>
     <string name="objective_capture">Capture the marked provinces</string>
     <string name="objective_hold">Hold the marked provinces until turn %2$d</string>
     <string name="objective_eliminate">Eliminate %3$s</string>
@@ -257,7 +261,7 @@
 
     <!-- Scenarios -->
     <string name="scn_conquest_1939">1939 · The World</string>
-    <string name="scn_conquest_1939_desc">The world as the empires held it: Africa and southern Asia belong to London, Paris and Rome rather than to themselves. Axis and Allies are already at war; everyone else is watching. Pick anyone.</string>
+    <string name="scn_conquest_1939_desc">The world as the empires held it: Africa and southern Asia belong to London, Paris and Rome rather than to themselves. Axis and Allies are already at war, though the Soviet Union and the United States will not join for some turns yet. Pick anyone.</string>
     <string name="scn_campaign_ww2_01_poland">1939 · Poland</string>
     <string name="scn_campaign_ww2_01_poland_desc">You are outnumbered in armour, in aircraft and in men. This one cannot be won — it can be made expensive. Hold Warsaw to turn 20.</string>
     <string name="scn_campaign_ww2_02_france">1940 · France</string>

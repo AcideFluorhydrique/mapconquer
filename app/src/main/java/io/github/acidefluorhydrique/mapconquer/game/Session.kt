@@ -96,7 +96,7 @@ class Session(
         scenario.nations.forEachIndexed { index, sn ->
             val nation = Nation(
                 index, sn.code, sn.nameKey, sn.colour,
-                sn.aiProfile, sn.capitalProvince, sn.flag, sn.bloc
+                sn.aiProfile, sn.capitalProvince, sn.flag, sn.bloc, sn.warTurn
             )
             nation.funds = sn.funds
             for (i in sn.tech.indices) {
@@ -112,6 +112,7 @@ class Session(
         nations[playerNationId].isPlayer = true
 
         applyScenarioRelations()
+        activateBlocWars()
         applyScenarioOwnership()
         applyScenarioFunds()
         computeProvinceIncome()
@@ -322,6 +323,8 @@ class Session(
                 activeNationId = 0
                 turn++
                 diplomacy.tickTruces()
+                announceScheduledEntries()
+                activateBlocWars()
                 wrapped = true
             }
             guard++
@@ -791,12 +794,55 @@ class Session(
 
     fun isBystander(nationId: Int): Boolean {
         val nation = nations.getOrNull(nationId) ?: return false
-        if (nation.bloc.isNotEmpty()) return false
-        for (other in nations.indices) {
-            if (other == nationId) continue
-            if (diplomacy.relation(nationId, other) == Relation.WAR) return false
+        return nation.bloc.isEmpty() && !isAtWarWithAnyone(nationId)
+    }
+
+    fun isAtWarWithAnyone(nationId: Int): Boolean =
+        nations.indices.any { it != nationId && diplomacy.isAtWar(nationId, it) }
+
+    /** 兩國是否分屬敵對陣營。任一方沒有陣營就不算。 */
+    fun opposingBlocs(a: Int, b: Int): Boolean {
+        val blocA = nations.getOrNull(a)?.bloc.orEmpty()
+        val blocB = nations.getOrNull(b)?.bloc.orEmpty()
+        return blocA.isNotEmpty() && blocB.isNotEmpty() && blocA != blocB
+    }
+
+    /**
+     * 這個國家是否已經加入陣營戰爭。
+     *
+     * 兩種方式進場：輪到它的參戰回合，或是被敵對陣營的國家先打了。後者是
+     * 為了讓「提早對美國宣戰」有代價 —— 那不只是跟美國一國開戰，而是把整個
+     * 同盟提早拖進來。被無陣營的國家攻擊則不算：巴西打美國是雙邊戰爭，
+     * 不會因此把美國推進歐洲戰場。
+     */
+    fun isBelligerent(nationId: Int): Boolean {
+        val nation = nations.getOrNull(nationId) ?: return false
+        if (nation.bloc.isEmpty() || nation.eliminated) return false
+        if (nation.warTurn <= turn) return true
+        return nations.indices.any { opposingBlocs(nationId, it) && diplomacy.isAtWar(nationId, it) }
+    }
+
+    /** 所有已參戰、分屬敵對陣營的國家兩兩開戰。重複呼叫沒有副作用。 */
+    fun activateBlocWars() {
+        for (a in nations.indices) {
+            if (!isBelligerent(a)) continue
+            for (b in a + 1 until nations.size) {
+                if (!opposingBlocs(a, b) || diplomacy.isAtWar(a, b)) continue
+                if (!isBelligerent(b)) continue
+                diplomacy.set(a, b, Relation.WAR)
+            }
         }
-        return true
+    }
+
+    /** 回合推進時，替這一回合照表參戰的國家發一則戰報。 */
+    private fun announceScheduledEntries() {
+        for (nation in nations) {
+            if (nation.eliminated || nation.bloc.isEmpty() || nation.warTurn != turn) continue
+            val alreadyIn = nations.indices.any {
+                opposingBlocs(nation.id, it) && diplomacy.isAtWar(nation.id, it)
+            }
+            if (!alreadyIn) pushEvent("event_war_entered", listOf(nation.nameKey), -1, nation.id)
+        }
     }
 
     /** 與 [nationId] 分屬敵對陣營的國家；兩邊都要有陣營才算數。 */

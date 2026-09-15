@@ -108,9 +108,12 @@ class ScenarioAssetTest {
             for (x in aligned) {
                 for (y in aligned) {
                     if (x.code >= y.code || x.bloc == y.bloc) continue
-                    assertTrue(
-                        "$id: ${x.code}(${x.bloc}) 與 ${y.code}(${y.bloc}) 分屬敵對陣營卻沒有交戰",
-                        atWar.contains("${x.code}|${y.code}")
+                    // 雙方都在第 1 回合參戰才該開局就在打；有一方晚參戰就該是和平。
+                    val fromStart = x.warTurn <= 1 && y.warTurn <= 1
+                    assertEquals(
+                        "$id: ${x.code}(${x.bloc}, 第 ${x.warTurn} 回合) 與 " +
+                            "${y.code}(${y.bloc}, 第 ${y.warTurn} 回合) 的開局關係不對",
+                        fromStart, atWar.contains("${x.code}|${y.code}")
                     )
                 }
             }

@@ -43,6 +43,9 @@
     <string name="hud_wait">待命</string>
     <string name="hud_next_unit">下一支</string>
     <string name="hud_undo">撤回</string>
+    <string name="hud_declare_war">宣戰</string>
+    <string name="hud_confirm_war">確認宣戰</string>
+    <string name="toast_war_armed">再按一次，對 %1$s 宣戰</string>
     <string name="hud_toggle_grid">格線</string>
     <string name="hud_toggle_supply">補給</string>
     <string name="hud_neutral">中立</string>
@@ -106,6 +109,7 @@
     <string name="event_unit_built">%2$s 生產了 %1$s</string>
     <string name="event_tech_advanced">%2$s 完成了一項研發</string>
     <string name="event_war_declared">%1$s 向 %2$s 宣戰</string>
+    <string name="event_war_entered">%1$s 參戰</string>
     <string name="objective_capture">攻下指定省份</string>
     <string name="objective_hold">守住指定省份至第 %2$d 回合</string>
     <string name="objective_eliminate">消滅 %3$s</string>
@@ -257,7 +261,7 @@
 
     <!-- Scenarios -->
     <string name="scn_conquest_1939">1939 · 全球</string>
-    <string name="scn_conquest_1939_desc">帝國手中的世界：非洲與南亞不屬於自己，屬於倫敦、巴黎與羅馬。軸心與同盟已經開戰，其餘國家在旁邊看。想選誰都行。</string>
+    <string name="scn_conquest_1939_desc">帝國手中的世界：非洲與南亞不屬於自己，屬於倫敦、巴黎與羅馬。軸心與同盟已經開戰，蘇聯與美國要再過幾個回合才會加入。想選誰都行。</string>
     <string name="scn_campaign_ww2_01_poland">1939 · 波蘭</string>
     <string name="scn_campaign_ww2_01_poland_desc">裝甲、飛機、人數，你樣樣都少。這一關贏不了，但可以讓對方付出代價：守住華沙到第 20 回合。</string>
     <string name="scn_campaign_ww2_02_france">1940 · 法蘭西</string>
