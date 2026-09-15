@@ -123,6 +123,7 @@
     <string name="difficulty_commander">指揮官</string>
     <string name="difficulty_marshal">元帥</string>
     <string name="nation_sun">蘇聯</string>
+    <string name="nation_frg">西德</string>
     <string name="bloc_axis">軸心國</string>
     <string name="bloc_allies">同盟國</string>
     <string name="bloc_west">西方陣營</string>
@@ -263,6 +264,12 @@
     <string name="cmd_alvarez">阿爾瓦雷斯元帥</string>
 
     <!-- Scenarios -->
+    <string name="scn_conquest_1943">1943 · 轉捩點</string>
+    <string name="scn_conquest_1943_desc">1943 年 3 月。軸心國的版圖到了頂點，從大西洋岸到頓涅茨、從滿洲到南洋，而史達林格勒剛剛回到蘇聯手上。該參戰的都已經參戰。選一邊，看戰局會不會就此逆轉。</string>
+    <string name="scn_conquest_1950">1950 · 兩大陣營</string>
+    <string name="scn_conquest_1950_desc">1950 年 1 月。德國與朝鮮一分為二，中華人民共和國成立才三個月，非洲大半仍是殖民地。西方與東方隔著一條穿過柏林的線對峙，其他國家寧可不選邊。</string>
+    <string name="scn_conquest_1980">1980 · 北約與華約</string>
+    <string name="scn_conquest_1980_desc">1980 年 1 月。帝國都已經散了，世界大半屬於自己。北約與華約在歐洲對峙，中國、印度與不結盟國家站在兩者之外。</string>
     <string name="scn_conquest_1939">1939 · 全球</string>
     <string name="scn_conquest_1939_desc">帝國手中的世界：非洲與南亞不屬於自己，屬於倫敦、巴黎與羅馬。軸心與同盟已經開戰，蘇聯與美國要再過幾個回合才會加入。想選誰都行。</string>
     <string name="scn_campaign_ww2_01_poland">1939 · 波蘭</string>
@@ -390,6 +397,7 @@
     <string name="nation_zaf">南非</string>
     <string name="nation_zmb">尚比亞</string>
     <string name="nation_zwe">辛巴威</string>
+    <string name="nation_ddr">東德</string>
     <string name="nation_roc">中華民國</string>
 
     <!-- Provinces -->

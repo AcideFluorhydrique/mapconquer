@@ -493,11 +493,121 @@ WW2_NEUTRALS = {
 }
 
 
+# ----------------------------------------------------------------------
+# 1943 年 3 月：軸心的最大版圖
+# ----------------------------------------------------------------------
+# 國家合併沿用 1939（非洲與南亞仍是殖民地），占領逐省覆寫。史達林格勒
+# 二月剛投降、羅斯托夫已經收復，但哈爾科夫三月中又被德軍拿回去了。
+WW2_1943_PROVINCE_OWNERS = dict(WW2_PROVINCE_OWNERS)
+WW2_1943_PROVINCE_OWNERS.update({
+    # 德國：法國全境（1942 年 11 月之後）、低地國、北歐、波蘭、巴爾幹、蘇聯西部
+    "prov_paris": "DEU", "prov_lyon": "DEU", "prov_bordeaux": "DEU",
+    "prov_amsterdam": "DEU", "prov_brussels": "DEU", "prov_copenhagen": "DEU",
+    "prov_oslo": "DEU", "prov_narvik": "DEU",
+    "prov_warsaw": "DEU", "prov_krakow": "DEU",
+    "prov_belgrade": "DEU", "prov_athens": "DEU",
+    "prov_riga": "DEU", "prov_minsk": "DEU", "prov_kyiv": "DEU", "prov_kharkiv": "DEU",
+    "prov_tunis": "DEU",
+    # 羅馬尼亞：外涅斯特里亞
+    "prov_odesa": "ROU",
+    # 日本：中國沿海、香港、東南亞、菲律賓、荷屬東印度
+    "prov_beijing": "JPN", "prov_shanghai": "JPN", "prov_guangzhou": "JPN",
+    "prov_wuhan": "JPN", "prov_hohhot": "JPN", "prov_hong_kong": "JPN",
+    "prov_manila": "JPN", "prov_cebu": "JPN",
+    "prov_jakarta": "JPN", "prov_surabaya": "JPN", "prov_medan": "JPN",
+    "prov_banjarmasin": "JPN", "prov_makassar": "JPN",
+    "prov_kuala_lumpur": "JPN", "prov_kota_kinabalu": "JPN", "prov_singapore": "JPN",
+    "prov_yangon": "JPN", "prov_mandalay": "JPN",
+    "prov_hanoi": "JPN", "prov_ho_chi_minh": "JPN", "prov_phnom_penh": "JPN",
+    # 同盟已經收回的：利比亞、義屬東非；伊朗由英蘇分區占領
+    "prov_tripoli": "GBR", "prov_mogadishu": "GBR", "prov_addis": "ETH",
+    "prov_tabriz": "RUS", "prov_tehran": "GBR", "prov_isfahan": "GBR",
+})
+
+# 芬蘭（繼續戰爭）、羅馬尼亞、匈牙利、保加利亞、泰國都是實際跟軸心並肩作戰的。
+# 西班牙與土耳其不是 —— 別的遊戲把西班牙排進軸心，那不對。衣索比亞在 1942 年
+# 底對軸心宣戰。巴西與墨西哥雖然也宣戰了，但在棋盤上跟中立沒有差別，
+# 放進同盟只會讓軸心玩家必須去滅掉它們才算贏。
+WW2_1943_BLOCS = {
+    "AXIS": ["DEU", "ITA", "JPN", "FIN", "ROU", "HUN", "BGR", "THA"],
+    "ALLIES": ["GBR", "USA", "RUS", "ROC", "FRA", "CAN", "AUS", "NZL", "ETH"],
+}
+
+# ----------------------------------------------------------------------
+# 1950 年 1 月：冷戰初期
+# ----------------------------------------------------------------------
+# 南亞、印尼、菲律賓、中東已經獨立；非洲大半與中南半島仍是殖民地。
+COLD_WAR_1950_MERGE = {
+    "DZA": "FRA", "MAR": "FRA", "TUN": "FRA", "SEN": "FRA", "MLI": "FRA",
+    "CIV": "FRA", "TCD": "FRA", "MDG": "FRA", "VNM": "FRA", "KHM": "FRA",
+    "NGA": "GBR", "GHA": "GBR", "KEN": "GBR", "UGA": "GBR", "TZA": "GBR",
+    "ZMB": "GBR", "ZWE": "GBR", "SDN": "GBR", "LBY": "GBR",
+    "MYS": "GBR", "SGP": "GBR", "ARE": "GBR", "OMN": "GBR", "YEM": "GBR",
+    "COD": "BEL",
+    "AGO": "PRT", "MOZ": "PRT",
+    "SOM": "ITA",       # 聯合國託管，由義大利管理
+    "NAM": "ZAF",
+    "GRL": "DNK",
+    "PNG": "AUS",
+    "BGD": "PAK",       # 東巴基斯坦
+    "BLR": "RUS", "UKR": "RUS", "KAZ": "RUS", "UZB": "RUS", "TKM": "RUS",
+    "AZE": "RUS", "GEO": "RUS", "LVA": "RUS",
+}
+
+# 德國分成兩個國家。柏林在東德境內，整個省算東德的。
+COLD_WAR_1950_PROVINCE_OWNERS = {
+    "prov_berlin": "DDR",
+    "prov_hong_kong": "GBR",
+}
+
+# 北約創始國加上當時已經明確靠向美國的（土耳其、希臘、日本、南韓、臺灣、
+# 澳紐、菲律賓）。東方是蘇聯、中華人民共和國與東歐衛星國。瑞典、芬蘭、
+# 南斯拉夫、西班牙、印度與整個不結盟世界都是中立。別的遊戲把古巴、埃及、
+# 伊拉克、泰國排進共產陣營 —— 1950 年這幾國都是親西方的君主或軍政府，不照做。
+COLD_WAR_1950_BLOCS = {
+    "WEST": ["USA", "CAN", "GBR", "FRA", "ITA", "NLD", "BEL", "DNK", "NOR", "ISL",
+             "PRT", "DEU", "GRC", "TUR", "AUS", "NZL", "JPN", "KOR", "TWN", "PHL"],
+    "EAST": ["RUS", "CHN", "POL", "CZE", "HUN", "ROU", "BGR", "DDR", "PRK", "MNG"],
+}
+
+# ----------------------------------------------------------------------
+# 1980 年 1 月：北約對華約
+# ----------------------------------------------------------------------
+# 帝國都已經散了。只剩蘇聯的加盟共和國與西南非的託管。
+COLD_WAR_1980_MERGE = {
+    "BLR": "RUS", "UKR": "RUS", "KAZ": "RUS", "UZB": "RUS", "TKM": "RUS",
+    "AZE": "RUS", "GEO": "RUS", "LVA": "RUS",
+    "NAM": "ZAF",
+    "GRL": "DNK",
+}
+
+COLD_WAR_1980_PROVINCE_OWNERS = {
+    "prov_berlin": "DDR",
+    "prov_hong_kong": "GBR",
+}
+
+# 兩個條約的正式成員。西班牙 1982 年才加入北約，所以這一年還是中立。
+COLD_WAR_1980_BLOCS = {
+    "NATO": ["USA", "CAN", "GBR", "FRA", "DEU", "ITA", "NLD", "BEL", "DNK", "NOR",
+             "ISL", "PRT", "GRC", "TUR"],
+    "PACT": ["RUS", "POL", "CZE", "HUN", "ROU", "BGR", "DDR"],
+}
+
+# 冷戰年代的名字：蘇聯、西德、在臺灣的中華民國。
+COLD_WAR_RENAMES = {
+    "RUS": "nation_sun",
+    "DEU": "nation_frg",
+    "TWN": "nation_roc",
+}
+
+
 # 合併後才出現的新勢力，需要自己的名字。
 EXTRA_NATIONS = {
     # 基準壓到 1100：省份多會被資金公式放大（十五個省乘 1.75），照 2400 算
     # 出來是全球最有錢的國家。1939 年的中華民國正在打一場守勢戰爭，不是首富。
     "ROC":       ("Republic of China", "中華民國", "中华民国", "#B4454C", "BALANCED", 1100),
+    # 東德沒有 emoji 國旗可用，旗幟欄留空。
+    "DDR":       ("East Germany", "東德", "东德", "#8C5A5A", "BALANCED", 700),
 }
 
 

@@ -181,6 +181,7 @@ UI = {
 
     # AI 性格
     "nation_sun": ("Soviet Union", "蘇聯", "苏联"),
+    "nation_frg": ("West Germany", "西德", "西德"),
 
     "bloc_axis":    ("Axis",         "軸心國",   "轴心国"),
     "bloc_allies":  ("Allies",       "同盟國",   "同盟国"),
@@ -457,6 +458,21 @@ COMMANDERS = {
 }
 
 SCENARIO_TEXT = {
+    "scn_conquest_1943": ("1943 · The Turning Point", "1943 · 轉捩點", "1943 · 转折点"),
+    "scn_conquest_1943_desc": (
+        "March 1943. The Axis holds more ground than it ever will again, from the Atlantic coast to the Donets and from Manchuria to the Indies, and Stalingrad has just fallen back into Soviet hands. Everyone who is going to fight is fighting. Pick a side and see whether the tide turns.",
+        "1943 年 3 月。軸心國的版圖到了頂點，從大西洋岸到頓涅茨、從滿洲到南洋，而史達林格勒剛剛回到蘇聯手上。該參戰的都已經參戰。選一邊，看戰局會不會就此逆轉。",
+        "1943 年 3 月。轴心国的版图到了顶点，从大西洋岸到顿涅茨、从满洲到南洋，而斯大林格勒刚刚回到苏联手上。该参战的都已经参战。选一边，看战局会不会就此逆转。"),
+    "scn_conquest_1950": ("1950 · The Two Camps", "1950 · 兩大陣營", "1950 · 两大阵营"),
+    "scn_conquest_1950_desc": (
+        "January 1950. Germany and Korea are divided, the People's Republic of China is three months old, and the empires still hold most of Africa. West and East face each other across a line drawn through Berlin, and everyone else would rather not choose.",
+        "1950 年 1 月。德國與朝鮮一分為二，中華人民共和國成立才三個月，非洲大半仍是殖民地。西方與東方隔著一條穿過柏林的線對峙，其他國家寧可不選邊。",
+        "1950 年 1 月。德国与朝鲜一分为二，中华人民共和国成立才三个月，非洲大半仍是殖民地。西方与东方隔着一条穿过柏林的线对峙，其他国家宁可不选边。"),
+    "scn_conquest_1980": ("1980 · NATO and the Pact", "1980 · 北約與華約", "1980 · 北约与华约"),
+    "scn_conquest_1980_desc": (
+        "January 1980. The empires are gone and most of the world belongs to itself. NATO and the Warsaw Pact face each other across Europe, while China, India and the non-aligned world stand outside both.",
+        "1980 年 1 月。帝國都已經散了，世界大半屬於自己。北約與華約在歐洲對峙，中國、印度與不結盟國家站在兩者之外。",
+        "1980 年 1 月。帝国都已经散了，世界大半属于自己。北约与华约在欧洲对峙，中国、印度与不结盟国家站在两者之外。"),
     "scn_conquest_1939": ("1939 · The World", "1939 · 全球", "1939 · 全球"),
     "scn_conquest_1939_desc": (
         "The world as the empires held it: Africa and southern Asia belong to London, Paris and Rome rather than to themselves. Axis and Allies are already at war, though the Soviet Union and the United States will not join for some turns yet. Pick anyone.",

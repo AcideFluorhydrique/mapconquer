@@ -123,6 +123,7 @@
     <string name="difficulty_commander">Commander</string>
     <string name="difficulty_marshal">Marshal</string>
     <string name="nation_sun">Soviet Union</string>
+    <string name="nation_frg">West Germany</string>
     <string name="bloc_axis">Axis</string>
     <string name="bloc_allies">Allies</string>
     <string name="bloc_west">Western bloc</string>
@@ -263,6 +264,12 @@
     <string name="cmd_alvarez">Mar. Alvarez</string>
 
     <!-- Scenarios -->
+    <string name="scn_conquest_1943">1943 · The Turning Point</string>
+    <string name="scn_conquest_1943_desc">March 1943. The Axis holds more ground than it ever will again, from the Atlantic coast to the Donets and from Manchuria to the Indies, and Stalingrad has just fallen back into Soviet hands. Everyone who is going to fight is fighting. Pick a side and see whether the tide turns.</string>
+    <string name="scn_conquest_1950">1950 · The Two Camps</string>
+    <string name="scn_conquest_1950_desc">January 1950. Germany and Korea are divided, the People\'s Republic of China is three months old, and the empires still hold most of Africa. West and East face each other across a line drawn through Berlin, and everyone else would rather not choose.</string>
+    <string name="scn_conquest_1980">1980 · NATO and the Pact</string>
+    <string name="scn_conquest_1980_desc">January 1980. The empires are gone and most of the world belongs to itself. NATO and the Warsaw Pact face each other across Europe, while China, India and the non-aligned world stand outside both.</string>
     <string name="scn_conquest_1939">1939 · The World</string>
     <string name="scn_conquest_1939_desc">The world as the empires held it: Africa and southern Asia belong to London, Paris and Rome rather than to themselves. Axis and Allies are already at war, though the Soviet Union and the United States will not join for some turns yet. Pick anyone.</string>
     <string name="scn_campaign_ww2_01_poland">1939 · Poland</string>
@@ -390,6 +397,7 @@
     <string name="nation_zaf">South Africa</string>
     <string name="nation_zmb">Zambia</string>
     <string name="nation_zwe">Zimbabwe</string>
+    <string name="nation_ddr">East Germany</string>
     <string name="nation_roc">Republic of China</string>
 
     <!-- Provinces -->
