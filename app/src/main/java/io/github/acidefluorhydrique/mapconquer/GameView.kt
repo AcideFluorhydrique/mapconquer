@@ -21,6 +21,7 @@ import io.github.acidefluorhydrique.mapconquer.core.Widgets
 import io.github.acidefluorhydrique.mapconquer.game.Difficulty
 import io.github.acidefluorhydrique.mapconquer.game.GameMode
 import io.github.acidefluorhydrique.mapconquer.game.Orders
+import io.github.acidefluorhydrique.mapconquer.game.CampaignOrder
 import io.github.acidefluorhydrique.mapconquer.game.Progress
 import io.github.acidefluorhydrique.mapconquer.game.SaveGame
 import io.github.acidefluorhydrique.mapconquer.game.Scenario
@@ -252,7 +253,8 @@ class GameView(context: Context) : SurfaceView(context), SurfaceHolder.Callback 
                 canvas, buttons, R.string.menu_campaign, campaignScenarios,
                 starsOf = { Progress.starsFor(context, it.id) },
                 unlockedAt = { Progress.isScenarioUnlocked(context, campaignScenarios, it) },
-                showStars = true
+                showStars = true,
+                grouped = true
             )
             Screen.CONQUEST_LIST -> menuRenderer.drawScenarioList(
                 canvas, buttons, R.string.menu_conquest, conquestScenarios,
@@ -819,7 +821,7 @@ class GameView(context: Context) : SurfaceView(context), SurfaceHolder.Callback 
 
     private fun loadScenarios() {
         allScenarios = runCatching { ScenarioLoader.loadAll(context) }.getOrDefault(emptyList())
-        campaignScenarios = allScenarios.filter { it.mode == GameMode.CAMPAIGN }
+        campaignScenarios = CampaignOrder.sorted(allScenarios.filter { it.mode == GameMode.CAMPAIGN })
         conquestScenarios = allScenarios.filter { it.mode == GameMode.CONQUEST }
     }
 

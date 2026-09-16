@@ -2,17 +2,17 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # 由 tools/genworld.py 產生，請勿手動編輯。
 format 1
-id campaign_ww2_05_east_front
+id campaign_ww2_05_east_front_axis
 map east_europe
 mode CAMPAIGN
-nameKey scn_campaign_ww2_05_east_front
-descKey scn_campaign_ww2_05_east_front_desc
-order 114
+nameKey scn_campaign_ww2_05_east_front_axis
+descKey scn_campaign_ww2_05_east_front_axis_desc
+order 104
 chapter ww2_europe
-route ALLIES
-turnLimit 40
+route AXIS
+turnLimit 34
 startYear 1943
-starTurns 24,32
+starTurns 28,31
 
 [nations]
 RUS|nation_sun|#8C6E4C|15|AGGRESSIVE|1800|2,2,1,0,0,2|🇷🇺|ALLIES|1
@@ -88,7 +88,7 @@ ROU|16,26|INFANTRY|1|-
 SRB|8,25|INFANTRY|1|-
 
 [playable]
-RUS
+DEU
 
 [objectives]
-CAPTURE_PROVINCES|11,13|0
+HOLD_PROVINCES|11,13|28

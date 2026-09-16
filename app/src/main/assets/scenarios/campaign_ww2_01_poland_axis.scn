@@ -2,20 +2,20 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # 由 tools/genworld.py 產生，請勿手動編輯。
 format 1
-id campaign_ww2_01_poland
+id campaign_ww2_01_poland_axis
 map europe
 mode CAMPAIGN
-nameKey scn_campaign_ww2_01_poland
-descKey scn_campaign_ww2_01_poland_desc
-order 111
+nameKey scn_campaign_ww2_01_poland_axis
+descKey scn_campaign_ww2_01_poland_axis_desc
+order 101
 chapter ww2_europe
-route ALLIES
-turnLimit 25
+route AXIS
+turnLimit 20
 startYear 1939
-starTurns 20,23
+starTurns 12,16
 
 [nations]
-POL|nation_pol|#B4535C|23|BALANCED|700|1,1,1,0,0,1|🇵🇱|ALLIES|1
+POL|nation_pol|#B4535C|23|TURTLE|700|1,1,1,0,0,1|🇵🇱|ALLIES|1
 DEU|nation_deu|#6E7A86|17|AGGRESSIVE|1500|3,3,2,1,0,2|🇩🇪|AXIS|1
 RUS|nation_sun|#8C6E4C|39|TURTLE|600|1,1,1,0,0,1|🇷🇺||1
 SWE|nation_swe|#4C6E9E|30|TURTLE|400|1,1,1,0,0,1|🇸🇪||1
@@ -131,7 +131,7 @@ TUR|44,33|INFANTRY|1|-
 TUR|38,35|INFANTRY|1|-
 
 [playable]
-POL
+DEU
 
 [objectives]
-HOLD_PROVINCES|23|20
+CAPTURE_PROVINCES|23-24|0

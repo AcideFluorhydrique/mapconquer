@@ -2,17 +2,17 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # 由 tools/genworld.py 產生，請勿手動編輯。
 format 1
-id campaign_ww2_02_france
+id campaign_ww2_02_france_allies
 map europe
 mode CAMPAIGN
-nameKey scn_campaign_ww2_02_france
-descKey scn_campaign_ww2_02_france_desc
-order 102
+nameKey scn_campaign_ww2_02_france_allies
+descKey scn_campaign_ww2_02_france_allies_desc
+order 112
 chapter ww2_europe
-route AXIS
-turnLimit 30
+route ALLIES
+turnLimit 26
 startYear 1940
-starTurns 16,22
+starTurns 20,23
 
 [nations]
 DEU|nation_deu|#6E7A86|17|AGGRESSIVE|1600|3,3,2,1,0,2|🇩🇪|AXIS|1
@@ -147,7 +147,7 @@ TUR|44,33|INFANTRY|1|-
 TUR|38,35|INFANTRY|1|-
 
 [playable]
-DEU
+FRA
 
 [objectives]
-CAPTURE_PROVINCES|4,7|0
+HOLD_PROVINCES|4|20

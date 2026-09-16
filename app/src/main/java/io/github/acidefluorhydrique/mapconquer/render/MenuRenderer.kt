@@ -167,7 +167,8 @@ class MenuRenderer {
         scenarios: List<Scenario>,
         starsOf: (Scenario) -> Int,
         unlockedAt: (Int) -> Boolean,
-        showStars: Boolean
+        showStars: Boolean,
+        grouped: Boolean = false
     ) {
         drawBackground(canvas)
         val top = header(canvas, buttons, titleRes)
@@ -178,14 +179,40 @@ class MenuRenderer {
         val width = (Ui.screenWidth - Ui.dp(40f)).coerceAtMost(Ui.dp(520f))
         val left = (Ui.screenWidth - width) / 2f
 
-        maxScroll = (scenarios.size * rowHeight - (listBottom - listTop)).coerceAtLeast(0f)
+        // 先排版：分組時，換章節或換路線的地方插一列標題，後面每一列往下推。
+        val headerHeight = Ui.dp(28f)
+        val rowTops = FloatArray(scenarios.size)
+        val headers = arrayOfNulls<String>(scenarios.size)
+        var cursor = 0f
+        for (i in scenarios.indices) {
+            val s = scenarios[i]
+            val previous = scenarios.getOrNull(i - 1)
+            if (grouped && (previous == null || previous.chapter != s.chapter || previous.route != s.route)) {
+                headers[i] = Strings.byName("chapter_" + s.chapter) + " · " +
+                    Strings.byName(Palette.blocNameKey(s.route))
+                cursor += headerHeight
+            }
+            rowTops[i] = cursor
+            cursor += rowHeight
+        }
+        maxScroll = (cursor - (listBottom - listTop)).coerceAtLeast(0f)
         scroll = scroll.coerceIn(0f, maxScroll)
 
         canvas.save()
         canvas.clipRect(0f, listTop, Ui.screenWidth.toFloat(), listBottom)
         for (i in scenarios.indices) {
             val scenario = scenarios[i]
-            val y = listTop + i * rowHeight - scroll
+            val header = headers[i]
+            if (header != null) {
+                val baseline = listTop + rowTops[i] - scroll - Ui.dp(9f)
+                if (baseline > listTop && baseline - headerHeight < listBottom) {
+                    Widgets.leftFit(
+                        canvas, header, left + Ui.dp(4f), baseline, Ui.dp(12.5f),
+                        width - Ui.dp(8f), Colors.of("#F2D08A"), bold = true
+                    )
+                }
+            }
+            val y = listTop + rowTops[i] - scroll
             if (y + rowHeight < listTop || y > listBottom) continue
             inner.set(left, y + Ui.dp(3f), left + width, y + rowHeight - Ui.dp(3f))
 

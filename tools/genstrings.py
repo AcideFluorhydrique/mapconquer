@@ -183,6 +183,10 @@ UI = {
     "nation_sun": ("Soviet Union", "蘇聯", "苏联"),
     "nation_frg": ("West Germany", "西德", "西德"),
 
+    "chapter_ww2_europe": ("WWII · Europe", "二戰 · 歐洲", "二战 · 欧洲"),
+    "chapter_ww2_pacific": ("WWII · Pacific", "二戰 · 太平洋", "二战 · 太平洋"),
+    "chapter_cold_war": ("Cold War", "冷戰", "冷战"),
+
     "bloc_axis":    ("Axis",         "軸心國",   "轴心国"),
     "bloc_allies":  ("Allies",       "同盟國",   "同盟国"),
     "bloc_west":    ("Western bloc", "西方陣營", "西方阵营"),
@@ -479,6 +483,56 @@ SCENARIO_TEXT = {
         "帝國手中的世界：非洲與南亞不屬於自己，屬於倫敦、巴黎與羅馬。軸心與同盟已經開戰，蘇聯與美國要再過幾個回合才會加入。想選誰都行。",
         "帝国手中的世界：非洲与南亚不属于自己，属于伦敦、巴黎与罗马。轴心与同盟已经开战，苏联与美国要再过几个回合才会加入。想选谁都行。"),
 
+    "scn_campaign_ww2_01_poland_axis": ("1939 · Case White", "1939 · 白色方案", "1939 · 白色方案"),
+    "scn_campaign_ww2_01_poland_axis_desc": (
+        "You have the armour, the aircraft and the numbers. What you do not have is time: take Warsaw and Krakow before the turn limit, and do not let a dug-in defence buy it back.",
+        "裝甲、飛機、兵力，你樣樣都有，唯獨沒有時間：在回合用完之前拿下華沙與克拉科夫，別讓挖好壕溝的守軍把時間拖回去。",
+        "装甲、飞机、兵力，你样样都有，唯独没有时间：在回合用完之前拿下华沙与克拉科夫，别让挖好壕沟的守军把时间拖回去。"),
+    "scn_campaign_ww2_02_france_allies": ("1940 · Holding Paris", "1940 · 守住巴黎", "1940 · 守住巴黎"),
+    "scn_campaign_ww2_02_france_allies_desc": (
+        "The line is in the wrong place and the armour is pouring through the gap. You do not need to win this one. Paris must still be French on turn 20.",
+        "防線擺錯了地方，裝甲正從缺口湧進來。這一仗你不必贏，只要第 20 回合巴黎還在法國手上。",
+        "防线摆错了地方，装甲正从缺口涌进来。这一仗你不必赢，只要第 20 回合巴黎还在法国手上。"),
+    "scn_campaign_ww2_03_desert_axis": ("1942 · Road to Alexandria", "1942 · 通往亞歷山大港", "1942 · 通往亚历山大港"),
+    "scn_campaign_ww2_03_desert_axis_desc": (
+        "Your tanks are better and your supply line is longer. Every hex toward the Nile is one more hex from Tunis. Take Alexandria and Cairo before the desert finishes the war for the enemy.",
+        "你的坦克比較好，補給線也比較長。往尼羅河多走一格，就離突尼斯遠一格。在沙漠替敵人把仗打完之前，拿下亞歷山大港與開羅。",
+        "你的坦克比较好，补给线也比较长。往尼罗河多走一格，就离突尼斯远一格。在沙漠替敌人把仗打完之前，拿下亚历山大港与开罗。"),
+    "scn_campaign_ww2_05_east_front_axis": ("1943 · Holding the Dnieper", "1943 · 守住聶伯河", "1943 · 守住聂伯河"),
+    "scn_campaign_ww2_05_east_front_axis_desc": (
+        "The initiative is gone and it is not coming back. Hold Kyiv and Kharkiv to turn 28 against an enemy with more of everything, and do not let yourself be surrounded while you do it.",
+        "主動權已經沒了，也不會再回來。面對樣樣都比你多的對手，把基輔與哈爾科夫守到第 28 回合，而且守的時候別讓自己被包圍。",
+        "主动权已经没了，也不会再回来。面对样样都比你多的对手，把基辅与哈尔科夫守到第 28 回合，而且守的时候别让自己被包围。"),
+    "scn_campaign_ww2_04_south_seas_allies": ("1942 · Fortress Singapore", "1942 · 新加坡要塞", "1942 · 新加坡要塞"),
+    "scn_campaign_ww2_04_south_seas_allies_desc": (
+        "Singapore's guns face the sea, and the enemy is coming through the jungle. Hold it to turn 22. The fleet will not save you, so do not spend it trying.",
+        "新加坡的砲口朝著海，敵人卻從叢林裡來。守到第 22 回合。艦隊救不了你，別把它耗在這上面。",
+        "新加坡的炮口朝着海，敌人却从丛林里来。守到第 22 回合。舰队救不了你，别把它耗在这上面。"),
+    "scn_campaign_ww2_06_philippines": ("1944 · Return to the Philippines", "1944 · 重返菲律賓", "1944 · 重返菲律宾"),
+    "scn_campaign_ww2_06_philippines_desc": (
+        "You do not have to take every island. Take the ones that cut the enemy's shipping and the rest will starve on their own. Manila and Cebu.",
+        "不必把每一座島都拿下。拿下切斷敵人航線的那幾座，其餘的會自己餓死。目標是馬尼拉與塞布。",
+        "不必把每一座岛都拿下。拿下切断敌人航线的那几座，其余的会自己饿死。目标是马尼拉与塞布。"),
+    "scn_campaign_ww2_06_philippines_axis": ("1944 · The Last Perimeter", "1944 · 最後防線", "1944 · 最后防线"),
+    "scn_campaign_ww2_06_philippines_axis_desc": (
+        "The fleet that won this ocean is gone. Hold Manila and Cebu to turn 26 with what is left, and make every landing cost more than the one before.",
+        "打贏這片海洋的艦隊已經沒了。用剩下的東西把馬尼拉與塞布守到第 26 回合，讓每一次登陸都比上一次更貴。",
+        "打赢这片海洋的舰队已经没了。用剩下的东西把马尼拉与塞布守到第 26 回合，让每一次登陆都比上一次更贵。"),
+    "scn_campaign_cw_01_suez_west": ("1956 · Operation Musketeer", "1956 · 火槍手行動", "1956 · 火枪手行动"),
+    "scn_campaign_cw_01_suez_west_desc": (
+        "Paratroops first, then the landing. Take Alexandria and Cairo before the rest of the world decides this war should not be happening.",
+        "先空降，再登陸。在全世界決定這場仗不該打之前，拿下亞歷山大港與開羅。",
+        "先空降，再登陆。在全世界决定这场仗不该打之前，拿下亚历山大港与开罗。"),
+    "scn_campaign_cw_02_indochina_west": ("1968 · Holding Saigon", "1968 · 守住西貢", "1968 · 守住西贡"),
+    "scn_campaign_cw_02_indochina_west_desc": (
+        "The sky and the sea are yours, and neither of them holds ground. The enemy only has to still be there. Keep Saigon to turn 30.",
+        "天空與海洋都是你的，但它們都守不住土地。對手只要還在就算贏。把西貢守到第 30 回合。",
+        "天空与海洋都是你的，但它们都守不住土地。对手只要还在就算赢。把西贡守到第 30 回合。"),
+    "scn_campaign_cw_03_central_front_pact": ("1985 · Through the Fulda Gap", "1985 · 穿越富爾達缺口", "1985 · 穿越富尔达缺口"),
+    "scn_campaign_cw_03_central_front_pact_desc": (
+        "The plan is speed: reach the Rhine before reinforcements cross the Atlantic. Take Hamburg and Munich, and do not stop to fight for anything that is not on the way.",
+        "計畫就是速度：在增援橫渡大西洋之前衝到萊茵河。拿下漢堡與慕尼黑，不在路上的東西都別停下來打。",
+        "计划就是速度：在增援横渡大西洋之前冲到莱茵河。拿下汉堡与慕尼黑，不在路上的东西都别停下来打。"),
     "scn_campaign_ww2_01_poland": ("1939 \u00b7 Poland", "1939 \u00b7 \u6ce2\u862d", "1939 \u00b7 \u6ce2\u5170"),
     "scn_campaign_ww2_01_poland_desc": (
         "You are outnumbered in armour, in aircraft and in men. This one cannot be won \u2014 it can be made expensive. Hold Warsaw to turn 20.",

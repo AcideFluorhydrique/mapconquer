@@ -2,17 +2,17 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # 由 tools/genworld.py 產生，請勿手動編輯。
 format 1
-id campaign_ww2_03_desert
+id campaign_ww2_03_desert_axis
 map north_africa
 mode CAMPAIGN
-nameKey scn_campaign_ww2_03_desert
-descKey scn_campaign_ww2_03_desert_desc
-order 113
+nameKey scn_campaign_ww2_03_desert_axis
+descKey scn_campaign_ww2_03_desert_axis_desc
+order 103
 chapter ww2_europe
-route ALLIES
-turnLimit 35
+route AXIS
+turnLimit 38
 startYear 1942
-starTurns 20,28
+starTurns 24,32
 
 [nations]
 GBR|nation_gbr|#8C4C4C|8|BALANCED|1300|1,1,1,0,0,1|🇬🇧|ALLIES|1
@@ -87,7 +87,7 @@ PRT|4,1|INFANTRY|1|-
 SAU|50,19|INFANTRY|1|-
 
 [playable]
-GBR
+DEU
 
 [objectives]
-CAPTURE_PROVINCES|11-12|0
+CAPTURE_PROVINCES|8-9|0

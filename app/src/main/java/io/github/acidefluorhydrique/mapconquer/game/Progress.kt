@@ -87,15 +87,9 @@ object Progress {
         return true
     }
 
-    /**
-     * 戰役關卡的解鎖：前一關至少要有一顆星。
-     * 第一關永遠開著。
-     */
-    fun isScenarioUnlocked(context: Context, scenarios: List<Scenario>, index: Int): Boolean {
-        if (index <= 0) return true
-        val previous = scenarios.getOrNull(index - 1) ?: return true
-        return starsFor(context, previous.id) > 0
-    }
+    /** 戰役關卡的解鎖規則在 [CampaignOrder]；這裡只負責把星等讀出來。 */
+    fun isScenarioUnlocked(context: Context, scenarios: List<Scenario>, index: Int): Boolean =
+        CampaignOrder.isUnlocked(scenarios, index) { starsFor(context, it) }
 
     const val MEDALS_PER_STAR = 3
 }

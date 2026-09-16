@@ -44,6 +44,8 @@ object ScenarioLoader {
         var startYear = 1939
         var startMonth = 9
         var starTurns = intArrayOf(0, 0)
+        var chapter = ""
+        var route = ""
 
         val nations = ArrayList<ScenarioNation>()
         val relations = ArrayList<Triple<String, String, Relation>>()
@@ -78,6 +80,8 @@ object ScenarioLoader {
                             "starTurns" -> starTurns = value.split(',')
                                 .mapNotNull { it.trim().toIntOrNull() }
                                 .toIntArray()
+                            "chapter" -> chapter = value
+                            "route" -> route = value.uppercase()
                         }
                     }
                 }
@@ -98,7 +102,8 @@ object ScenarioLoader {
 
         return Scenario(
             id, mapId, mode, nameKey, descKey, order, turnLimit, startYear, startMonth,
-            nations, relations, ownership, units, playable, objectives, starTurns
+            nations, relations, ownership, units, playable, objectives, starTurns,
+            chapter, route
         )
     }
 

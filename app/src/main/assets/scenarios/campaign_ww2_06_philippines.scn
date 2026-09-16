@@ -1,0 +1,76 @@
+# SPDX-FileCopyrightText: 2026 AcideFluorhydrique
+# SPDX-License-Identifier: GPL-3.0-or-later
+# 由 tools/genworld.py 產生，請勿手動編輯。
+format 1
+id campaign_ww2_06_philippines
+map sea_asia
+mode CAMPAIGN
+nameKey scn_campaign_ww2_06_philippines
+descKey scn_campaign_ww2_06_philippines_desc
+order 212
+chapter ww2_pacific
+route ALLIES
+turnLimit 40
+startYear 1944
+starTurns 24,32
+
+[nations]
+USA|nation_usa|#4C7BA8|22|BALANCED|2000|3,3,3,3,0,3|🇺🇸|ALLIES|1
+JPN|nation_jpn|#C45C5C|20|BALANCED|1400|2,2,2,3,0,2|🇯🇵|AXIS|1
+THA|nation_tha|#5C86A8|7|TURTLE|400|1,1,1,0,0,1|🇹🇭|AXIS|1
+ROC|nation_roc|#B4454C|1|TURTLE|1100|1,1,1,0,0,1|🇹🇼||1
+
+[relations]
+JPN USA WAR
+THA USA WAR
+
+[owners]
+USA: 19,22
+JPN: 0,2-6,9-18,20-21
+THA: 7-8
+ROC: 1
+
+[units]
+USA|24,25|CARRIER|3|-
+USA|23,25|CARRIER|3|-
+USA|49,37|FIGHTER|3|-
+USA|23,32|FIGHTER|3|-
+USA|50,37|BOMBER|3|-
+USA|25,25|TRANSPORT_SHIP|2|-
+USA|26,25|TRANSPORT_SHIP|2|-
+USA|27,25|TRANSPORT_SHIP|2|-
+USA|50,36|MARINE|3|-
+USA|49,36|MARINE|3|-
+USA|24,32|MARINE|3|-
+USA|29,26|BATTLESHIP|3|-
+USA|28,25|DESTROYER|2|-
+USA|28,27|DESTROYER|2|-
+USA|22,29|DESTROYER|2|-
+USA|29,28|SUBMARINE|2|-
+USA|28,29|SUBMARINE|2|-
+JPN|24,11|INFANTRY|2|-
+JPN|27,16|INFANTRY|2|-
+JPN|11,33|INFANTRY|2|-
+JPN|17,34|INFANTRY|2|-
+JPN|3,23|INFANTRY|2|-
+JPN|19,30|INFANTRY|2|-
+JPN|20,20|ANTI_AIR|2|-
+JPN|7,24|ANTI_AIR|2|-
+JPN|8,25|ANTI_AIR|2|-
+JPN|1,9|ARTILLERY|2|-
+JPN|1,4|ARTILLERY|2|-
+JPN|21,1|DESTROYER|2|-
+JPN|23,0|DESTROYER|2|-
+JPN|22,1|CRUISER|2|-
+JPN|10,5|FIGHTER|2|-
+JPN|11,15|FIGHTER|2|-
+JPN|26,0|SUBMARINE|2|-
+THA|6,12|INFANTRY|1|-
+THA|4,7|INFANTRY|1|-
+ROC|7,1|INFANTRY|1|-
+
+[playable]
+USA
+
+[objectives]
+CAPTURE_PROVINCES|20-21|0

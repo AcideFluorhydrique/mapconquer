@@ -6,6 +6,7 @@ package io.github.acidefluorhydrique.mapconquer.game
 import io.github.acidefluorhydrique.mapconquer.TestAssets
 import io.github.acidefluorhydrique.mapconquer.units.UnitKind
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -118,6 +119,40 @@ class ScenarioAssetTest {
                 }
             }
         }
+    }
+
+    @Test
+    fun `campaign chapters split into two routes and unlock along them`() {
+        val campaign = CampaignOrder.sorted(
+            TestAssets.scenarioIds().map { TestAssets.scenario(it) }.filter { it.mode == GameMode.CAMPAIGN }
+        )
+        assertTrue("每一關都要有章節與路線", campaign.all { it.chapter.isNotEmpty() && it.route.isNotEmpty() })
+        for (chapter in CampaignOrder.CHAPTERS) {
+            val routes = campaign.filter { it.chapter == chapter }.groupBy { it.route }
+            assertEquals("$chapter 應該正好兩條路線", 2, routes.size)
+            for ((route, missions) in routes) {
+                assertEquals(
+                    "$chapter/$route 的關卡順序有重複",
+                    missions.size, missions.map { it.order }.toSet().size
+                )
+            }
+        }
+
+        val cleared = HashSet<String>()
+        val stars: (String) -> Int = { if (it in cleared) 3 else 0 }
+        fun unlocked(s: Scenario) = CampaignOrder.isUnlocked(campaign, campaign.indexOf(s), stars)
+
+        val firstChapter = campaign.filter { it.chapter == CampaignOrder.CHAPTERS[0] }
+        val routes = firstChapter.groupBy { it.route }.values.map { r -> r.sortedBy { it.order } }
+        assertTrue("第一章每條路線的第一關都開著", routes.all { unlocked(it.first()) })
+        val routeA = routes.first()
+        assertFalse("前一關沒星，下一關不開", unlocked(routeA[1]))
+        val nextOpener = campaign.filter { it.chapter == CampaignOrder.CHAPTERS[1] }.minByOrNull { it.order }!!
+        assertFalse("前一章還沒打完，下一章不開", unlocked(nextOpener))
+
+        routeA.forEach { cleared.add(it.id) }
+        assertTrue("一條路線整條打完，這條路線的每一關都開著", routeA.all { unlocked(it) })
+        assertTrue("前一章有一條路線整條打完，下一章就開", unlocked(nextOpener))
     }
 
     @Test

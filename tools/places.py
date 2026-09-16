@@ -560,6 +560,11 @@ COLD_WAR_1950_PROVINCE_OWNERS = {
     "prov_hong_kong": "GBR",
 }
 
+# 1956：北非的摩洛哥、突尼西亞、利比亞、蘇丹都已經獨立了。
+COLD_WAR_1956_MERGE = {
+    k: v for k, v in COLD_WAR_1950_MERGE.items() if k not in ("MAR", "TUN", "LBY", "SDN")
+}
+
 # 北約創始國加上當時已經明確靠向美國的（土耳其、希臘、日本、南韓、臺灣、
 # 澳紐、菲律賓）。東方是蘇聯、中華人民共和國與東歐衛星國。瑞典、芬蘭、
 # 南斯拉夫、西班牙、印度與整個不結盟世界都是中立。別的遊戲把古巴、埃及、

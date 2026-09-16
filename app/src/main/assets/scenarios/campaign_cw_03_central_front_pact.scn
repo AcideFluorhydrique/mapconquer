@@ -2,20 +2,20 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # 由 tools/genworld.py 產生，請勿手動編輯。
 format 1
-id campaign_cw_03_central_front
+id campaign_cw_03_central_front_pact
 map europe
 mode CAMPAIGN
-nameKey scn_campaign_cw_03_central_front
-descKey scn_campaign_cw_03_central_front_desc
-order 313
+nameKey scn_campaign_cw_03_central_front_pact
+descKey scn_campaign_cw_03_central_front_pact_desc
+order 303
 chapter cold_war
-route WEST
+route EAST
 turnLimit 35
 startYear 1985
-starTurns 30,33
+starTurns 22,30
 
 [nations]
-DEU|nation_frg|#6E7A86|19|AGGRESSIVE|1600|3,2,3,3,0,3|🇩🇪|NATO|1
+DEU|nation_frg|#6E7A86|19|BALANCED|1600|3,2,3,3,0,3|🇩🇪|NATO|1
 FRA|nation_fra|#4C5C9E|4|BALANCED|1200|1,1,1,0,0,1|🇫🇷|NATO|1
 GBR|nation_gbr|#8C4C4C|0|BALANCED|1200|1,1,1,0,0,1|🇬🇧|NATO|1
 NLD|nation_nld|#C4813C|8|TURTLE|500|1,1,1,0,0,1|🇳🇱|NATO|1
@@ -197,7 +197,7 @@ TUR|44,33|INFANTRY|1|-
 TUR|38,35|INFANTRY|1|-
 
 [playable]
-DEU
+RUS
 
 [objectives]
-HOLD_PROVINCES|18-20|30
+CAPTURE_PROVINCES|18-19|0

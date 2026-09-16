@@ -579,6 +579,8 @@ def write_campaign(built, mission):
     lines.append("nameKey %s" % ("scn_" + mission["id"]))
     lines.append("descKey %s" % ("scn_" + mission["id"] + "_desc"))
     lines.append("order %d" % mission["order"])
+    lines.append("chapter %s" % mission["chapter"])
+    lines.append("route %s" % mission["route"])
     lines.append("turnLimit %d" % mission["turn_limit"])
     lines.append("startYear %d" % mission.get("year", 2026))
     lines.append("starTurns %d,%d" % tuple(mission["stars"]))

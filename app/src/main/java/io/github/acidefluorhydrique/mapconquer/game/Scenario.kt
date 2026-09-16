@@ -115,7 +115,11 @@ class Scenario(
     val playable: List<String>,
     val objectives: List<Objective>,
     /** 三星／二星的回合門檻。戰役專用。 */
-    val starTurns: IntArray
+    val starTurns: IntArray,
+    /** 戰役章節，例如 ww2_europe。征服劇本是空的。 */
+    val chapter: String = "",
+    /** 章節裡的路線，用陣營代碼表示（AXIS、ALLIES、EAST、WEST）。 */
+    val route: String = ""
 ) {
     fun nationByCode(code: String): ScenarioNation? = nations.firstOrNull { it.code == code }
 
