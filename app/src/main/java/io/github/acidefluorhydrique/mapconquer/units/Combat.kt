@@ -159,6 +159,52 @@ object Combat {
         return jitter(DAMAGE_SCALE * a / (a + d), rng).coerceAtLeast(1)
     }
 
+    // ------------------------------------------------------------------
+    // 空中打擊
+    // ------------------------------------------------------------------
+
+    /**
+     * 防空把打擊削掉多少。
+     *
+     * 用「火力 / (火力 + 防空)」的同一種比值：一門滿血防空炮（52）讓打擊只剩
+     * 約三分之二，兩門剩一半 —— 永遠不會歸零，但防空密集的地方就是不划算。
+     */
+    fun flakFactor(flak: Int): Float = if (flak <= 0) 1f else 100f / (100f + flak)
+
+    /**
+     * 挨空襲時的防禦。
+     *
+     * 跟 [defencePower] 同一組修正，只是沒有攻方可比：等級、科技、
+     * 地形（由呼叫端先砍半）、築壕、補給與殘血。飛機打完就走，不會被還手。
+     */
+    fun airDefence(defender: ArmyUnit, techBonus: Int, coverBonus: Int, atSea: Boolean): Float {
+        var p = defender.kind.defence.toFloat()
+        p *= 1f + 0.05f * (defender.level - 1)
+        p *= 1f + techBonus / 100f
+        p *= 1f + (coverBonus + defender.entrenchBonus) / 100f
+        p *= 0.5f + 0.5f * defender.supplyFactor
+        p *= 0.45f + 0.55f * (defender.hp / ArmyUnit.MAX_HP.toFloat())
+        if (atSea) p *= 0.15f
+        return p.coerceAtLeast(1f)
+    }
+
+    fun previewAirStrike(power: Float, defence: Float): Int {
+        if (power <= 0f) return 0
+        return (DAMAGE_SCALE * power / (power + defence)).roundToInt().coerceIn(1, ArmyUnit.MAX_HP)
+    }
+
+    fun airStrike(power: Float, defence: Float, rng: Rng): Int {
+        if (power <= 0f) return 0
+        return jitter(DAMAGE_SCALE * power / (power + defence), rng).coerceIn(1, ArmyUnit.MAX_HP)
+    }
+
+    /** 轟炸一座空城：跟 [cityStrike] 同一個守方基準。 */
+    fun airStrikeCity(power: Float, cityDefence: Int, rng: Rng): Int {
+        if (power <= 0f) return 0
+        val d = CITY_STRIKE_DEFENCE_BASE * (1f + cityDefence / 100f)
+        return jitter(DAMAGE_SCALE * power / (power + d), rng).coerceAtLeast(1)
+    }
+
     fun defencePower(ctx: CombatContext): Float {
         val u = ctx.defender
         var p = u.kind.defence.toFloat()
@@ -295,7 +341,6 @@ object Combat {
         var f = 1f
         if (cmd.has(CommanderSkill.OFFENSIVE)) f *= 1.12f
         if (cmd.has(CommanderSkill.ARMOUR_EXPERT) && unit.kind.branch == TechBranch.ARMOUR) f *= 1.20f
-        if (cmd.has(CommanderSkill.AIR_EXPERT) && unit.kind.branch == TechBranch.AIR) f *= 1.20f
         if (cmd.has(CommanderSkill.NAVAL_EXPERT) && unit.kind.branch == TechBranch.NAVY) f *= 1.20f
         if (cmd.has(CommanderSkill.ARTILLERY_EXPERT) && unit.kind.branch == TechBranch.ARTILLERY) f *= 1.20f
         // 攻城：對方縮在城裡才有加成，由呼叫端把城市加成寫進 entrenchment 以外的地方判斷不了，

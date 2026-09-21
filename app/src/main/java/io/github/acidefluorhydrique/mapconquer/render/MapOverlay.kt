@@ -3,6 +3,7 @@
 
 package io.github.acidefluorhydrique.mapconquer.render
 
+import io.github.acidefluorhydrique.mapconquer.game.AirMission
 import io.github.acidefluorhydrique.mapconquer.units.ArmyUnit
 
 /**
@@ -15,6 +16,12 @@ class MapOverlay(tileCount: Int) {
 
     var selectedUnit: ArmyUnit? = null
     var selectedTile: Int = -1
+
+    /**
+     * 正在挑目標的空中任務；null 代表一般的選取模式。
+     * 挑目標時，合法的落點畫在 [attackable] 上，跟攻擊目標同一種紅框。
+     */
+    var mission: AirMission? = null
 
     val movable = BooleanArray(tileCount)
     val attackable = BooleanArray(tileCount)

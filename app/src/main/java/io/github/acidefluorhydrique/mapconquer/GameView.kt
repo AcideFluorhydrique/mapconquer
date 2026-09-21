@@ -18,6 +18,8 @@ import io.github.acidefluorhydrique.mapconquer.core.Rng
 import io.github.acidefluorhydrique.mapconquer.core.Strings
 import io.github.acidefluorhydrique.mapconquer.core.Ui
 import io.github.acidefluorhydrique.mapconquer.core.Widgets
+import io.github.acidefluorhydrique.mapconquer.game.AirMission
+import io.github.acidefluorhydrique.mapconquer.game.AirOps
 import io.github.acidefluorhydrique.mapconquer.game.Difficulty
 import io.github.acidefluorhydrique.mapconquer.game.GameMode
 import io.github.acidefluorhydrique.mapconquer.game.Orders
@@ -482,6 +484,10 @@ class GameView(context: Context) : SurfaceView(context), SurfaceHolder.Callback 
             HudRenderer.ID_MENU -> panel = Panel.PAUSE
             HudRenderer.ID_TECH -> panel = Panel.TECH
             HudRenderer.ID_OBJECTIVES -> panel = Panel.OBJECTIVES
+            HudRenderer.ID_AIR -> {
+                cancelMission()
+                panel = Panel.AIR
+            }
             HudRenderer.ID_BUILD -> panel = Panel.PRODUCTION
             HudRenderer.ID_WAIT -> skipSelectedUnit()
             HudRenderer.ID_REPAIR -> repairSelectedUnit()
@@ -492,6 +498,7 @@ class GameView(context: Context) : SurfaceView(context), SurfaceHolder.Callback 
             PanelRenderer.ID_CLOSE, PanelRenderer.ID_RESUME -> panel = Panel.NONE
             PanelRenderer.ID_BUILD_KIND -> buildUnit(payload)
             PanelRenderer.ID_BUILD_SIZE -> panelRenderer?.productionSize = payload
+            PanelRenderer.ID_AIR_MISSION -> beginMission(payload)
             PanelRenderer.ID_RESEARCH -> researchBranch(payload)
             PanelRenderer.ID_SAVE -> {
                 autoSave()
@@ -529,6 +536,10 @@ class GameView(context: Context) : SurfaceView(context), SurfaceHolder.Callback 
                     panel = Panel.NONE
                     true
                 }
+                screen == Screen.GAME && overlay?.mission != null -> {
+                    cancelMission()
+                    true
+                }
                 screen == Screen.GAME -> {
                     panel = Panel.PAUSE
                     true
@@ -557,6 +568,13 @@ class GameView(context: Context) : SurfaceView(context), SurfaceHolder.Callback 
         if (!active.isPlayerTurn) {
             over.selectedTile = tile
             over.selectedUnit = active.primaryUnitAt(tile)
+            return
+        }
+
+        // 正在挑空中任務的目標：點紅框就出擊，點別處就取消。
+        val mission = over.mission
+        if (mission != null) {
+            if (over.attackable[tile]) performMission(active, mission, tile) else cancelMission()
             return
         }
 
@@ -619,6 +637,72 @@ class GameView(context: Context) : SurfaceView(context), SurfaceHolder.Callback 
             if (animationsEnabled) it.startMoveAnimation(unit, from, moved)
             refreshHighlights(active, it)
             it.selectedTile = moved
+        }
+    }
+
+    /** 從空軍面板選了任務：關掉面板，把能打的格子畫出來，等玩家點。 */
+    private fun beginMission(ordinal: Int) {
+        val active = session ?: return
+        val over = overlay ?: return
+        val mission = AirMission.ALL.getOrNull(ordinal) ?: return
+        panel = Panel.NONE
+        AirOps.collectTargets(active, active.playerNationId, mission, attackTargets)
+        if (attackTargets.isEmpty()) {
+            Audio.play(Sfx.DENIED)
+            toast(Strings.get(R.string.toast_air_no_targets))
+            return
+        }
+        over.clearSelection()
+        over.mission = mission
+        over.setAttackable(attackTargets)
+        Audio.play(Sfx.CLICK)
+    }
+
+    private fun cancelMission() {
+        val over = overlay ?: return
+        if (over.mission == null) return
+        over.mission = null
+        over.clearHighlights()
+    }
+
+    private fun performMission(active: Session, mission: AirMission, tile: Int) {
+        undoRecord = null
+        val target = AirOps.strikeTarget(active, active.playerNationId, mission, tile)
+        val result = AirOps.fly(active, active.playerNationId, mission, tile)
+        cancelMission()
+        if (result == null) {
+            Audio.play(Sfx.DENIED)
+            return
+        }
+        val dropped = result.dropped
+        when {
+            dropped != null -> {
+                Audio.play(Sfx.BUILD)
+                toast(Strings.get(R.string.toast_airdrop))
+                overlay?.let {
+                    it.selectedUnit = dropped
+                    it.selectedTile = tile
+                }
+            }
+            target != null -> {
+                Audio.play(Sfx.ATTACK)
+                toast(
+                    Strings.format(
+                        R.string.toast_air_strike,
+                        Strings.byName(target.kind.key), result.damageToUnit
+                    )
+                )
+            }
+            else -> {
+                Audio.play(Sfx.ATTACK)
+                toast(
+                    Strings.format(
+                        R.string.toast_city_shelled,
+                        active.map.provinceAt(tile)?.let { Strings.byName(it.nameKey) } ?: "",
+                        result.damageToCity
+                    )
+                )
+            }
         }
     }
 
@@ -794,6 +878,7 @@ class GameView(context: Context) : SurfaceView(context), SurfaceHolder.Callback 
     private fun endPlayerTurn() {
         val active = session ?: return
         if (!active.isPlayerTurn) return
+        cancelMission()
         overlay?.clearSelection()
         undoRecord = null
         panel = Panel.NONE

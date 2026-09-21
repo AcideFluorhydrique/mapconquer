@@ -68,6 +68,21 @@ UI = {
     "hud_end_turn": ("End Turn", "結束回合", "结束回合"),
     "hud_menu": ("Menu", "選單", "菜单"),
     "hud_tech": ("Tech", "研發", "研发"),
+    "hud_air": ("Air", "空軍", "空军"),
+    "hud_air_pick_target": ("%1$s: tap a target, or elsewhere to cancel",
+                            "%1$s：點選目標，點別處取消",
+                            "%1$s：点选目标，点别处取消"),
+    "panel_air": ("Air missions", "空中任務", "空中任务"),
+    "panel_air_subtitle": ("Funds %1$d · each airfield and carrier flies once a turn",
+                           "資金 %1$d · 每座機場與航艦每回合出擊一次",
+                           "资金 %1$d · 每座机场与航舰每回合出击一次"),
+    "air_blocked_base": ("No airfield ready this turn", "這回合沒有可起飛的機場", "这回合没有可起飞的机场"),
+    "toast_air_no_targets": ("No target within range", "航程內沒有目標", "航程内没有目标"),
+    "toast_airdrop": ("Paratroopers have landed", "傘兵已著陸", "伞兵已着陆"),
+    "toast_air_strike": ("Air strike: %1$s lost %2$d", "空襲：%1$s 損失 %2$d", "空袭：%1$s 损失 %2$d"),
+    "event_air_strike": ("%2$s %1$s hit from the air (−%3$d)", "%2$s 的 %1$s 遭空襲（−%3$d）",
+                         "%2$s 的 %1$s 遭空袭（−%3$d）"),
+    "event_airdrop": ("%1$s paratroopers landed", "%1$s 傘兵著陸", "%1$s 伞兵着陆"),
     "hud_objectives": ("Goals", "目標", "目标"),
     "hud_build": ("Build", "生產", "生产"),
     "hud_repair": ("Repair", "整補", "整补"),
@@ -252,17 +267,17 @@ UI = {
         "或是纯粹三次谣言，结果都一样。"
         "正因为它读的是处境，包围圈一松开，士气就立刻回来。"),
     "help_combat_body": (
-        "Every unit has four separate attack values: against infantry, armour, ships and aircraft. "
-        "Anti-tank guns shred armour and bounce off infantry; fighters own the sky and do nothing on the ground. "
+        "Every unit has four separate attack values: against infantry, armour, ships, and anti-air fire. "
+        "Anti-tank guns shred armour and bounce off infantry. "
         "Artillery strikes from two or more hexes away and takes no return fire, but is nearly helpless once something reaches it — "
         "keep infantry in front of it. Terrain, city walls and entrenchment all raise the defender's strength, "
         "so attacking a dug-in unit in the mountains is a very different proposition from catching it on open farmland.",
-        "每支部隊都有四個獨立的攻擊值：對步兵、對裝甲、對艦艇、對空。"
-        "反坦克炮打戰車勢如破竹，打步兵卻軟弱無力；戰鬥機制空無敵，對地面卻幾乎沒有作用。"
+        "每支部隊都有四個獨立的攻擊值：對步兵、對裝甲、對艦艇、對空（對空就是防空火力）。"
+        "反坦克炮打戰車勢如破竹，打步兵卻軟弱無力。"
         "火炮從兩格以外開火且不會被反擊，可是一旦被貼身就幾乎沒有自衛能力 —— 前面一定要有步兵擋著。"
         "地形、城牆與築壕都會提高守方的防禦，所以「打山裡挖好壕溝的敵人」跟「在農地上逮到它」是兩回事。",
-        "每支部队都有四个独立的攻击值：对步兵、对装甲、对舰艇、对空。"
-        "反坦克炮打战车势如破竹，打步兵却软弱无力；战斗机制空无敌，对地面却几乎没有作用。"
+        "每支部队都有四个独立的攻击值：对步兵、对装甲、对舰艇、对空（对空就是防空火力）。"
+        "反坦克炮打战车势如破竹，打步兵却软弱无力。"
         "火炮从两格以外开火且不会被反击，可是一旦被贴身就几乎没有自卫能力 —— 前面一定要有步兵挡着。"
         "地形、城墙与筑壕都会提高守方的防御，所以「打山里挖好壕沟的敌人」跟「在农地上逮到它」是两回事。"),
     "morale_elevated": ("Elevated", "士氣高昂", "士气高昂"),
@@ -312,7 +327,7 @@ UI = {
         "does, and that garrison is what rebuilds the city's defence — an empty city never recovers on its own, "
         "and neither recovers while an enemy is adjacent. A captured city keeps only a third of its defence, so "
         "whether you leave someone behind to restore it is the difference between holding a place and passing "
-        "through it. Only land units that can capture may stop in an enemy city; aircraft, guns and trucks "
+        "through it. Only land units that can capture may stop in an enemy city; guns, trucks and ships "
         "cannot park there.",
         "城市除了收入之外還有城防。城防還在的時候，城裡的部隊只吃一半傷害，城市再替它多擋一層，"
         "所以攻下一座有守軍的首都，代價是野戰的好幾倍。有城的省份在城防歸零之前不會易主："
@@ -320,28 +335,47 @@ UI = {
         "這個關係是雙向的。城市替駐軍回血的速度遠高於野外，而城防也正是靠那支駐軍補回來的 —— "
         "空城永遠不會自己長回來，而且只要旁邊有敵人，兩邊都停。打下來的城市只剩三分之一的城防，"
         "所以要不要留一支部隊把它補起來，就是「佔領」與「路過」的差別。"
-        "只有能佔領的陸軍可以停進敵方城市；飛機、火砲與補給車都不行。",
+        "只有能佔領的陸軍可以停進敵方城市；火砲、補給車與軍艦都不行。",
         "城市除了收入之外还有城防。城防还在的时候，城里的部队只吃一半伤害，城市再替它多挡一层，"
         "所以攻下一座有守军的首都，代价是野战的好几倍。有城的省份在城防归零之前不会易主："
         "远远轰掉它，或是站上去慢慢磨，然后走进去。\\n\\n"
         "这个关系是双向的。城市替驻军回血的速度远高于野外，而城防也正是靠那支驻军补回来的 —— "
         "空城永远不会自己长回来，而且只要旁边有敌人，两边都停。打下来的城市只剩三分之一的城防，"
         "所以要不要留一支部队把它补起来，就是「占领」与「路过」的差别。"
-        "只有能占领的陆军可以停进敌方城市；飞机、火炮与补给车都不行。"),
+        "只有能占领的陆军可以停进敌方城市；火炮、补给车与军舰都不行。"),
+    "help_air": ("Air power", "空軍", "空军"),
+    "help_air_body": (
+        "Aircraft are not units on the map. Open the Air panel, pick a mission, pay for it and tap a target: "
+        "the planes take off from one of your cities or carriers, do their job and go home. "
+        "A fighter strike tears into infantry, a bomber strike smashes tanks and ships and can bomb an empty "
+        "city's walls, and an airdrop puts a fresh infantry unit on any open land hex in range. "
+        "Every airfield and carrier flies once a turn, so more big cities mean more sorties. "
+        "Enemy anti-air, cruisers and destroyers within two hexes of the target blunt every strike — "
+        "clear the flak first, or send the planes somewhere else.",
+        "飛機不是地圖上的部隊。打開「空軍」面板，選一種任務、付錢、點目標：飛機從你的某座城市或航艦起飛，"
+        "打完就回去。戰鬥機出擊專打步兵，轟炸機出擊專打戰車與軍艦、也能炸空城的城牆，"
+        "空降則在航程內任一空著的陸地格放下一支新的步兵。每座機場與航艦每回合出擊一次，"
+        "所以大城越多，架次越多。目標兩格內的敵方防空炮、巡洋艦與驅逐艦會削弱每一次空襲 —— "
+        "先拔掉防空，或者換個地方炸。",
+        "飞机不是地图上的部队。打开「空军」面板，选一种任务、付钱、点目标：飞机从你的某座城市或航舰起飞，"
+        "打完就回去。战斗机出击专打步兵，轰炸机出击专打战车与军舰、也能炸空城的城墙，"
+        "空降则在航程内任一空着的陆地格放下一支新的步兵。每座机场与航舰每回合出击一次，"
+        "所以大城越多，架次越多。目标两格内的敌方防空炮、巡洋舰与驱逐舰会削弱每一次空袭 —— "
+        "先拔掉防空，或者换个地方炸。"),
     "help_victory": ("Winning", "勝利條件", "胜利条件"),
     "help_victory_body": (
         "Campaign missions state their objective up front — check the Goals panel any time. Finishing early earns more stars, "
         "and stars pay out medals you spend on commanders, who then serve you in every later game. "
-        "Conquest has no script: pick any nation on the world map, and win by controlling 80% of its provinces. "
-        "Everyone starts at peace, so the first war is yours to declare — or to survive.",
+        "Conquest has no script: pick a nation on either side of the war, and win by knocking out every nation "
+        "of the other bloc. Neutral countries cannot be chosen — they have nobody to fight.",
         "戰役關卡一開始就會說明目標，隨時可以打開「目標」面板查看。提早通關可以拿到更多星等，"
         "星等換成勳章，勳章用來招募指揮官，而指揮官在之後的每一局都能用。"
-        "征服模式沒有劇本：在世界地圖上挑任何一個國家，控制八成的省份就算贏。"
-        "所有人開局都是和平狀態，所以第一場戰爭由你來宣 —— 或者由你來撐過去。",
+        "征服模式沒有劇本：挑戰爭任一方的國家，把敵對陣營的國家全部打垮就算贏。"
+        "中立國不能選 —— 它沒有人可打。",
         "战役关卡一开始就会说明目标，随时可以打开「目标」面板查看。提早通关可以拿到更多星等，"
         "星等换成勋章，勋章用来招募指挥官，而指挥官在之后的每一局都能用。"
-        "征服模式没有剧本：在世界地图上挑任何一个国家，控制八成的省份就算赢。"
-        "所有人开局都是和平状态，所以第一场战争由你来宣 —— 或者由你来撑过去。"),
+        "征服模式没有剧本：挑战争任一方的国家，把敌对阵营的国家全部打垮就算赢。"
+        "中立国不能选 —— 它没有人可打。"),
 }
 
 UNITS = {
@@ -378,9 +412,9 @@ UNITS = {
         "射程更遠、火力更猛，代價是貴得多。",
         "射程更远、火力更猛，代价是贵得多。"),
     "unit_anti_air": ("Anti-Air", "防空炮", "防空炮",
-        "Reaches two hexes into the sky. Enemy aircraft simply cannot operate over it.",
-        "對空射程兩格。敵機根本沒辦法在它頭上活動。",
-        "对空射程两格。敌机根本没办法在它头上活动。"),
+        "Blunts every enemy air strike and airdrop within two hexes.",
+        "削弱兩格內每一次敵方空襲與空降。",
+        "削弱两格内每一次敌方空袭与空降。"),
     "unit_supply_truck": ("Supply Truck", "補給車", "补给车",
         "Carries a small supply bubble with it. This is how an offensive keeps moving.",
         "自帶一個小型補給圈。攻勢能不能持續，全看它跟不跟得上。",
@@ -389,18 +423,19 @@ UNITS = {
         "Grants +10% attack to friendly units within three hexes, and supplies them too.",
         "為三格內的友軍提供 +10% 攻擊力，同時也是移動的補給站。",
         "为三格内的友军提供 +10% 攻击力，同时也是移动的补给站。"),
-    "unit_fighter": ("Fighter", "戰鬥機", "战斗机",
-        "Owns the sky. Nearly worthless against ground targets — that is the point.",
-        "制空無敵。對地面目標幾乎無用 —— 這正是它的定位。",
-        "制空无敌。对地面目标几乎无用 —— 这正是它的定位。"),
-    "unit_bomber": ("Bomber", "轟炸機", "轰炸机",
-        "Hits harder than anything on the ground, and falls to the first fighter that finds it.",
-        "對地火力冠絕全場，卻會被第一架找到它的戰鬥機打下來。",
-        "对地火力冠绝全场，却会被第一架找到它的战斗机打下来。"),
-    "unit_air_transport": ("Air Transport", "運輸機", "运输机",
-        "Lifts two foot units over mountains, water and enemy lines alike.",
-        "可以把兩支徒步部隊直接吊過山脈、海面與敵人的戰線。",
-        "可以把两支徒步部队直接吊过山脉、海面与敌人的战线。"),
+    # 空中任務不是兵種，但名稱與說明的形狀一樣，所以放在同一張表。
+    "mission_fighter": ("Fighter Strike", "戰鬥機出擊", "战斗机出击",
+        "Strafes infantry hard; barely scratches tanks and ships.",
+        "重創步兵；對戰車與軍艦幾乎無效。",
+        "重创步兵；对战车与军舰几乎无效。"),
+    "mission_bomber": ("Bomber Strike", "轟炸機出擊", "轰炸机出击",
+        "Wrecks tanks and ships, or bombs an empty city's defences. Flies from large cities.",
+        "重創戰車與軍艦，也能炸空城的城防。只能從大城起飛。",
+        "重创战车与军舰，也能炸空城的城防。只能从大城起飞。"),
+    "mission_airdrop": ("Airdrop", "空降", "空降",
+        "Drops a fresh infantry unit on an open land hex in range.",
+        "在航程內空著的陸地格放下一支新的步兵。",
+        "在航程内空着的陆地格放下一支新的步兵。"),
     "unit_transport_ship": ("Transport Ship", "運輸艦", "运输舰",
         "Carries three land units. Defenceless — never sail one without an escort.",
         "可載三支陸軍。毫無自衛能力 —— 絕對不要讓它單獨出海。",
@@ -422,9 +457,9 @@ UNITS = {
         "除非有東西靠得夠近或驅逐艦來掃，否則看不見。專門獵殺運輸艦。",
         "除非有东西靠得够近或驱逐舰来扫，否则看不见。专门猎杀运输舰。"),
     "unit_carrier": ("Carrier", "航空母艦", "航空母舰",
-        "Carries three aircraft and keeps them supplied far from any friendly airfield.",
-        "可載三架飛機，並在遠離任何友方機場的地方維持它們的補給。",
-        "可载三架飞机，并在远离任何友方机场的地方维持它们的补给。"),
+        "A moving airfield: flies one air mission a turn from wherever it is.",
+        "移動的機場：每回合可以從所在位置出擊一次空中任務。",
+        "移动的机场：每回合可以从所在位置出击一次空中任务。"),
 }
 
 SKILLS = {
@@ -433,7 +468,7 @@ SKILLS = {
     "skill_blitz": ("Blitz", "疾行", "疾行", "+1 movement", "移動力 +1", "移动力 +1"),
     "skill_logistics": ("Logistics", "後勤", "后勤", "Faster resupply", "補給回復更快", "补给回复更快"),
     "skill_armour_expert": ("Armour Expert", "裝甲專家", "装甲专家", "+20% attack with armour", "裝甲部隊攻擊 +20%", "装甲部队攻击 +20%"),
-    "skill_air_expert": ("Air Expert", "空戰專家", "空战专家", "+20% attack with aircraft", "空軍部隊攻擊 +20%", "空军部队攻击 +20%"),
+    "skill_air_expert": ("Air Expert", "空戰專家", "空战专家", "+20% to air strikes within three hexes", "三格內的空襲威力 +20%", "三格内的空袭威力 +20%"),
     "skill_naval_expert": ("Naval Expert", "海戰專家", "海战专家", "+20% attack with ships", "海軍部隊攻擊 +20%", "海军部队攻击 +20%"),
     "skill_artillery_expert": ("Gunnery Expert", "炮術專家", "炮术专家", "+20% attack with artillery", "火炮部隊攻擊 +20%", "火炮部队攻击 +20%"),
     "skill_fortress": ("Fortress", "堡壘", "堡垒", "+20% defence when well entrenched", "築壕兩級以上時防禦 +20%", "筑壕两级以上时防御 +20%"),

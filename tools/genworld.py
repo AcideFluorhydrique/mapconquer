@@ -361,8 +361,6 @@ def garrison_lines(built, owners, nation_funds):
             wanted.append((capital_pid, "ARTILLERY", 1))
         if funds >= 700:
             wanted.append((capital_pid, "ARMOUR", 1))
-        if funds >= 1100:
-            wanted.append((capital_pid, "FIGHTER", 2))
         # 其他大城各留一支守備。
         for pid in province_ids:
             if pid == capital_pid:
@@ -463,8 +461,10 @@ def write_conquest(built, scenario_id, name_key, desc_key, order, merge,
     lines.extend(garrison_lines(built, owners, nation_funds))
     lines.append("")
     lines.append("[playable]")
-    # 可選國家：有城市的都能選，讓「用小國翻盤」也是一種玩法。
-    lines.append(",".join(ordered))
+    # 可選國家：有陣營的才能選。中立國不參戰、也沒有敵對陣營可打垮，
+    # 選了它就是對著一張和平的地圖發呆。劇本沒分陣營的話才全部開放。
+    belligerents = [code for code in ordered if bloc_of(code, blocs)]
+    lines.append(",".join(belligerents or ordered))
     lines.append("")
     lines.append("[objectives]")
     lines.append("# 沒有列出目標 = 征服模式的預設條件（拿下地圖上八成的省份）")

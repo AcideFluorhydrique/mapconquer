@@ -7,6 +7,7 @@ import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.Path
 import android.graphics.RectF
+import io.github.acidefluorhydrique.mapconquer.game.AirMission
 import io.github.acidefluorhydrique.mapconquer.units.UnitKind
 
 /**
@@ -92,19 +93,6 @@ object UnitGlyphs {
                 canvas.drawRect(oval, paint)
             }
 
-            UnitKind.FIGHTER -> delta(canvas, cx, cy, hw, hh, filled = false, paint = paint)
-
-            UnitKind.BOMBER -> {
-                delta(canvas, cx, cy - hh * 0.1f, hw, hh * 0.9f, filled = true, paint = paint)
-                paint.style = Paint.Style.FILL
-                canvas.drawCircle(cx, cy + hh * 0.75f, hh * 0.22f, paint)
-            }
-
-            UnitKind.AIR_TRANSPORT -> {
-                delta(canvas, cx, cy - hh * 0.15f, hw, hh * 0.8f, filled = false, paint = paint)
-                canvas.drawLine(cx - hw * 0.8f, cy + hh * 0.8f, cx + hw * 0.8f, cy + hh * 0.8f, paint)
-            }
-
             UnitKind.TRANSPORT_SHIP -> {
                 hull(canvas, cx, cy + hh * 0.35f, hw, hh * 0.7f, paint)
                 canvas.drawLine(cx - hw * 0.5f, cy - hh * 0.55f, cx + hw * 0.5f, cy - hh * 0.55f, paint)
@@ -136,6 +124,28 @@ object UnitGlyphs {
             UnitKind.CARRIER -> {
                 hull(canvas, cx, cy + hh * 0.35f, hw, hh * 0.7f, paint)
                 canvas.drawLine(cx - hw, cy - hh * 0.35f, cx + hw, cy - hh * 0.35f, paint)
+            }
+        }
+        paint.style = Paint.Style.FILL
+    }
+
+    /** 空中任務的記號：沿用原本三種飛機的三角形。 */
+    fun drawMission(canvas: Canvas, mission: AirMission, cx: Float, cy: Float, w: Float, h: Float, paint: Paint) {
+        val hw = w * 0.34f
+        val hh = h * 0.34f
+        paint.style = Paint.Style.STROKE
+        paint.strokeWidth = (h * 0.11f).coerceAtLeast(1f)
+        paint.strokeCap = Paint.Cap.ROUND
+        when (mission) {
+            AirMission.FIGHTER -> delta(canvas, cx, cy, hw, hh, filled = false, paint = paint)
+            AirMission.BOMBER -> {
+                delta(canvas, cx, cy - hh * 0.1f, hw, hh * 0.9f, filled = true, paint = paint)
+                paint.style = Paint.Style.FILL
+                canvas.drawCircle(cx, cy + hh * 0.75f, hh * 0.22f, paint)
+            }
+            AirMission.AIRDROP -> {
+                delta(canvas, cx, cy - hh * 0.15f, hw, hh * 0.8f, filled = false, paint = paint)
+                canvas.drawLine(cx - hw * 0.8f, cy + hh * 0.8f, cx + hw * 0.8f, cy + hh * 0.8f, paint)
             }
         }
         paint.style = Paint.Style.FILL

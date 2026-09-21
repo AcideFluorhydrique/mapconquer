@@ -37,6 +37,16 @@
     <string name="hud_end_turn">結束回合</string>
     <string name="hud_menu">選單</string>
     <string name="hud_tech">研發</string>
+    <string name="hud_air">空軍</string>
+    <string name="hud_air_pick_target">%1$s：點選目標，點別處取消</string>
+    <string name="panel_air">空中任務</string>
+    <string name="panel_air_subtitle">資金 %1$d · 每座機場與航艦每回合出擊一次</string>
+    <string name="air_blocked_base">這回合沒有可起飛的機場</string>
+    <string name="toast_air_no_targets">航程內沒有目標</string>
+    <string name="toast_airdrop">傘兵已著陸</string>
+    <string name="toast_air_strike">空襲：%1$s 損失 %2$d</string>
+    <string name="event_air_strike">%2$s 的 %1$s 遭空襲（−%3$d）</string>
+    <string name="event_airdrop">%1$s 傘兵著陸</string>
     <string name="hud_objectives">目標</string>
     <string name="hud_build">生產</string>
     <string name="hud_repair">整補</string>
@@ -158,7 +168,7 @@
     <string name="help_combat">戰鬥</string>
     <string name="help_morale">士氣與包圍</string>
     <string name="help_morale_body">士氣不是會慢慢流失的一條槽，而是「這支部隊現在站在什麼處境」的讀數。對向兩格有敵人就是夾擊、士氣下降；四面以上有敵人就是包圍、士氣嚴重下降；再降一級就是混亂 —— 無法攻擊，也無法還手。帶謠言的指揮官每次命中都有機會再壓一級，所以包圍加一次謠言、夾擊加兩次、或是純粹三次謠言，結果都一樣。正因為它讀的是處境，包圍圈一鬆開，士氣就立刻回來。</string>
-    <string name="help_combat_body">每支部隊都有四個獨立的攻擊值：對步兵、對裝甲、對艦艇、對空。反坦克炮打戰車勢如破竹，打步兵卻軟弱無力；戰鬥機制空無敵，對地面卻幾乎沒有作用。火炮從兩格以外開火且不會被反擊，可是一旦被貼身就幾乎沒有自衛能力 —— 前面一定要有步兵擋著。地形、城牆與築壕都會提高守方的防禦，所以「打山裡挖好壕溝的敵人」跟「在農地上逮到它」是兩回事。</string>
+    <string name="help_combat_body">每支部隊都有四個獨立的攻擊值：對步兵、對裝甲、對艦艇、對空（對空就是防空火力）。反坦克炮打戰車勢如破竹，打步兵卻軟弱無力。火炮從兩格以外開火且不會被反擊，可是一旦被貼身就幾乎沒有自衛能力 —— 前面一定要有步兵擋著。地形、城牆與築壕都會提高守方的防禦，所以「打山裡挖好壕溝的敵人」跟「在農地上逮到它」是兩回事。</string>
     <string name="morale_elevated">士氣高昂</string>
     <string name="morale_steady">正常</string>
     <string name="morale_shaken">士氣下降</string>
@@ -170,9 +180,11 @@
     <string name="help_formations">編制</string>
     <string name="help_formations_body">編制在造兵時就決定：在生產面板選 ×1 到 ×4，照編制數付錢，造出來之後不能再併。編制越大打得越重，每次挨打掉的比例也越少，但永遠比不上同樣數量拆開的部隊：兩支一編制的部隊，打得贏一支兩編制的。需要在一格裡集中重量時才造大編制 —— 守窄正面，或是單支部隊打不動的目標；要佔地盤就造小的。維持費與整補費都照編制數算。</string>
     <string name="help_cities">城市與攻城</string>
-    <string name="help_cities_body">城市除了收入之外還有城防。城防還在的時候，城裡的部隊只吃一半傷害，城市再替它多擋一層，所以攻下一座有守軍的首都，代價是野戰的好幾倍。有城的省份在城防歸零之前不會易主：遠遠轟掉它，或是站上去慢慢磨，然後走進去。\n\n這個關係是雙向的。城市替駐軍回血的速度遠高於野外，而城防也正是靠那支駐軍補回來的 —— 空城永遠不會自己長回來，而且只要旁邊有敵人，兩邊都停。打下來的城市只剩三分之一的城防，所以要不要留一支部隊把它補起來，就是「佔領」與「路過」的差別。只有能佔領的陸軍可以停進敵方城市；飛機、火砲與補給車都不行。</string>
+    <string name="help_cities_body">城市除了收入之外還有城防。城防還在的時候，城裡的部隊只吃一半傷害，城市再替它多擋一層，所以攻下一座有守軍的首都，代價是野戰的好幾倍。有城的省份在城防歸零之前不會易主：遠遠轟掉它，或是站上去慢慢磨，然後走進去。\n\n這個關係是雙向的。城市替駐軍回血的速度遠高於野外，而城防也正是靠那支駐軍補回來的 —— 空城永遠不會自己長回來，而且只要旁邊有敵人，兩邊都停。打下來的城市只剩三分之一的城防，所以要不要留一支部隊把它補起來，就是「佔領」與「路過」的差別。只有能佔領的陸軍可以停進敵方城市；火砲、補給車與軍艦都不行。</string>
+    <string name="help_air">空軍</string>
+    <string name="help_air_body">飛機不是地圖上的部隊。打開「空軍」面板，選一種任務、付錢、點目標：飛機從你的某座城市或航艦起飛，打完就回去。戰鬥機出擊專打步兵，轟炸機出擊專打戰車與軍艦、也能炸空城的城牆，空降則在航程內任一空著的陸地格放下一支新的步兵。每座機場與航艦每回合出擊一次，所以大城越多，架次越多。目標兩格內的敵方防空炮、巡洋艦與驅逐艦會削弱每一次空襲 —— 先拔掉防空，或者換個地方炸。</string>
     <string name="help_victory">勝利條件</string>
-    <string name="help_victory_body" formatted="false">戰役關卡一開始就會說明目標，隨時可以打開「目標」面板查看。提早通關可以拿到更多星等，星等換成勳章，勳章用來招募指揮官，而指揮官在之後的每一局都能用。征服模式沒有劇本：在世界地圖上挑任何一個國家，控制八成的省份就算贏。所有人開局都是和平狀態，所以第一場戰爭由你來宣 —— 或者由你來撐過去。</string>
+    <string name="help_victory_body">戰役關卡一開始就會說明目標，隨時可以打開「目標」面板查看。提早通關可以拿到更多星等，星等換成勳章，勳章用來招募指揮官，而指揮官在之後的每一局都能用。征服模式沒有劇本：挑戰爭任一方的國家，把敵對陣營的國家全部打垮就算贏。中立國不能選 —— 它沒有人可打。</string>
 
     <!-- Units -->
     <string name="unit_infantry">步兵</string>
@@ -192,17 +204,17 @@
     <string name="unit_rocket">火箭炮</string>
     <string name="unit_rocket_desc">射程更遠、火力更猛，代價是貴得多。</string>
     <string name="unit_anti_air">防空炮</string>
-    <string name="unit_anti_air_desc">對空射程兩格。敵機根本沒辦法在它頭上活動。</string>
+    <string name="unit_anti_air_desc">削弱兩格內每一次敵方空襲與空降。</string>
     <string name="unit_supply_truck">補給車</string>
     <string name="unit_supply_truck_desc">自帶一個小型補給圈。攻勢能不能持續，全看它跟不跟得上。</string>
     <string name="unit_headquarters">司令部</string>
     <string name="unit_headquarters_desc" formatted="false">為三格內的友軍提供 +10% 攻擊力，同時也是移動的補給站。</string>
-    <string name="unit_fighter">戰鬥機</string>
-    <string name="unit_fighter_desc">制空無敵。對地面目標幾乎無用 —— 這正是它的定位。</string>
-    <string name="unit_bomber">轟炸機</string>
-    <string name="unit_bomber_desc">對地火力冠絕全場，卻會被第一架找到它的戰鬥機打下來。</string>
-    <string name="unit_air_transport">運輸機</string>
-    <string name="unit_air_transport_desc">可以把兩支徒步部隊直接吊過山脈、海面與敵人的戰線。</string>
+    <string name="mission_fighter">戰鬥機出擊</string>
+    <string name="mission_fighter_desc">重創步兵；對戰車與軍艦幾乎無效。</string>
+    <string name="mission_bomber">轟炸機出擊</string>
+    <string name="mission_bomber_desc">重創戰車與軍艦，也能炸空城的城防。只能從大城起飛。</string>
+    <string name="mission_airdrop">空降</string>
+    <string name="mission_airdrop_desc">在航程內空著的陸地格放下一支新的步兵。</string>
     <string name="unit_transport_ship">運輸艦</string>
     <string name="unit_transport_ship_desc">可載三支陸軍。毫無自衛能力 —— 絕對不要讓它單獨出海。</string>
     <string name="unit_destroyer">驅逐艦</string>
@@ -214,7 +226,7 @@
     <string name="unit_submarine">潛艇</string>
     <string name="unit_submarine_desc">除非有東西靠得夠近或驅逐艦來掃，否則看不見。專門獵殺運輸艦。</string>
     <string name="unit_carrier">航空母艦</string>
-    <string name="unit_carrier_desc">可載三架飛機，並在遠離任何友方機場的地方維持它們的補給。</string>
+    <string name="unit_carrier_desc">移動的機場：每回合可以從所在位置出擊一次空中任務。</string>
 
     <!-- Commander skills -->
     <string name="skill_offensive">攻勢</string>
@@ -228,7 +240,7 @@
     <string name="skill_armour_expert">裝甲專家</string>
     <string name="skill_armour_expert_desc" formatted="false">裝甲部隊攻擊 +20%</string>
     <string name="skill_air_expert">空戰專家</string>
-    <string name="skill_air_expert_desc" formatted="false">空軍部隊攻擊 +20%</string>
+    <string name="skill_air_expert_desc" formatted="false">三格內的空襲威力 +20%</string>
     <string name="skill_naval_expert">海戰專家</string>
     <string name="skill_naval_expert_desc" formatted="false">海軍部隊攻擊 +20%</string>
     <string name="skill_artillery_expert">炮術專家</string>

@@ -43,6 +43,7 @@ class HudRenderer(private val session: Session) {
         drawEvents(canvas)
         drawBottomBar(canvas, buttons, overlay, canUndo)
         if (aiThinking) drawTurnBanner(canvas)
+        overlay.mission?.let { drawBanner(canvas, Strings.format(R.string.hud_air_pick_target, Strings.byName(it.key))) }
     }
 
     // ------------------------------------------------------------------
@@ -398,8 +399,11 @@ class HudRenderer(private val session: Session) {
 
     /** AI 回合時蓋在畫面中央上方的提示條。 */
     private fun drawTurnBanner(canvas: Canvas) {
-        val nation = session.activeNation
-        val w = Ui.dp(220f)
+        drawBanner(canvas, Strings.format(R.string.hud_ai_turn, Strings.byName(session.activeNation.nameKey)))
+    }
+
+    private fun drawBanner(canvas: Canvas, text: String) {
+        val w = Ui.dp(260f)
         val h = Ui.dp(30f)
         val x = (Ui.screenWidth - w) / 2f
         val y = Ui.topBarHeight + Ui.dp(12f)
@@ -407,7 +411,7 @@ class HudRenderer(private val session: Session) {
         Widgets.panel(canvas, rect, Ui.dp(6f))
         Widgets.centeredFit(
             canvas,
-            Strings.format(R.string.hud_ai_turn, Strings.byName(nation.nameKey)),
+            text,
             rect.centerX(), rect.centerY() + Ui.dp(4f), Ui.dp(12f), w - Ui.dp(16f),
             bold = true, color = Colors.of(Widgets.INK)
         )
@@ -418,6 +422,7 @@ class HudRenderer(private val session: Session) {
         const val ID_MENU = "menu"
         const val ID_TECH = "tech"
         const val ID_OBJECTIVES = "objectives"
+        const val ID_AIR = "air"
         const val ID_BUILD = "build"
         const val ID_REPAIR = "repair"
         const val ID_WAIT = "wait"
@@ -430,6 +435,7 @@ class HudRenderer(private val session: Session) {
         private val TOP_BUTTONS = arrayOf(
             ID_MENU to R.string.hud_menu,
             ID_TECH to R.string.hud_tech,
+            ID_AIR to R.string.hud_air,
             ID_OBJECTIVES to R.string.hud_objectives
         )
     }

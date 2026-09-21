@@ -11,6 +11,8 @@ import io.github.acidefluorhydrique.mapconquer.core.Colors
 import io.github.acidefluorhydrique.mapconquer.core.Strings
 import io.github.acidefluorhydrique.mapconquer.core.Ui
 import io.github.acidefluorhydrique.mapconquer.core.Widgets
+import io.github.acidefluorhydrique.mapconquer.game.AirMission
+import io.github.acidefluorhydrique.mapconquer.game.AirOps
 import io.github.acidefluorhydrique.mapconquer.game.GameMode
 import io.github.acidefluorhydrique.mapconquer.game.Nation
 import io.github.acidefluorhydrique.mapconquer.game.Objective
@@ -23,7 +25,7 @@ import io.github.acidefluorhydrique.mapconquer.units.TechBranch
 import io.github.acidefluorhydrique.mapconquer.units.UnitKind
 
 /** 目前疊在地圖上的面板。同時只會有一個。 */
-enum class Panel { NONE, PRODUCTION, TECH, OBJECTIVES, PAUSE, UNIT_DETAIL, RESULT }
+enum class Panel { NONE, PRODUCTION, AIR, TECH, OBJECTIVES, PAUSE, UNIT_DETAIL, RESULT }
 
 /**
  * 蓋在地圖上的各種面板。
@@ -64,6 +66,7 @@ class PanelRenderer(private val session: Session) {
         Widgets.scrim(canvas, Ui.screenWidth, Ui.screenHeight, "#B3050A10")
         when (panel) {
             Panel.PRODUCTION -> drawProduction(canvas, buttons, selectedProvince)
+            Panel.AIR -> drawAir(canvas, buttons)
             Panel.TECH -> drawTech(canvas, buttons)
             Panel.OBJECTIVES -> drawObjectives(canvas, buttons)
             Panel.PAUSE -> drawPause(canvas, buttons)
@@ -229,6 +232,63 @@ class PanelRenderer(private val session: Session) {
         Widgets.right(
             canvas, Orders.buildCost(kind, productionSize).toString(), row.right - Ui.dp(8f), row.centerY() + Ui.dp(4f),
             Ui.dp(12f), if (enabled) Colors.of("#F2D08A") else Colors.of("#7A6B54"), bold = true
+        )
+    }
+
+    // ------------------------------------------------------------------
+    // 空中任務
+    // ------------------------------------------------------------------
+
+    /** 三種出擊，一列一種。選了之後回到地圖挑目標。 */
+    private fun drawAir(canvas: Canvas, buttons: ButtonLayer) {
+        val panel = frame(canvas, buttons, R.string.panel_air, 440f, 230f)
+        val nation = session.playerNation
+        Widgets.centeredFit(
+            canvas, Strings.format(R.string.panel_air_subtitle, nation.funds),
+            panel.centerX(), panel.top + Ui.dp(40f), Ui.dp(11f), panel.width() - Ui.dp(40f),
+            color = Colors.of(Widgets.INK_DIM)
+        )
+        val rowHeight = Ui.dp(50f)
+        var y = panel.top + Ui.dp(52f)
+        for (mission in AirMission.ALL) {
+            inner.set(panel.left + Ui.dp(12f), y + Ui.dp(2f), panel.right - Ui.dp(12f), y + rowHeight - Ui.dp(2f))
+            val blocker = AirOps.blocker(session, nation.id, mission)
+            val enabled = session.isPlayerTurn && blocker == AirOps.Blocker.NONE
+            drawAirRow(canvas, inner, mission, blocker, enabled)
+            buttons.add(ID_AIR_MISSION, inner, payload = mission.ordinal, isEnabled = enabled)
+            y += rowHeight
+        }
+    }
+
+    private fun drawAirRow(canvas: Canvas, row: RectF, mission: AirMission, blocker: AirOps.Blocker, enabled: Boolean) {
+        Widgets.fill(
+            canvas, row,
+            if (enabled) Colors.of("#3325384A") else Colors.of("#221C1F26"),
+            Ui.dp(5f)
+        )
+        val ink = if (enabled) Colors.of(Widgets.INK) else Colors.of("#7A8794")
+        val dim = if (enabled) Colors.of(Widgets.INK_DIM) else Colors.of("#5F6B78")
+        paint.color = if (enabled) Palette.AIR_ACCENT else Colors.of("#5F6B78")
+        UnitGlyphs.drawMission(canvas, mission, row.left + Ui.dp(18f), row.centerY(), Ui.dp(26f), Ui.dp(24f), paint)
+
+        val textX = row.left + Ui.dp(38f)
+        val textWidth = row.width() - Ui.dp(100f)
+        Widgets.leftFit(
+            canvas, Strings.byName(mission.key), textX, row.centerY() - Ui.dp(4f),
+            Ui.dp(12.5f), textWidth, ink, bold = true
+        )
+        val detail = when (blocker) {
+            AirOps.Blocker.NO_FUNDS -> Strings.get(R.string.build_blocked_funds)
+            AirOps.Blocker.NO_BASE -> Strings.get(R.string.air_blocked_base)
+            AirOps.Blocker.NONE -> Strings.byName(mission.descKey)
+        }
+        Widgets.leftFit(
+            canvas, detail, textX, row.centerY() + Ui.dp(12f),
+            Ui.dp(9.5f), textWidth, dim
+        )
+        Widgets.right(
+            canvas, mission.totalCost.toString(), row.right - Ui.dp(10f), row.centerY() + Ui.dp(4f),
+            Ui.dp(13f), if (enabled) Colors.of("#F2D08A") else Colors.of("#7A6B54"), bold = true
         )
     }
 
@@ -547,6 +607,7 @@ class PanelRenderer(private val session: Session) {
         const val ID_CLOSE = "panel_close"
         const val ID_BUILD_KIND = "build_kind"
         const val ID_BUILD_SIZE = "build_size"
+        const val ID_AIR_MISSION = "air_mission"
         const val ID_RESEARCH = "research"
         const val ID_RESUME = "resume"
         const val ID_SAVE = "save"

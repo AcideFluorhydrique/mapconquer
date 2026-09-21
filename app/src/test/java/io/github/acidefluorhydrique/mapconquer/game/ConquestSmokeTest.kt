@@ -54,7 +54,6 @@ class ConquestSmokeTest {
                     )
                 }
                 Domain.SEA -> assertTrue("$where: 軍艦擱淺 ${unit.kind}", map.isWater(unit.tile))
-                Domain.AIR -> Unit
             }
 
             if (unit.isLoaded) {
@@ -112,6 +111,25 @@ class ConquestSmokeTest {
         }
         assertTrue("回合沒有推進", session.turn >= 5)
         assertTrue("四回合就有人統一世界，平衡出了問題", session.status == SessionStatus.PLAYING)
+    }
+
+    /** 飛機不再是部隊，AI 得真的會用空中任務，不然空軍這條線對它等於不存在。 */
+    @Test
+    fun `the AI flies air strikes`() {
+        val scenario = TestAssets.scenario("conquest_1939")
+        val map = TestAssets.map(scenario.mapId)
+        val session = Session(map, scenario, Difficulty.OFFICER, "USA", 20260922L)
+        var strikes = 0
+        var guard = 0
+        while (session.turn <= 4 && session.status == SessionStatus.PLAYING && guard < 1000) {
+            val ai = AiPlayer(session, session.activeNationId)
+            var steps = 0
+            while (ai.step() && steps < 4000) steps++
+            strikes += session.sortieBases.size
+            session.advanceToNextNation()
+            guard++
+        }
+        assertTrue("四回合下來 AI 一次空襲都沒飛", strikes > 0)
     }
 
     /**

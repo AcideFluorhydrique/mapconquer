@@ -67,6 +67,11 @@ object SaveGame {
         }
         sb.append('\n')
 
+        // 這回合飛過的起飛點。不存的話，存檔再讀檔就能把每座機場重飛一次。
+        if (session.sortieBases.isNotEmpty()) {
+            sb.append("sorties ").append(session.sortieBases.joinToString(",")).append('\n')
+        }
+
         for (nation in session.nations) {
             sb.append("nation ")
                 .append(nation.code).append(' ')
@@ -149,6 +154,7 @@ object SaveGame {
         var diplomacy = ""
         var owners = ""
         var cityHp = ""
+        var sorties = ""
         val nationLines = ArrayList<String>()
         val unitLines = ArrayList<String>()
 
@@ -169,6 +175,7 @@ object SaveGame {
                 "diplomacy" -> diplomacy = value
                 "owners" -> owners = value
                 "cityhp" -> cityHp = value
+                "sorties" -> sorties = value
                 "nation" -> nationLines.add(value)
                 "unit" -> unitLines.add(value)
             }
@@ -241,6 +248,9 @@ object SaveGame {
             session.restoreUnit(unit)
         }
         session.rebuildCargoLinks()
+        // 讀檔時先跑過一次開局的 beginNationTurn，那會清掉起飛紀錄，所以放在最後才蓋回去。
+        session.sortieBases.clear()
+        sorties.split(',').mapNotNullTo(session.sortieBases) { it.trim().toIntOrNull() }
         session.refreshSupplyView()
         session
     }.getOrNull()

@@ -67,15 +67,16 @@ class CombatTest {
             context(unit(UnitKind.ANTI_TANK), unit(UnitKind.INFANTRY, nation = 1))
         )
         assertTrue("AT $versusArmour vs $versusInfantry", versusArmour > versusInfantry * 2)
+    }
 
-        // 戰鬥機打飛機應該遠勝於打地面。
-        val airToAir = Combat.previewDamage(
-            context(unit(UnitKind.FIGHTER), unit(UnitKind.BOMBER, nation = 1))
-        )
-        val airToGround = Combat.previewDamage(
-            context(unit(UnitKind.FIGHTER), unit(UnitKind.INFANTRY, nation = 1))
-        )
-        assertTrue("fighter $airToAir vs $airToGround", airToAir > airToGround)
+    @Test
+    fun `flak blunts an air strike but never stops it`() {
+        assertEquals(1f, Combat.flakFactor(0), 0.0001f)
+        val one = Combat.flakFactor(UnitKind.ANTI_AIR.attackAgainst(TargetClass.AIRCRAFT))
+        val two = Combat.flakFactor(UnitKind.ANTI_AIR.attackAgainst(TargetClass.AIRCRAFT) * 2)
+        assertTrue("一門防空就該有感 $one", one < 0.75f)
+        assertTrue("越多越痛 $two", two < one)
+        assertTrue("但不會歸零 $two", two > 0f)
     }
 
     @Test

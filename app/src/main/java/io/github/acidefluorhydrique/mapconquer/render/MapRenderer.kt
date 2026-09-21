@@ -407,9 +407,8 @@ class MapRenderer(private val session: Session) {
     private fun drawUnitBadge(canvas: Canvas, unit: ArmyUnit, cx: Float, cy: Float, size: Float) {
         val w = size * 0.86f
         val h = size * 0.66f
-        // 空中單位往上偏、海上單位往下偏：同一格有兩層時仍然分得開。
+        // 海上單位往下偏一點，讓船看起來浮在水上。
         val yShift = when (unit.kind.domain) {
-            Domain.AIR -> -size * 0.34f
             Domain.SEA -> size * 0.10f
             Domain.LAND -> 0f
         }

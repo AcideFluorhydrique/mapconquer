@@ -291,34 +291,118 @@ class SessionTest {
     }
 
     @Test
-    fun `an enemy on any layer blocks the way`() {
+    fun `an enemy blocks the way through its hex`() {
         val s = session(
             listOf(
                 ScenarioUnit("AAA", 2, 2, "INFANTRY", 1, ""),
-                ScenarioUnit("BBB", 3, 2, "FIGHTER", 1, "")
+                ScenarioUnit("BBB", 3, 2, "INFANTRY", 1, "")
             )
         )
         val infantry = s.units.first { it.nationId == 0 }
-        val fighter = s.units.first { it.nationId == 1 }
-        assertEquals(
-            "步兵不能從敵機底下穿過",
-            -1, UnitMoveRules(s, infantry).enterCost(infantry.tile, fighter.tile)
-        )
-        assertEquals(
-            "敵機也不能從步兵頭上飛過",
-            -1, UnitMoveRules(s, fighter).enterCost(fighter.tile, infantry.tile)
-        )
+        val enemy = s.units.first { it.nationId == 1 }
+        assertEquals(-1, UnitMoveRules(s, infantry).enterCost(infantry.tile, enemy.tile))
+    }
+
+    // ------------------------------------------------------------------
+    // 空中任務
+    // ------------------------------------------------------------------
+
+    @Test
+    fun `aircraft are missions, not units`() {
+        for (kind in UnitKind.ALL) {
+            assertTrue("$kind 不該是空軍部隊", kind.domain == Domain.LAND || kind.domain == Domain.SEA)
+        }
     }
 
     @Test
-    fun `aircraft cannot park in an enemy city`() {
-        val s = session(listOf(ScenarioUnit("AAA", 4, 2, "FIGHTER", 1, "")))
-        val fighter = s.units.first()
+    fun `fighters hit infantry hardest and bombers hit armour hardest`() {
+        val s = session(
+            listOf(
+                ScenarioUnit("BBB", 5, 2, "INFANTRY", 1, ""),
+                ScenarioUnit("BBB", 5, 3, "ARMOUR", 1, "")
+            )
+        )
+        val infantry = s.units.first { it.kind == UnitKind.INFANTRY }
+        val armour = s.units.first { it.kind == UnitKind.ARMOUR }
+        val fighterOnFoot = AirOps.previewDamage(s, 0, AirMission.FIGHTER, infantry)
+        val fighterOnTanks = AirOps.previewDamage(s, 0, AirMission.FIGHTER, armour)
+        val bomberOnFoot = AirOps.previewDamage(s, 0, AirMission.BOMBER, infantry)
+        val bomberOnTanks = AirOps.previewDamage(s, 0, AirMission.BOMBER, armour)
+        assertTrue("戰鬥機 $fighterOnFoot vs $fighterOnTanks", fighterOnFoot > fighterOnTanks * 2)
+        assertTrue("轟炸機 $bomberOnTanks vs $bomberOnFoot", bomberOnTanks > bomberOnFoot)
+        assertTrue("打步兵該找戰鬥機", fighterOnFoot > bomberOnFoot)
+        assertTrue("打戰車該找轟炸機", bomberOnTanks > fighterOnTanks)
+    }
+
+    @Test
+    fun `an air strike costs money, hits once, and grounds its airfield for the turn`() {
+        val s = session(listOf(ScenarioUnit("BBB", 4, 2, "INFANTRY", 1, "")))
+        val nation = s.nations[0]
+        nation.funds = 1_000
+        val target = s.units.first()
+        assertTrue(AirOps.canFly(s, 0, AirMission.FIGHTER, target.tile))
+
+        val result = AirOps.fly(s, 0, AirMission.FIGHTER, target.tile)
+        assertNotNull(result)
+        assertTrue("要打出傷害", result!!.damageToUnit > 0)
+        assertTrue(target.hp < ArmyUnit.MAX_HP)
+        assertEquals(1_000 - AirMission.FIGHTER.totalCost, nation.funds)
+        assertEquals("飛機不會留在地圖上", 1, s.units.size)
+
+        // A 國只有一座機場，這回合已經飛過了。
+        assertFalse(AirOps.canFly(s, 0, AirMission.FIGHTER, target.tile))
+        assertEquals(AirOps.Blocker.NO_BASE, AirOps.blocker(s, 0, AirMission.FIGHTER))
+        repeat(s.nations.size) { s.advanceToNextNation() }
+        assertTrue("下一回合機場又能飛", AirOps.canFly(s, 0, AirMission.FIGHTER, target.tile))
+    }
+
+    @Test
+    fun `anti-air near the target blunts the strike`() {
+        val bare = session(listOf(ScenarioUnit("BBB", 4, 2, "INFANTRY", 1, "")))
+        val covered = session(
+            listOf(
+                ScenarioUnit("BBB", 4, 2, "INFANTRY", 1, ""),
+                ScenarioUnit("BBB", 5, 2, "ANTI_AIR", 1, "")
+            )
+        )
+        val a = AirOps.previewDamage(bare, 0, AirMission.FIGHTER, bare.units.first())
+        val b = AirOps.previewDamage(
+            covered, 0, AirMission.FIGHTER, covered.units.first { it.kind == UnitKind.INFANTRY }
+        )
+        assertTrue("有防空要打得比較少 $b vs $a", b < a)
+    }
+
+    @Test
+    fun `an airdrop puts a fresh infantry unit on an open land hex`() {
+        val s = session(listOf(ScenarioUnit("BBB", 3, 3, "INFANTRY", 1, "")))
+        val nation = s.nations[0]
+        nation.funds = 1_000
+        val drop = s.map.index(3, 2)
+        val occupied = s.map.index(3, 3)
+        val water = s.map.index(3, 5)
+
+        assertFalse("不能落在有人的格子", AirOps.canFly(s, 0, AirMission.AIRDROP, occupied))
+        assertFalse("不能落在海上", AirOps.canFly(s, 0, AirMission.AIRDROP, water))
+        val result = AirOps.fly(s, 0, AirMission.AIRDROP, drop)
+        val trooper = result?.dropped
+        assertNotNull(trooper)
+        assertEquals(drop, trooper!!.tile)
+        assertEquals(AirOps.PARATROOPER, trooper.kind)
+        assertEquals(0, trooper.nationId)
+        assertEquals(1_000 - AirMission.AIRDROP.totalCost, nation.funds)
+    }
+
+    @Test
+    fun `only a bomber can bomb an empty city`() {
+        val s = session()
+        s.nations[0].funds = 1_000
         val enemyCapital = s.map.provinces[1].capitalTile
-        val reachable = ArrayList<Int>()
-        Orders.computeReachable(s, fighter, reachable)
-        assertTrue("旁邊的格子要到得了", reachable.contains(s.map.index(5, 1)))
-        assertFalse("戰鬥機不該停得進敵城", reachable.contains(enemyCapital))
+        assertFalse(AirOps.canFly(s, 0, AirMission.FIGHTER, enemyCapital))
+        assertTrue(AirOps.canFly(s, 0, AirMission.BOMBER, enemyCapital))
+        val before = s.cityHp[1]
+        assertNotNull(AirOps.fly(s, 0, AirMission.BOMBER, enemyCapital))
+        assertTrue(s.cityHp[1] < before)
+        assertEquals("炸城不會讓它易主", 1, s.provinceOwner[1])
     }
 
     @Test
@@ -388,19 +472,19 @@ class SessionTest {
         val s = session(
             listOf(
                 ScenarioUnit("AAA", 2, 1, "INFANTRY", 1, ""),
-                ScenarioUnit("AAA", 2, 3, "FIGHTER", 1, "")
+                ScenarioUnit("AAA", 2, 3, "ARTILLERY", 1, "")
             )
         )
         val infantry = s.units.first { it.kind == UnitKind.INFANTRY }
-        val fighter = s.units.first { it.kind == UnitKind.FIGHTER }
+        val gun = s.units.first { it.kind == UnitKind.ARTILLERY }
 
-        assertFalse("步兵佔著的格子放不下飛機", s.isTileFreeFor(fighter, infantry.tile))
+        assertFalse("步兵佔著的格子放不下火炮", s.isTileFreeFor(gun, infantry.tile))
         val reachable = ArrayList<Int>()
-        Orders.computeReachable(s, fighter, reachable)
+        Orders.computeReachable(s, gun, reachable)
         assertFalse("可達清單不該包含被佔的格子", reachable.contains(infantry.tile))
         assertEquals(
             "移動到被佔的格子應該原地不動",
-            fighter.tile, Orders.move(s, fighter, infantry.tile, ArrayList())
+            gun.tile, Orders.move(s, gun, infantry.tile, ArrayList())
         )
     }
 

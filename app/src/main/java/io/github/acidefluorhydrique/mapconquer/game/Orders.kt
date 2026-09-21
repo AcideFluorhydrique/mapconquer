@@ -42,7 +42,6 @@ class UnitMoveRules(
             // 步兵進得了山地與叢林，只是很慢；輪車與履帶進不去。
             Domain.LAND -> if (terrain.isLand && unit.kind.vehicle && !terrain.vehiclePassable) return -1
             Domain.SEA -> if (!terrain.isWater) return -1
-            Domain.AIR -> Unit
         }
 
         if (!ignoreEnemies) {
@@ -56,7 +55,6 @@ class UnitMoveRules(
         }
 
         return when {
-            unit.kind.domain == Domain.AIR -> 1
             // 軍艦在水上是一格一點 —— 海洋就是它的地盤。
             unit.kind.domain == Domain.SEA -> 1
             // 只有浮渡的陸軍才付較高的代價：擠在駁船上就是比軍艦慢。
@@ -82,8 +80,6 @@ class UnitMoveRules(
      * 登陸不再是行軍途中順手做的事，而是一次要規劃的作戰。
      */
     override fun stopsAt(from: Int, to: Int): Boolean {
-        if (unit.kind.domain == Domain.AIR) return false
-
         if (unit.kind.domain == Domain.LAND && from >= 0 && map.isWater(from) != map.isWater(to)) {
             return true
         }
@@ -389,11 +385,8 @@ object Orders {
         val defenderInCity = session.cityShields(defender)
         val attackerInCity = session.cityShields(attacker)
 
-        // 空中單位不吃地形加成：它在天上，底下是山還是平原都一樣。
-        val defenderTerrain =
-            if (defender.kind.domain == Domain.AIR) 0 else map.terrainAt(defender.tile).defenceBonus
-        val attackerTerrain =
-            if (attacker.kind.domain == Domain.AIR) 0 else map.terrainAt(attacker.tile).defenceBonus
+        val defenderTerrain = map.terrainAt(defender.tile).defenceBonus
+        val attackerTerrain = map.terrainAt(attacker.tile).defenceBonus
 
         return CombatContext(
             attacker = attacker,
@@ -513,7 +506,6 @@ object Orders {
         val terrain = session.map.terrainAt(target)
         return when (passenger.kind.domain) {
             Domain.LAND -> terrain.isLand && (!passenger.kind.vehicle || terrain.vehiclePassable)
-            Domain.AIR -> true
             Domain.SEA -> terrain.isWater
         }
     }

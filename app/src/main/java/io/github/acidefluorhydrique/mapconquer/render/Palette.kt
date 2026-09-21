@@ -100,12 +100,14 @@ object Palette {
     fun unitPlate(session: Session, nationId: Int): Int =
         Colors.scale(nationColour(session, nationId), 0.72f)
 
-    /** 三個層面各給一個記號形狀的暗示色，海空單位不至於跟陸軍混在一起。 */
+    /** 陸海各給一個記號形狀的暗示色，海上單位不至於跟陸軍混在一起。 */
     fun domainAccent(domain: Domain): Int = when (domain) {
         Domain.LAND -> Colors.of("#E8EDF2")
         Domain.SEA -> Colors.of("#9FD8F0")
-        Domain.AIR -> Colors.of("#F6D9A0")
     }
+
+    /** 空中任務的記號色，沿用原本空軍的那一個。 */
+    val AIR_ACCENT: Int get() = Colors.of("#F6D9A0")
 
     fun healthColour(ratio: Float): Int = when {
         ratio > 0.6f -> Colors.of("#5FBF74")

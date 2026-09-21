@@ -544,6 +544,7 @@ class MenuRenderer {
             R.string.help_basics to R.string.help_basics_body,
             R.string.help_combat to R.string.help_combat_body,
             R.string.help_formations to R.string.help_formations_body,
+            R.string.help_air to R.string.help_air_body,
             R.string.help_morale to R.string.help_morale_body,
             R.string.help_supply to R.string.help_supply_body,
             R.string.help_cities to R.string.help_cities_body,

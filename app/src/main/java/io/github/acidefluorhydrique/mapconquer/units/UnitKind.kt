@@ -4,7 +4,12 @@
 package io.github.acidefluorhydrique.mapconquer.units
 
 /** 單位活動的層面。三層互不重疊，同一格可以同時站一支陸軍與一架飛機。 */
-enum class Domain { LAND, SEA, AIR }
+/**
+ * 部隊走在哪裡。
+ *
+ * 沒有空軍這一層：飛機不是棋子，是一次性的出擊（見 game.AirOps）。
+ */
+enum class Domain { LAND, SEA }
 
 /**
  * 被攻擊時算的是哪一類目標。
@@ -13,7 +18,15 @@ enum class Domain { LAND, SEA, AIR }
  * 這是整個戰鬥系統的骨架：反坦克炮打步兵很差、打戰車很好，
  * 這件事直接寫在數字裡，玩家看面板就懂，不必去猜隱藏公式。
  */
-enum class TargetClass { SOFT, ARMOURED, SHIP, AIRCRAFT }
+enum class TargetClass {
+    SOFT, ARMOURED, SHIP,
+
+    /**
+     * 沒有任何部隊屬於這一類 —— 飛機已經不是部隊了。攻擊表裡這一欄留著，
+     * 意思變成「防空火力」：目標兩格內每一門有這一欄的敵軍，都會削弱空中打擊。
+     */
+    AIRCRAFT
+}
 
 /** 研發分支。升級只影響同分支的單位。 */
 enum class TechBranch { INFANTRY, ARMOUR, ARTILLERY, AIR, NAVY, LOGISTICS }
@@ -117,23 +130,6 @@ enum class UnitKind(
         300, 2, 1, true, true, 6, Flags.SUPPLIER or Flags.COMMAND_AURA
     ),
 
-    // ---- 空軍 ----
-    FIGHTER(
-        "unit_fighter", Domain.AIR, TargetClass.AIRCRAFT, TechBranch.AIR,
-        intArrayOf(18, 12, 14, 54), 30, 9, 1, 1, 5,
-        220, 2, 0, false, false, 10, Flags.INTERCEPT
-    ),
-    BOMBER(
-        "unit_bomber", Domain.AIR, TargetClass.AIRCRAFT, TechBranch.AIR,
-        intArrayOf(50, 42, 44, 10), 22, 7, 1, 1, 4,
-        320, 3, 0, false, false, 12, 0
-    ),
-    AIR_TRANSPORT(
-        "unit_air_transport", Domain.AIR, TargetClass.AIRCRAFT, TechBranch.LOGISTICS,
-        intArrayOf(0, 0, 0, 0), 16, 10, 0, 0, 4,
-        200, 2, 2, false, false, 9, Flags.SUPPLIER
-    ),
-
     // ---- 海軍 ----
     TRANSPORT_SHIP(
         "unit_transport_ship", Domain.SEA, TargetClass.SHIP, TechBranch.NAVY,
@@ -171,7 +167,7 @@ enum class UnitKind(
     CARRIER(
         "unit_carrier", Domain.SEA, TargetClass.SHIP, TechBranch.NAVY,
         intArrayOf(10, 8, 14, 26), 42, 7, 1, 1, 5,
-        520, 4, 3, false, false, 10, Flags.AIRBASE
+        520, 4, 0, false, false, 10, Flags.AIRBASE
     );
 
     val descKey: String get() = key + "_desc"
@@ -199,11 +195,9 @@ enum class UnitKind(
 
     fun attackAgainst(target: TargetClass): Int = attack[target.ordinal]
 
-    /** 這個兵種載得動什麼。運輸艦載陸軍、航艦載飛機、卡車載步兵。 */
+    /** 這個兵種載得動什麼。只剩運輸艦載陸軍；航艦現在是空中任務的起飛點。 */
     fun canCarry(other: UnitKind): Boolean = when {
         capacity <= 0 -> false
-        this == CARRIER -> other.domain == Domain.AIR
-        this == AIR_TRANSPORT -> other.domain == Domain.LAND && !other.vehicle
         this == TRANSPORT_SHIP -> other.domain == Domain.LAND
         this == SUPPLY_TRUCK || this == HEADQUARTERS -> false
         else -> false
@@ -242,6 +236,7 @@ object Flags {
     const val COMMAND_AURA = 1 shl 6
     const val INTERCEPT = 1 shl 7
     const val SUB_HUNTER = 1 shl 8
+    /** 空中任務的起飛點：航艦把機場帶到海上。 */
     const val AIRBASE = 1 shl 9
     const val BREAKTHROUGH = 1 shl 10
 

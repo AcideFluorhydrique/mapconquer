@@ -4,6 +4,8 @@
 package io.github.acidefluorhydrique.mapconquer.ai
 
 import io.github.acidefluorhydrique.mapconquer.game.AiProfile
+import io.github.acidefluorhydrique.mapconquer.game.AirMission
+import io.github.acidefluorhydrique.mapconquer.game.AirOps
 import io.github.acidefluorhydrique.mapconquer.game.Orders
 import io.github.acidefluorhydrique.mapconquer.game.Session
 import io.github.acidefluorhydrique.mapconquer.game.UnitMoveRules
@@ -33,13 +35,15 @@ import io.github.acidefluorhydrique.mapconquer.units.UnitKind
  */
 class AiPlayer(private val session: Session, private val nationId: Int) {
 
-    private enum class Phase { RESEARCH, PRODUCTION, UNITS, DONE }
+    private enum class Phase { RESEARCH, AIR, PRODUCTION, UNITS, DONE }
 
     private var phase = Phase.RESEARCH
     private val queue = ArrayDeque<Int>()
     private val reachable = ArrayList<Int>(128)
     private val targets = ArrayList<Int>(32)
     private val path = ArrayList<Int>(32)
+    private val airTargets = ArrayList<Int>(64)
+    private var sortiesFlown = 0
 
     private val nation get() = session.nations[nationId]
     private val profile get() = nation.aiProfile
@@ -62,7 +66,10 @@ class AiPlayer(private val session: Session, private val nationId: Int) {
         when (phase) {
             Phase.RESEARCH -> {
                 considerResearch()
-                phase = Phase.PRODUCTION
+                phase = Phase.AIR
+            }
+            Phase.AIR -> {
+                if (!flyOneMission()) phase = Phase.PRODUCTION
             }
             Phase.PRODUCTION -> {
                 if (!buildOneUnit()) {
@@ -118,6 +125,45 @@ class AiPlayer(private val session: Session, private val nationId: Int) {
         session.units.count { it.nationId == nationId && it.isAlive && it.kind.branch == branch }
 
     // ------------------------------------------------------------------
+    // 空中任務
+    // ------------------------------------------------------------------
+
+    /**
+     * 先轟再走：空襲排在生產與部隊行動之前，讓地面部隊去收打殘的目標。
+     *
+     * 只在「打下去的價值」接近任務價錢時才飛 —— 拿一百多塊的轟炸去刮一支
+     * 九十塊的步兵是虧本生意。每回合架次設上限，錢才不會全燒在天上。
+     * 空降不給 AI 用：它挑落點的眼光不夠，只會把傘兵丟進包圍圈送死。
+     */
+    private fun flyOneMission(): Boolean {
+        if (sortiesFlown >= MAX_SORTIES_PER_TURN) return false
+        var bestMission: AirMission? = null
+        var bestTile = -1
+        var bestRatio = MIN_SORTIE_VALUE_RATIO
+        for (mission in AirMission.ALL) {
+            if (!mission.isStrike) continue
+            if (nation.funds < mission.totalCost + AIR_RESERVE) continue
+            AirOps.collectTargets(session, nationId, mission, airTargets)
+            for (tile in airTargets) {
+                val defender = AirOps.strikeTarget(session, nationId, mission, tile) ?: continue
+                val share = defender.scaledDamage(AirOps.previewDamage(session, nationId, mission, defender))
+                var value = share * defender.kind.cost * defender.size / 100f
+                if (share >= defender.hp) value += defender.kind.cost * defender.size * 0.5f
+                val ratio = value / mission.totalCost
+                if (ratio > bestRatio) {
+                    bestRatio = ratio
+                    bestMission = mission
+                    bestTile = tile
+                }
+            }
+        }
+        val mission = bestMission ?: return false
+        if (AirOps.fly(session, nationId, mission, bestTile) == null) return false
+        sortiesFlown++
+        return true
+    }
+
+    // ------------------------------------------------------------------
     // 生產
     // ------------------------------------------------------------------
 
@@ -164,7 +210,6 @@ class AiPlayer(private val session: Session, private val nationId: Int) {
         val infantry = owned.filter { it.kind.branch == TechBranch.INFANTRY }.sumOf { it.size }
         val armour = owned.filter { it.kind.branch == TechBranch.ARMOUR }.sumOf { it.size }
         val artillery = owned.filter { it.kind.branch == TechBranch.ARTILLERY }.sumOf { it.size }
-        val air = owned.filter { it.kind.domain == Domain.AIR }.sumOf { it.size }
         val logistics = owned.filter { it.kind.isSupplier }.sumOf { it.size }
 
         val wants = ArrayList<UnitKind>(6)
@@ -172,7 +217,6 @@ class AiPlayer(private val session: Session, private val nationId: Int) {
         if (logistics == 0 || logistics * 100 / total < 8) wants.add(UnitKind.SUPPLY_TRUCK)
         if (artillery * 100 / total < 20) wants.add(UnitKind.ARTILLERY)
         if (armour * 100 / total < 25) wants.add(UnitKind.ARMOUR)
-        if (air * 100 / total < 12) wants.add(UnitKind.FIGHTER)
         if (wants.isEmpty()) wants.add(if (session.rng.chance(50)) UnitKind.ARMOUR else UnitKind.INFANTRY)
 
         // 從想要的清單裡挑一個現在買得起、而且真的有城市造得出來的。
@@ -212,7 +256,6 @@ class AiPlayer(private val session: Session, private val nationId: Int) {
 
     private fun orderPriority(unit: ArmyUnit): Int = when {
         unit.kind.isBombard -> 0
-        unit.kind.domain == Domain.AIR -> 1
         unit.kind.isSupplier -> 4
         unit.kind.canCapture -> 3
         else -> 2
@@ -397,6 +440,13 @@ class AiPlayer(private val session: Session, private val nationId: Int) {
         const val RESEARCH_RESERVE = 900
 
         const val MIN_BUILD_FUNDS = 90
+
+        /** 空襲之後至少留這麼多錢給生產。 */
+        const val AIR_RESERVE = 250
+        const val MAX_SORTIES_PER_TURN = 3
+
+        /** 預期戰果至少要值任務價錢的這個比例才飛。 */
+        const val MIN_SORTIE_VALUE_RATIO = 0.75f
         const val MAX_GOAL_DISTANCE = 28
         const val CITY_ALERT_RANGE = 6
     }

@@ -37,6 +37,16 @@
     <string name="hud_end_turn">End Turn</string>
     <string name="hud_menu">Menu</string>
     <string name="hud_tech">Tech</string>
+    <string name="hud_air">Air</string>
+    <string name="hud_air_pick_target">%1$s: tap a target, or elsewhere to cancel</string>
+    <string name="panel_air">Air missions</string>
+    <string name="panel_air_subtitle">Funds %1$d · each airfield and carrier flies once a turn</string>
+    <string name="air_blocked_base">No airfield ready this turn</string>
+    <string name="toast_air_no_targets">No target within range</string>
+    <string name="toast_airdrop">Paratroopers have landed</string>
+    <string name="toast_air_strike">Air strike: %1$s lost %2$d</string>
+    <string name="event_air_strike">%2$s %1$s hit from the air (−%3$d)</string>
+    <string name="event_airdrop">%1$s paratroopers landed</string>
     <string name="hud_objectives">Goals</string>
     <string name="hud_build">Build</string>
     <string name="hud_repair">Repair</string>
@@ -158,7 +168,7 @@
     <string name="help_combat">Combat</string>
     <string name="help_morale">Morale and encirclement</string>
     <string name="help_morale_body">Morale is not a bar that drains -- it is a read of the position a unit is in right now. Enemies on two opposite sides leave it shaken; four or more around it leave it broken; one step further and it is disrupted, unable to attack or even return fire. A commander with Rumour pushes the target one step lower on a hit, so encircle plus one rumour, or a flank plus two, or three rumours alone all reach the same place. Because morale reads the position, it comes straight back the moment the ring opens up.</string>
-    <string name="help_combat_body">Every unit has four separate attack values: against infantry, armour, ships and aircraft. Anti-tank guns shred armour and bounce off infantry; fighters own the sky and do nothing on the ground. Artillery strikes from two or more hexes away and takes no return fire, but is nearly helpless once something reaches it — keep infantry in front of it. Terrain, city walls and entrenchment all raise the defender\'s strength, so attacking a dug-in unit in the mountains is a very different proposition from catching it on open farmland.</string>
+    <string name="help_combat_body">Every unit has four separate attack values: against infantry, armour, ships, and anti-air fire. Anti-tank guns shred armour and bounce off infantry. Artillery strikes from two or more hexes away and takes no return fire, but is nearly helpless once something reaches it — keep infantry in front of it. Terrain, city walls and entrenchment all raise the defender\'s strength, so attacking a dug-in unit in the mountains is a very different proposition from catching it on open farmland.</string>
     <string name="morale_elevated">Elevated</string>
     <string name="morale_steady">Steady</string>
     <string name="morale_shaken">Shaken</string>
@@ -170,9 +180,11 @@
     <string name="help_formations">Formations</string>
     <string name="help_formations_body">A formation is chosen when you build: pick ×1 to ×4 in the production panel and pay for each one. Units cannot be merged afterwards. A bigger formation hits harder and loses a smaller share of its strength to each blow, but it is never worth as much as the same number of separate units: two formations of one will out-fight one formation of two. Build big when you need weight in a single hex — a narrow front, or a target one unit cannot move — and build small when you need to cover ground. Upkeep and repairs scale with the size.</string>
     <string name="help_cities">Cities and sieges</string>
-    <string name="help_cities_body">A city has defence points as well as income. While they stand, a unit inside the city takes only half the damage of an attack and the city absorbs a further share on top, so a defended capital costs several times what the same unit costs in the open. A province with a city does not change hands until its defence reaches zero: shell it from range, or stand on it and grind it down, then walk in.\n\nThe relationship runs both ways. A city repairs the garrison standing in it far faster than open ground does, and that garrison is what rebuilds the city\'s defence — an empty city never recovers on its own, and neither recovers while an enemy is adjacent. A captured city keeps only a third of its defence, so whether you leave someone behind to restore it is the difference between holding a place and passing through it. Only land units that can capture may stop in an enemy city; aircraft, guns and trucks cannot park there.</string>
+    <string name="help_cities_body">A city has defence points as well as income. While they stand, a unit inside the city takes only half the damage of an attack and the city absorbs a further share on top, so a defended capital costs several times what the same unit costs in the open. A province with a city does not change hands until its defence reaches zero: shell it from range, or stand on it and grind it down, then walk in.\n\nThe relationship runs both ways. A city repairs the garrison standing in it far faster than open ground does, and that garrison is what rebuilds the city\'s defence — an empty city never recovers on its own, and neither recovers while an enemy is adjacent. A captured city keeps only a third of its defence, so whether you leave someone behind to restore it is the difference between holding a place and passing through it. Only land units that can capture may stop in an enemy city; guns, trucks and ships cannot park there.</string>
+    <string name="help_air">Air power</string>
+    <string name="help_air_body">Aircraft are not units on the map. Open the Air panel, pick a mission, pay for it and tap a target: the planes take off from one of your cities or carriers, do their job and go home. A fighter strike tears into infantry, a bomber strike smashes tanks and ships and can bomb an empty city\'s walls, and an airdrop puts a fresh infantry unit on any open land hex in range. Every airfield and carrier flies once a turn, so more big cities mean more sorties. Enemy anti-air, cruisers and destroyers within two hexes of the target blunt every strike — clear the flak first, or send the planes somewhere else.</string>
     <string name="help_victory">Winning</string>
-    <string name="help_victory_body" formatted="false">Campaign missions state their objective up front — check the Goals panel any time. Finishing early earns more stars, and stars pay out medals you spend on commanders, who then serve you in every later game. Conquest has no script: pick any nation on the world map, and win by controlling 80% of its provinces. Everyone starts at peace, so the first war is yours to declare — or to survive.</string>
+    <string name="help_victory_body">Campaign missions state their objective up front — check the Goals panel any time. Finishing early earns more stars, and stars pay out medals you spend on commanders, who then serve you in every later game. Conquest has no script: pick a nation on either side of the war, and win by knocking out every nation of the other bloc. Neutral countries cannot be chosen — they have nobody to fight.</string>
 
     <!-- Units -->
     <string name="unit_infantry">Infantry</string>
@@ -192,17 +204,17 @@
     <string name="unit_rocket">Rocket Artillery</string>
     <string name="unit_rocket_desc">Longer reach and heavier punch than artillery, at a much higher price.</string>
     <string name="unit_anti_air">Anti-Air</string>
-    <string name="unit_anti_air_desc">Reaches two hexes into the sky. Enemy aircraft simply cannot operate over it.</string>
+    <string name="unit_anti_air_desc">Blunts every enemy air strike and airdrop within two hexes.</string>
     <string name="unit_supply_truck">Supply Truck</string>
     <string name="unit_supply_truck_desc">Carries a small supply bubble with it. This is how an offensive keeps moving.</string>
     <string name="unit_headquarters">Headquarters</string>
     <string name="unit_headquarters_desc" formatted="false">Grants +10% attack to friendly units within three hexes, and supplies them too.</string>
-    <string name="unit_fighter">Fighter</string>
-    <string name="unit_fighter_desc">Owns the sky. Nearly worthless against ground targets — that is the point.</string>
-    <string name="unit_bomber">Bomber</string>
-    <string name="unit_bomber_desc">Hits harder than anything on the ground, and falls to the first fighter that finds it.</string>
-    <string name="unit_air_transport">Air Transport</string>
-    <string name="unit_air_transport_desc">Lifts two foot units over mountains, water and enemy lines alike.</string>
+    <string name="mission_fighter">Fighter Strike</string>
+    <string name="mission_fighter_desc">Strafes infantry hard; barely scratches tanks and ships.</string>
+    <string name="mission_bomber">Bomber Strike</string>
+    <string name="mission_bomber_desc">Wrecks tanks and ships, or bombs an empty city\'s defences. Flies from large cities.</string>
+    <string name="mission_airdrop">Airdrop</string>
+    <string name="mission_airdrop_desc">Drops a fresh infantry unit on an open land hex in range.</string>
     <string name="unit_transport_ship">Transport Ship</string>
     <string name="unit_transport_ship_desc">Carries three land units. Defenceless — never sail one without an escort.</string>
     <string name="unit_destroyer">Destroyer</string>
@@ -214,7 +226,7 @@
     <string name="unit_submarine">Submarine</string>
     <string name="unit_submarine_desc">Invisible until something gets close or a destroyer sweeps for it. Murders transports.</string>
     <string name="unit_carrier">Carrier</string>
-    <string name="unit_carrier_desc">Carries three aircraft and keeps them supplied far from any friendly airfield.</string>
+    <string name="unit_carrier_desc">A moving airfield: flies one air mission a turn from wherever it is.</string>
 
     <!-- Commander skills -->
     <string name="skill_offensive">Offensive</string>
@@ -228,7 +240,7 @@
     <string name="skill_armour_expert">Armour Expert</string>
     <string name="skill_armour_expert_desc" formatted="false">+20% attack with armour</string>
     <string name="skill_air_expert">Air Expert</string>
-    <string name="skill_air_expert_desc" formatted="false">+20% attack with aircraft</string>
+    <string name="skill_air_expert_desc" formatted="false">+20% to air strikes within three hexes</string>
     <string name="skill_naval_expert">Naval Expert</string>
     <string name="skill_naval_expert_desc" formatted="false">+20% attack with ships</string>
     <string name="skill_artillery_expert">Gunnery Expert</string>

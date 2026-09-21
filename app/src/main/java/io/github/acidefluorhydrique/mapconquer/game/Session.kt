@@ -62,12 +62,18 @@ class Session(
     private var nextUnitId = 1
 
     /**
-     * 三層佔位表：陸、海、空各一份，值是單位 id（-1 = 空）。
+     * 兩層佔位表：陸、海各一份，值是單位 id（-1 = 空）。
      *
-     * 分層的理由是它直接對應規則：轟炸機飛過艦隊上空不會撞船，
-     * 而如果只用一層，這件事就得靠一堆特例判斷來補。
+     * 一格仍然只放得下一支部隊（見 [isTileFree]），分層只是為了讓
+     * 「浮渡的陸軍佔海層」那條規則有地方寫。
      */
-    private val occupancy = IntArray(map.tileCount * 3) { -1 }
+    private val occupancy = IntArray(map.tileCount * DOMAINS) { -1 }
+
+    /**
+     * 這回合已經起飛過的空中任務起飛點（鍵的定義見 [AirOps]）。
+     * 每個起飛點每回合只飛一次，回合開始時清空。
+     */
+    val sortieBases = HashSet<Int>()
 
     /** 目前行動國的補給覆蓋，回合開始時重算。 */
     private val suppliedTiles = BooleanArray(map.tileCount)
@@ -141,14 +147,12 @@ class Session(
         return if (id >= 0) unitsById[id] else null
     }
 
-    /** 這格上「最該被選到」的那支：陸 > 海 > 空。 */
+    /** 這格上的那一支部隊（一格只會有一支，先查陸層只是習慣）。 */
     fun primaryUnitAt(tile: Int): ArmyUnit? =
-        unitAt(tile, Domain.LAND) ?: unitAt(tile, Domain.SEA) ?: unitAt(tile, Domain.AIR)
+        unitAt(tile, Domain.LAND) ?: unitAt(tile, Domain.SEA)
 
     fun anyUnitAt(tile: Int): Boolean =
-        occupancy[tile] >= 0 ||
-            occupancy[map.tileCount + tile] >= 0 ||
-            occupancy[map.tileCount * 2 + tile] >= 0
+        occupancy[tile] >= 0 || occupancy[map.tileCount + tile] >= 0
 
     fun ownerOfTile(tile: Int): Int {
         val p = map.provinceOf[tile]
@@ -336,6 +340,7 @@ class Session(
     }
 
     private fun beginNationTurn(nation: Nation) {
+        sortieBases.clear()
         collectIncome(nation)
         computeSupply(nation.id)
         refreshUnits(nation)
@@ -517,16 +522,11 @@ class Session(
 
     fun isDisrupted(unit: ArmyUnit): Boolean = moraleOf(unit) <= ArmyUnit.MIN_MORALE
 
-    /** 飛機停在自己的機場／航艦上時算有補給。 */
+    /** 載在自己的船上時算有補給。 */
     private fun carriedByFriendlyBase(unit: ArmyUnit): Boolean {
-        if (unit.isLoaded) {
-            val transport = unitsById[unit.transportId] ?: return false
-            return transport.nationId == unit.nationId
-        }
-        if (unit.kind.domain != Domain.AIR) return false
-        val owner = ownerOfTile(unit.tile)
-        return owner >= 0 && diplomacy.isAllied(owner, unit.nationId) &&
-            map.provinceAt(unit.tile)?.hasCity == true
+        if (!unit.isLoaded) return false
+        val transport = unitsById[unit.transportId] ?: return false
+        return transport.nationId == unit.nationId
     }
 
     private fun repairRate(unit: ArmyUnit): Int {
@@ -918,6 +918,8 @@ class Session(
     }
 
     companion object {
+        private val DOMAINS = Domain.values().size
+
         const val MAX_ENTRENCHMENT = 3
 
         /** 相鄰敵軍到這個數量就算被包圍。 */
