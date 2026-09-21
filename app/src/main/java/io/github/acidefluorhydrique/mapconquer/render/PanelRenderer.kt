@@ -49,6 +49,10 @@ class PanelRenderer(private val session: Session) {
     var productionScroll: Float = 0f
     var productionMaxScroll: Float = 0f
 
+    /** 生產面板上選定的編制數。徵召時就決定，之後不能再併。 */
+    var productionSize: Int = 1
+        set(value) { field = value.coerceIn(1, ArmyUnit.MAX_SIZE) }
+
     fun draw(
         canvas: Canvas,
         buttons: ButtonLayer,
@@ -104,7 +108,7 @@ class PanelRenderer(private val session: Session) {
      * 把不可用的選項藏起來會讓城市等級這條成長線變得不可見。
      */
     private fun drawProduction(canvas: Canvas, buttons: ButtonLayer, provinceId: Int) {
-        val panel = frame(canvas, buttons, R.string.panel_production, 480f, 260f)
+        val panel = frame(canvas, buttons, R.string.panel_production, 480f, 292f)
         if (provinceId < 0 || provinceId >= session.map.provinces.size) return
         val province = session.map.provinces[provinceId]
         val nation = session.playerNation
@@ -121,7 +125,29 @@ class PanelRenderer(private val session: Session) {
             color = Colors.of(Widgets.INK_DIM)
         )
 
-        val listTop = panel.top + Ui.dp(50f)
+        // 編制選擇：一排 ×1..×4。價格與「錢夠不夠」都照選定的編制算。
+        val sizeTop = panel.top + Ui.dp(52f)
+        Widgets.leftFit(
+            canvas, Strings.get(R.string.panel_production_size), panel.left + Ui.dp(14f),
+            sizeTop + Ui.dp(16f), Ui.dp(11f), Ui.dp(90f), Colors.of(Widgets.INK_DIM)
+        )
+        val chipWidth = Ui.dp(46f)
+        val chipGap = Ui.dp(6f)
+        val chipsLeft = panel.left + Ui.dp(104f)
+        for (n in 1..ArmyUnit.MAX_SIZE) {
+            val x = chipsLeft + (n - 1) * (chipWidth + chipGap)
+            inner.set(x, sizeTop, x + chipWidth, sizeTop + Ui.dp(24f))
+            val chosen = n == productionSize
+            Widgets.button(
+                canvas, inner, "\u00D7$n",
+                if (chosen) Widgets.AMBER_TOP else Widgets.GRAY_TOP,
+                if (chosen) Widgets.AMBER_BOTTOM else Widgets.GRAY_BOTTOM,
+                selected = chosen, textSize = Ui.dp(12f)
+            )
+            buttons.add(ID_BUILD_SIZE, inner, payload = n)
+        }
+
+        val listTop = panel.top + Ui.dp(84f)
         val listBottom = panel.bottom - Ui.dp(10f)
         val rowHeight = Ui.dp(34f)
         val columns = 2
@@ -143,7 +169,7 @@ class PanelRenderer(private val session: Session) {
             val x = panel.left + Ui.dp(12f) + column * columnWidth
             inner.set(x, y + Ui.dp(2f), x + columnWidth - Ui.dp(8f), y + rowHeight - Ui.dp(2f))
 
-            val blocker = Orders.buildBlocker(session, nation.id, provinceId, kind)
+            val blocker = Orders.buildBlocker(session, nation.id, provinceId, kind, productionSize)
             val enabled = blocker == Orders.BuildBlocker.NONE
             drawProductionRow(canvas, inner, kind, blocker, enabled)
             buttons.add(ID_BUILD_KIND, inner, payload = kind.ordinal, isEnabled = enabled)
@@ -201,7 +227,7 @@ class PanelRenderer(private val session: Session) {
         )
 
         Widgets.right(
-            canvas, kind.cost.toString(), row.right - Ui.dp(8f), row.centerY() + Ui.dp(4f),
+            canvas, Orders.buildCost(kind, productionSize).toString(), row.right - Ui.dp(8f), row.centerY() + Ui.dp(4f),
             Ui.dp(12f), if (enabled) Colors.of("#F2D08A") else Colors.of("#7A6B54"), bold = true
         )
     }
@@ -520,6 +546,7 @@ class PanelRenderer(private val session: Session) {
     companion object {
         const val ID_CLOSE = "panel_close"
         const val ID_BUILD_KIND = "build_kind"
+        const val ID_BUILD_SIZE = "build_size"
         const val ID_RESEARCH = "research"
         const val ID_RESUME = "resume"
         const val ID_SAVE = "save"

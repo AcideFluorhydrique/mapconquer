@@ -125,12 +125,13 @@ class AiPlayer(private val session: Session, private val nationId: Int) {
     private fun buildOneUnit(): Boolean {
         if (nation.funds < MIN_BUILD_FUNDS) return false
         val kind = chooseUnitKind() ?: return false
+        val size = chooseFormationSize(kind)
 
         var bestProvince = -1
         var bestScore = Int.MIN_VALUE
         for (province in session.map.provinces) {
             if (session.provinceOwner[province.id] != nationId) continue
-            if (!Orders.canBuild(session, nationId, province.id, kind)) continue
+            if (!Orders.canBuild(session, nationId, province.id, kind, size)) continue
             // 靠近戰線的城市優先出兵，省下行軍的回合。
             val score = province.cityTier * 10 - distanceToNearestThreat(province.capitalTile)
             if (score > bestScore) {
@@ -139,8 +140,15 @@ class AiPlayer(private val session: Session, private val nationId: Int) {
             }
         }
         if (bestProvince < 0) return false
-        return Orders.build(session, nationId, bestProvince, kind) != null
+        return Orders.build(session, nationId, bestProvince, kind, size) != null
     }
+
+    /**
+     * 編制在徵召時就決定。花不超過手上一半的錢，讓一回合的預算還能分給
+     * 別的城市與兵種；錢少的時候退回一個編制。
+     */
+    private fun chooseFormationSize(kind: UnitKind): Int =
+        (nation.funds / 2 / kind.cost).coerceIn(1, ArmyUnit.MAX_SIZE)
 
     /**
      * 兵種選擇：先補齊「缺什麼」再談「想要什麼」。
@@ -150,13 +158,14 @@ class AiPlayer(private val session: Session, private val nationId: Int) {
      * 玩家也不會遇到「整場只碰到步兵」這種無聊的對手。
      */
     private fun chooseUnitKind(): UnitKind? {
+        // 配額照編制數算：一支四編制的步兵是四份步兵，不是一份。
         val owned = session.units.filter { it.nationId == nationId && it.isAlive }
-        val total = owned.size.coerceAtLeast(1)
-        val infantry = owned.count { it.kind.branch == TechBranch.INFANTRY }
-        val armour = owned.count { it.kind.branch == TechBranch.ARMOUR }
-        val artillery = owned.count { it.kind.branch == TechBranch.ARTILLERY }
-        val air = owned.count { it.kind.domain == Domain.AIR }
-        val logistics = owned.count { it.kind.isSupplier }
+        val total = owned.sumOf { it.size }.coerceAtLeast(1)
+        val infantry = owned.filter { it.kind.branch == TechBranch.INFANTRY }.sumOf { it.size }
+        val armour = owned.filter { it.kind.branch == TechBranch.ARMOUR }.sumOf { it.size }
+        val artillery = owned.filter { it.kind.branch == TechBranch.ARTILLERY }.sumOf { it.size }
+        val air = owned.filter { it.kind.domain == Domain.AIR }.sumOf { it.size }
+        val logistics = owned.filter { it.kind.isSupplier }.sumOf { it.size }
 
         val wants = ArrayList<UnitKind>(6)
         if (infantry * 100 / total < 40) wants.add(UnitKind.INFANTRY)

@@ -46,12 +46,13 @@ class UnitMoveRules(
         }
 
         if (!ignoreEnemies) {
-            // 用「這支部隊在那一格會佔哪一層」去查阻擋 —— 浮渡中的陸軍
-            // 跟軍艦是互相排擠的，這樣敵方艦隊才堵得住渡海的部隊。
-            val blocker = session.unitAt(to, session.layerFor(unit.kind, to))
-            if (blocker != null && blocker.nationId != unit.nationId &&
-                !session.diplomacy.isAllied(blocker.nationId, unit.nationId)
-            ) return -1
+            // 一格一支部隊，軍種不分：非友軍站著的格子一律穿不過去。
+            // 原本只查同一層，於是步兵可以從敵機底下走過、戰鬥機可以從
+            // 敵軍頭上飛過 —— 同一格裡同時有兩國的部隊，只是沒停下來而已。
+            for (domain in Domain.values()) {
+                val blocker = session.unitAt(to, domain) ?: continue
+                if (!session.diplomacy.isAllied(blocker.nationId, unit.nationId)) return -1
+            }
         }
 
         return when {
@@ -96,8 +97,15 @@ class UnitMoveRules(
         return false
     }
 
+    /**
+     * 能不能停在這格。
+     *
+     * 除了「格子要空著」之外還有一條：不能佔領的部隊不能停進別國的城市。
+     * 戰鬥機停在敵方城裡，佔領（要陸軍站上去）與轟城（要城裡沒人）兩條路
+     * 就同時被它堵死，那座城會卡在殘血永遠不易主。
+     */
     override fun canEndOn(tile: Int): Boolean =
-        session.isTileFreeFor(unit, tile) || Orders.mergeTargetAt(session, unit, tile) != null
+        session.isTileFreeFor(unit, tile) && Orders.mayStandIn(session, unit, tile)
 
     private companion object {
         /**
@@ -124,18 +132,35 @@ object Orders {
     fun computeReachable(session: Session, unit: ArmyUnit, into: MutableList<Int>) {
         into.clear()
         if (unit.movesLeft <= 0 || unit.isLoaded) return
-        session.pathfinder.explore(unit.tile, unit.movesLeft, UnitMoveRules(session, unit))
+        val rules = UnitMoveRules(session, unit)
+        session.pathfinder.explore(unit.tile, unit.movesLeft, rules)
         for (tile in session.pathfinder.reached) {
             if (tile == unit.tile) continue
-            if (!session.isTileFreeFor(unit, tile) && mergeTargetAt(session, unit, tile) == null) continue
+            if (!rules.canEndOn(tile)) continue
             into.add(tile)
         }
     }
 
     fun canMoveTo(session: Session, unit: ArmyUnit, target: Int): Boolean {
         if (unit.movesLeft <= 0 || unit.isLoaded) return false
-        if (!session.isTileFreeFor(unit, target) && mergeTargetAt(session, unit, target) == null) return false
+        if (!UnitMoveRules(session, unit).canEndOn(target)) return false
         return session.pathfinder.origin == unit.tile && session.pathfinder.isReachable(target)
+    }
+
+    /**
+     * [unit] 能不能站在 [tile] 這座城裡（不是城市格一律可以）。
+     *
+     * 自己與盟友的城隨便進；敵方與無主的城只有能佔領的部隊進得去 ——
+     * 進去就是圍攻。沒在打仗的第三國的城誰都不能進，那等於佔了別人的城
+     * 卻既不打也不走。
+     */
+    fun mayStandIn(session: Session, unit: ArmyUnit, tile: Int): Boolean {
+        val pid = session.cityProvinceAt(tile)
+        if (pid < 0) return true
+        val owner = session.provinceOwner[pid]
+        if (owner >= 0 && session.diplomacy.isAllied(owner, unit.nationId)) return true
+        if (owner >= 0 && !session.isHostile(owner, unit.nationId)) return false
+        return unit.kind.canCapture && unit.kind.domain == Domain.LAND
     }
 
     /**
@@ -148,56 +173,12 @@ object Orders {
         if (path.size < 2) return unit.tile
 
         val spent = session.pathfinder.costTo(target)
-        val partner = mergeTargetAt(session, unit, target)
-        if (partner != null) {
-            merge(session, unit, partner, (unit.movesLeft - spent).coerceAtLeast(0))
-            session.refreshOutcome()
-            return target
-        }
         session.relocate(unit, target)
         unit.movesLeft = (unit.movesLeft - spent).coerceAtLeast(0)
         unit.entrenchment = 0
 
         onArrived(session, unit)
         return target
-    }
-
-    /**
-     * 站在 [tile] 上、能跟 [unit] 併編的友軍；沒有就回 null。
-     *
-     * 同國、同兵種、合計不超過四個編制，而且兩邊都沒有載人 —— 運輸艦帶著
-     * 乘客併編的話，乘客算誰的會變成一整串例外，不值得。
-     */
-    fun mergeTargetAt(session: Session, unit: ArmyUnit, tile: Int): ArmyUnit? {
-        if (tile == unit.tile || unit.isLoaded || unit.cargo.isNotEmpty()) return null
-        val other = session.primaryUnitAt(tile) ?: return null
-        if (other === unit || other.nationId != unit.nationId || other.kind != unit.kind) return null
-        if (other.isLoaded || other.cargo.isNotEmpty()) return null
-        if (other.size + unit.size > ArmyUnit.MAX_SIZE) return null
-        return other
-    }
-
-    /**
-     * 併編。留下的是原本站在那一格的部隊，移動過來的那一支併進去。
-     *
-     * 血量照「實際兵力」合併再換算回百分比，所以兩支滿血的一編制併成一支
-     * 兩編制之後是 100% —— 帳面上沒掉血，但總兵力從 200 變成 160，那就是
-     * 併編的代價。等級與補給照編制數加權，移動點取兩者較少的一方。
-     */
-    private fun merge(session: Session, mover: ArmyUnit, target: ArmyUnit, moverMovesLeft: Int) {
-        val sizeT = target.size
-        val sizeM = mover.size
-        val merged = sizeT + sizeM
-        val strength = target.hp * ArmyUnit.hpPercent(sizeT) + mover.hp * ArmyUnit.hpPercent(sizeM)
-        target.hp = (strength / ArmyUnit.hpPercent(merged)).coerceIn(1, ArmyUnit.MAX_HP)
-        target.level = ((target.level * sizeT + mover.level * sizeM) / merged).coerceIn(1, ArmyUnit.MAX_LEVEL)
-        target.supply = (target.supply * sizeT + mover.supply * sizeM) / merged
-        target.rumour = maxOf(target.rumour, mover.rumour)
-        target.movesLeft = minOf(target.movesLeft, moverMovesLeft)
-        target.hasAttacked = target.hasAttacked || mover.hasAttacked
-        if (!target.hasCommander && mover.hasCommander) target.commanderId = mover.commanderId
-        target.size = merged
-        session.removeMerged(mover)
     }
 
     /** 抵達之後的連鎖效果：佔領、視野、勝負重判。 */
@@ -400,7 +381,8 @@ object Orders {
         val defenderCityBonus = if (
             defenderProvince != null &&
             defenderProvince.capitalTile == defender.tile &&
-            defender.kind.domain == Domain.LAND
+            defender.kind.domain == Domain.LAND &&
+            session.holdsCity(defender, defenderProvince.id)
         ) defenderProvince.cityDefenceBonus else 0
 
         // 城防已經被打光的城市不再替駐軍擋傷害 —— 那才是「城破了」的意思。
@@ -527,6 +509,7 @@ object Orders {
         val transport = session.unitById(passenger.transportId) ?: return false
         if (session.map.distance(transport.tile, target) > 1) return false
         if (!session.isTileFreeFor(passenger, target)) return false
+        if (!mayStandIn(session, passenger, target)) return false
         val terrain = session.map.terrainAt(target)
         return when (passenger.kind.domain) {
             Domain.LAND -> terrain.isLand && (!passenger.kind.vehicle || terrain.vehiclePassable)
@@ -562,18 +545,26 @@ object Orders {
     // ------------------------------------------------------------------
 
     /** 這個省能不能造這種兵。 */
-    fun canBuild(session: Session, nationId: Int, provinceId: Int, kind: UnitKind): Boolean =
-        buildBlocker(session, nationId, provinceId, kind) == BuildBlocker.NONE
+    fun canBuild(session: Session, nationId: Int, provinceId: Int, kind: UnitKind, size: Int = 1): Boolean =
+        buildBlocker(session, nationId, provinceId, kind, size) == BuildBlocker.NONE
+
+    /**
+     * 造一支 [size] 個編制的部隊要多少錢。
+     *
+     * 編制在徵召的時候就決定，照編制數等比付錢 —— 沒有打折，也沒有事後併編。
+     * 大編制的好處只有「集中在一格」，那在一格一支部隊的規則下已經夠值錢了。
+     */
+    fun buildCost(kind: UnitKind, size: Int): Int = kind.cost * size.coerceIn(1, ArmyUnit.MAX_SIZE)
 
     enum class BuildBlocker { NONE, NOT_OWNED, NO_CITY, LOW_INDUSTRY, NOT_COASTAL, NO_ROOM, NO_FUNDS }
 
-    fun buildBlocker(session: Session, nationId: Int, provinceId: Int, kind: UnitKind): BuildBlocker {
+    fun buildBlocker(session: Session, nationId: Int, provinceId: Int, kind: UnitKind, size: Int = 1): BuildBlocker {
         if (provinceId !in session.provinceOwner.indices) return BuildBlocker.NOT_OWNED
         if (session.provinceOwner[provinceId] != nationId) return BuildBlocker.NOT_OWNED
         val province = session.map.provinces[provinceId]
         if (!province.hasCity) return BuildBlocker.NO_CITY
         if (province.industry < kind.industry) return BuildBlocker.LOW_INDUSTRY
-        if (session.nations[nationId].funds < kind.cost) return BuildBlocker.NO_FUNDS
+        if (session.nations[nationId].funds < buildCost(kind, size)) return BuildBlocker.NO_FUNDS
         if (kind.isNaval) {
             if (!province.coastal) return BuildBlocker.NOT_COASTAL
             if (navalSpawnTile(session, province.capitalTile) < 0) return BuildBlocker.NO_ROOM
@@ -594,14 +585,15 @@ object Orders {
         return -1
     }
 
-    fun build(session: Session, nationId: Int, provinceId: Int, kind: UnitKind): ArmyUnit? {
-        if (!canBuild(session, nationId, provinceId, kind)) return null
+    fun build(session: Session, nationId: Int, provinceId: Int, kind: UnitKind, size: Int = 1): ArmyUnit? {
+        if (!canBuild(session, nationId, provinceId, kind, size)) return null
         val province = session.map.provinces[provinceId]
         val tile = if (kind.isNaval) navalSpawnTile(session, province.capitalTile) else province.capitalTile
         if (tile < 0) return null
         val nation = session.nations[nationId]
         val unit = session.spawnUnit(kind, nationId, tile) ?: return null
-        nation.funds -= kind.cost
+        unit.size = size.coerceIn(1, ArmyUnit.MAX_SIZE)
+        nation.funds -= buildCost(kind, unit.size)
         session.pushEvent("event_unit_built", listOf(kind.key, province.nameKey), tile, nationId)
         return unit
     }
@@ -623,7 +615,7 @@ object Orders {
     /** 花錢就地補血。前線修不滿，只能靠城市。 */
     fun repairCost(unit: ArmyUnit): Int {
         val missing = ArmyUnit.MAX_HP - unit.hp
-        return (unit.kind.cost * missing) / 180
+        return (buildCost(unit.kind, unit.size) * missing) / 180
     }
 
     fun canRepair(session: Session, unit: ArmyUnit): Boolean {

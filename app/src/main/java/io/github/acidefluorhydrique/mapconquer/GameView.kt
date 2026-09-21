@@ -491,6 +491,7 @@ class GameView(context: Context) : SurfaceView(context), SurfaceHolder.Callback 
 
             PanelRenderer.ID_CLOSE, PanelRenderer.ID_RESUME -> panel = Panel.NONE
             PanelRenderer.ID_BUILD_KIND -> buildUnit(payload)
+            PanelRenderer.ID_BUILD_SIZE -> panelRenderer?.productionSize = payload
             PanelRenderer.ID_RESEARCH -> researchBranch(payload)
             PanelRenderer.ID_SAVE -> {
                 autoSave()
@@ -609,22 +610,6 @@ class GameView(context: Context) : SurfaceView(context), SurfaceHolder.Callback 
         val moved = Orders.move(active, unit, target, pathBuffer)
         if (moved == from) {
             Audio.play(Sfx.DENIED)
-            return
-        }
-        // 併編：移動過來的那一支已經不在場上，選取換成留下的那一支。不能撤回 ——
-        // 兩支合成一支之後，沒有辦法拆回原本各自的血量與等級。
-        if (!unit.isAlive) {
-            undoRecord = null
-            Audio.play(Sfx.BUILD)
-            val merged = active.primaryUnitAt(moved)
-            overlay?.let {
-                it.selectedUnit = merged
-                it.selectedTile = moved
-                refreshHighlights(active, it)
-            }
-            if (merged != null) {
-                toast(Strings.format(R.string.toast_merged, Strings.byName(merged.kind.key), merged.size))
-            }
             return
         }
         val captured = province >= 0 && active.provinceOwner[province] != ownerBefore
@@ -757,13 +742,14 @@ class GameView(context: Context) : SurfaceView(context), SurfaceHolder.Callback 
         if (tile < 0) return
         val provinceId = active.map.provinceOf[tile]
         if (provinceId < 0) return
-        val unit = Orders.build(active, active.playerNationId, provinceId, kind)
+        val size = panelRenderer?.productionSize ?: 1
+        val unit = Orders.build(active, active.playerNationId, provinceId, kind, size)
         if (unit == null) {
             Audio.play(Sfx.DENIED)
             return
         }
         Audio.play(Sfx.BUILD)
-        toast(Strings.format(R.string.toast_built, Strings.byName(kind.key)))
+        toast(Strings.format(R.string.toast_built, Strings.byName(kind.key) + if (unit.size > 1) " \u00D7${unit.size}" else ""))
     }
 
     private fun researchBranch(ordinal: Int) {

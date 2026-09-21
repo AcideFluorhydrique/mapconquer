@@ -253,20 +253,6 @@ class Session(
         if (occupancy[slot] == unitId) occupancy[slot] = -1
     }
 
-    /**
-     * 併編時把移動過來的那一支拿下場。
-     *
-     * 跟 [destroyUnit] 不同的只有一件事：不記成損失。它沒有陣亡，是併進別的
-     * 部隊了 —— 結算畫面上的「損失部隊數」不該因為玩家整編而增加。
-     */
-    internal fun removeMerged(unit: ArmyUnit) {
-        detachFromTransport(unit)
-        if (!unit.isLoaded) clearOccupancy(unit.tile, layerOf(unit), unit.id)
-        unit.hp = 0
-        units.remove(unit)
-        unitsById.remove(unit.id)
-    }
-
     internal fun relocate(unit: ArmyUnit, toTile: Int) {
         // layerOf 讀的是 unit.tile，所以清舊位置要在改座標之前 —— 陸軍
         // 從陸地走到海上時，前後佔的是不同層。
@@ -380,7 +366,7 @@ class Session(
 
         var upkeep = 0
         for (unit in units) {
-            if (unit.nationId == nation.id && unit.isAlive) upkeep += unit.kind.upkeep
+            if (unit.nationId == nation.id && unit.isAlive) upkeep += unit.kind.upkeep * unit.size
         }
 
         nation.lastIncome = income
@@ -531,7 +517,6 @@ class Session(
 
     fun isDisrupted(unit: ArmyUnit): Boolean = moraleOf(unit) <= ArmyUnit.MIN_MORALE
 
-    /** 飛機停在自己的機場／航艦上時算有補給。 */
     /** 飛機停在自己的機場／航艦上時算有補給。 */
     private fun carriedByFriendlyBase(unit: ArmyUnit): Boolean {
         if (unit.isLoaded) {
@@ -742,7 +727,19 @@ class Session(
     fun cityShields(unit: ArmyUnit): Boolean {
         if (unit.kind.domain != Domain.LAND) return false
         val pid = cityProvinceAt(unit.tile)
-        return pid >= 0 && cityHp[pid] > 0
+        return pid >= 0 && cityHp[pid] > 0 && holdsCity(unit, pid)
+    }
+
+    /**
+     * 這座城是不是站在裡面的這支部隊自己（或盟友）的。
+     *
+     * 城牆只護著守軍。圍城的部隊站在敵城格上，原本也被算成「在城牆後面」：
+     * 打它的傷害一半扣在城防上，守方等於在拆自己的城，拆到零之後圍攻又
+     * 因為「城防已經是零」而跳過，那座城就再也不會易主。
+     */
+    fun holdsCity(unit: ArmyUnit, provinceId: Int): Boolean {
+        val owner = provinceOwner.getOrElse(provinceId) { -1 }
+        return owner >= 0 && diplomacy.isAllied(owner, unit.nationId)
     }
 
     /** 對城市造成傷害，回傳實際扣掉的量。 */
@@ -794,15 +791,16 @@ class Session(
      */
     private fun pressCities(nationId: Int) {
         for (province in map.provinces) {
-            if (!province.hasCity || cityHp[province.id] <= 0) continue
+            if (!province.hasCity) continue
             val owner = provinceOwner[province.id]
             if (owner == nationId) continue
             if (owner >= 0 && !isHostile(owner, nationId)) continue
             val besieger = unitAt(province.capitalTile, Domain.LAND) ?: continue
-            if (besieger.nationId != nationId || !besieger.isAlive) continue
-            if (damageCity(province.id, SIEGE_PER_TURN) > 0 && cityHp[province.id] <= 0) {
-                captureProvince(province.id, nationId)
-            }
+            if (besieger.nationId != nationId || !besieger.isAlive || !besieger.kind.canCapture) continue
+            // 城防已經是零的也要收：部隊可能是在城防還在時走進來，之後城防才
+            // 被別的方式打光。原本這裡先濾掉零城防，那種城就永遠卡在原主手上。
+            damageCity(province.id, SIEGE_PER_TURN)
+            if (cityHp[province.id] <= 0) captureProvince(province.id, nationId)
         }
     }
 

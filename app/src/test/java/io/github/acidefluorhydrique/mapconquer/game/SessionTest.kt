@@ -256,40 +256,87 @@ class SessionTest {
     }
 
     @Test
-    fun `units of the same kind merge into one formation`() {
-        val s = session(
-            listOf(
-                ScenarioUnit("AAA", 2, 1, "INFANTRY", 1, ""),
-                ScenarioUnit("AAA", 3, 1, "INFANTRY", 1, "")
-            )
-        )
-        val mover = s.units.first { it.tile == s.map.index(2, 1) }
-        val stay = s.units.first { it.tile == s.map.index(3, 1) }
-        val lostBefore = s.nations[0].unitsLost
+    fun `a formation is chosen when it is built, and units never merge afterwards`() {
+        val s = session(listOf(ScenarioUnit("AAA", 2, 1, "INFANTRY", 1, "")))
+        val nation = s.nations[0]
+        nation.funds = 10_000
 
-        Orders.computeReachable(s, mover, ArrayList())
-        assertEquals(stay.tile, Orders.move(s, mover, stay.tile, ArrayList()))
-        assertFalse("移過來的那一支併進去了", mover.isAlive)
-        assertEquals(1, s.unitsOf(0).size)
-        assertEquals(2, stay.size)
-        assertEquals("兩支滿血併起來是滿血的兩編制", ArmyUnit.MAX_HP, stay.hp)
-        assertEquals("併編不算陣亡", lostBefore, s.nations[0].unitsLost)
+        val built = Orders.build(s, 0, 0, UnitKind.INFANTRY, size = 3)
+        assertNotNull(built)
+        assertEquals(3, built!!.size)
+        assertEquals("照編制數付錢", 10_000 - UnitKind.INFANTRY.cost * 3, nation.funds)
+
+        nation.funds = UnitKind.INFANTRY.cost * 2
+        s.relocate(built, s.map.index(1, 3))
+        assertEquals(
+            "錢不夠四個編制",
+            Orders.BuildBlocker.NO_FUNDS,
+            Orders.buildBlocker(s, 0, 0, UnitKind.INFANTRY, 4)
+        )
+
+        // 同兵種的友軍站著的格子，走不進去 —— 不會再變成併編。
+        val single = s.units.first { it.size == 1 }
+        val reachable = ArrayList<Int>()
+        Orders.computeReachable(s, single, reachable)
+        assertFalse(reachable.contains(built.tile))
+        assertEquals(single.tile, Orders.move(s, single, built.tile, ArrayList()))
+        assertEquals(2, s.unitsOf(0).size)
     }
 
     @Test
-    fun `different kinds never merge, and no formation grows past four`() {
+    fun `a bigger formation pays more upkeep`() {
+        val s = session(listOf(ScenarioUnit("AAA", 2, 1, "INFANTRY", 1, "", size = 4)))
+        repeat(s.nations.size) { s.advanceToNextNation() }
+        assertEquals(UnitKind.INFANTRY.upkeep * 4, s.nations[0].lastUpkeep)
+    }
+
+    @Test
+    fun `an enemy on any layer blocks the way`() {
         val s = session(
             listOf(
-                ScenarioUnit("AAA", 2, 1, "INFANTRY", 1, ""),
-                ScenarioUnit("AAA", 3, 1, "ARTILLERY", 1, ""),
-                ScenarioUnit("AAA", 2, 2, "INFANTRY", 1, "", size = 4)
+                ScenarioUnit("AAA", 2, 2, "INFANTRY", 1, ""),
+                ScenarioUnit("BBB", 3, 2, "FIGHTER", 1, "")
             )
         )
-        val single = s.units.first { it.kind == UnitKind.INFANTRY && it.size == 1 }
-        val gun = s.units.first { it.kind == UnitKind.ARTILLERY }
-        val full = s.units.first { it.size == 4 }
-        assertNull("不同兵種不併", Orders.mergeTargetAt(s, single, gun.tile))
-        assertNull("滿編不能再塞", Orders.mergeTargetAt(s, single, full.tile))
+        val infantry = s.units.first { it.nationId == 0 }
+        val fighter = s.units.first { it.nationId == 1 }
+        assertEquals(
+            "步兵不能從敵機底下穿過",
+            -1, UnitMoveRules(s, infantry).enterCost(infantry.tile, fighter.tile)
+        )
+        assertEquals(
+            "敵機也不能從步兵頭上飛過",
+            -1, UnitMoveRules(s, fighter).enterCost(fighter.tile, infantry.tile)
+        )
+    }
+
+    @Test
+    fun `aircraft cannot park in an enemy city`() {
+        val s = session(listOf(ScenarioUnit("AAA", 4, 2, "FIGHTER", 1, "")))
+        val fighter = s.units.first()
+        val enemyCapital = s.map.provinces[1].capitalTile
+        val reachable = ArrayList<Int>()
+        Orders.computeReachable(s, fighter, reachable)
+        assertTrue("旁邊的格子要到得了", reachable.contains(s.map.index(5, 1)))
+        assertFalse("戰鬥機不該停得進敵城", reachable.contains(enemyCapital))
+    }
+
+    @Test
+    fun `a besieger is not shielded by the walls it is besieging`() {
+        val s = session(
+            listOf(
+                ScenarioUnit("AAA", 6, 1, "INFANTRY", 1, ""),
+                ScenarioUnit("BBB", 6, 2, "INFANTRY", 1, "")
+            )
+        )
+        val besieger = s.units.first { it.nationId == 0 }
+        assertEquals(s.map.provinces[1].capitalTile, besieger.tile)
+        assertFalse("敵城的城牆不護圍城的部隊", s.cityShields(besieger))
+
+        // 城防在圍城期間被別的方式打光，下一個己方回合也要收下。
+        s.cityHp[1] = 0
+        repeat(s.nations.size) { s.advanceToNextNation() }
+        assertEquals(0, s.provinceOwner[1])
     }
 
     @Test
@@ -402,6 +449,7 @@ class SessionTest {
         Orders.computeReachable(s, gun, ArrayList())
         Orders.move(s, gun, s.map.provinces[1].capitalTile, ArrayList())
         assertEquals("火炮不該佔得下省份", 1, s.provinceOwner[1])
+        assertTrue("火炮也不該停得進敵城", gun.tile != s.map.provinces[1].capitalTile)
     }
 
     @Test
