@@ -76,7 +76,6 @@ UI = {
     "hud_undo": ("Undo", "撤回", "撤回"),
     "hud_declare_war": ("Declare war", "宣戰", "宣战"),
     "hud_confirm_war": ("Confirm", "確認宣戰", "确认宣战"),
-    "toast_merged": ("%1$s merged into a formation of %2$d", "%1$s 併編為 %2$d 個編制", "%1$s 并编为 %2$d 个编制"),
     "toast_war_armed": ("Tap again to declare war on %1$s", "再按一次，對 %1$s 宣戰", "再按一次，对 %1$s 宣战"),
     "hud_toggle_grid": ("Grid", "格線", "格线"),
     "hud_toggle_supply": ("Supply", "補給", "补给"),
@@ -92,6 +91,7 @@ UI = {
 
     # 面板
     "panel_production": ("Production", "生產", "生产"),
+    "panel_production_size": ("Formation", "編制", "编制"),
     "panel_production_subtitle": ("%1$s · industry %2$d · funds %3$d",
                                   "%1$s · 工業 %2$d · 資金 %3$d",
                                   "%1$s · 工业 %2$d · 资金 %3$d"),
@@ -288,17 +288,20 @@ UI = {
         "打开「补给」图层，就看得到自己的后勤到底伸得多远。"),
     "help_formations": ("Formations", "編制", "编制"),
     "help_formations_body": (
-        "Move a unit onto another of the same kind to merge them, up to four formations in one hex. A bigger "
-        "formation hits harder and loses a smaller share of its strength to each blow, but it is never worth "
-        "as much as the separate units it was made from: two formations of one will out-fight one formation of "
-        "two. Merge when you need weight in a single hex — a narrow front, or a target one unit cannot move — "
-        "and keep units apart when you need to cover ground. A merge cannot be undone.",
-        "把部隊移到同兵種的友軍身上就會併編，一格最多四個編制。編制越大打得越重，每次挨打掉的比例也越少，"
-        "但永遠比不上拆開的那幾支：兩支一編制的部隊，打得贏一支兩編制的。需要在一格裡集中重量時才併 —— "
-        "守窄正面，或是單支部隊打不動的目標；要佔地盤就分開。併編無法撤回。",
-        "把部队移到同兵种的友军身上就会并编，一格最多四个编制。编制越大打得越重，每次挨打掉的比例也越少，"
-        "但永远比不上拆开的那几支：两支一编制的部队，打得赢一支两编制的。需要在一格里集中重量时才并 —— "
-        "守窄正面，或是单支部队打不动的目标；要占地盘就分开。并编无法撤回。"),
+        "A formation is chosen when you build: pick ×1 to ×4 in the production panel and pay for each one. "
+        "Units cannot be merged afterwards. A bigger formation hits harder and loses a smaller share of its "
+        "strength to each blow, but it is never worth as much as the same number of separate units: two "
+        "formations of one will out-fight one formation of two. Build big when you need weight in a single "
+        "hex — a narrow front, or a target one unit cannot move — and build small when you need to cover "
+        "ground. Upkeep and repairs scale with the size.",
+        "編制在造兵時就決定：在生產面板選 ×1 到 ×4，照編制數付錢，造出來之後不能再併。"
+        "編制越大打得越重，每次挨打掉的比例也越少，但永遠比不上同樣數量拆開的部隊：兩支一編制的部隊，"
+        "打得贏一支兩編制的。需要在一格裡集中重量時才造大編制 —— 守窄正面，或是單支部隊打不動的目標；"
+        "要佔地盤就造小的。維持費與整補費都照編制數算。",
+        "编制在造兵时就决定：在生产面板选 ×1 到 ×4，按编制数付钱，造出来之后不能再并。"
+        "编制越大打得越重，每次挨打掉的比例也越少，但永远比不上同样数量拆开的部队：两支一编制的部队，"
+        "打得赢一支两编制的。需要在一格里集中重量时才造大编制 —— 守窄正面，或是单支部队打不动的目标；"
+        "要占地盘就造小的。维持费与整补费都照编制数算。"),
     "help_cities": ("Cities and sieges", "城市與攻城", "城市与攻城"),
     "help_cities_body": (
         "A city has defence points as well as income. While they stand, a unit inside the city takes only half "
@@ -309,19 +312,22 @@ UI = {
         "does, and that garrison is what rebuilds the city's defence — an empty city never recovers on its own, "
         "and neither recovers while an enemy is adjacent. A captured city keeps only a third of its defence, so "
         "whether you leave someone behind to restore it is the difference between holding a place and passing "
-        "through it.",
+        "through it. Only land units that can capture may stop in an enemy city; aircraft, guns and trucks "
+        "cannot park there.",
         "城市除了收入之外還有城防。城防還在的時候，城裡的部隊只吃一半傷害，城市再替它多擋一層，"
         "所以攻下一座有守軍的首都，代價是野戰的好幾倍。有城的省份在城防歸零之前不會易主："
         "遠遠轟掉它，或是站上去慢慢磨，然後走進去。\\n\\n"
         "這個關係是雙向的。城市替駐軍回血的速度遠高於野外，而城防也正是靠那支駐軍補回來的 —— "
         "空城永遠不會自己長回來，而且只要旁邊有敵人，兩邊都停。打下來的城市只剩三分之一的城防，"
-        "所以要不要留一支部隊把它補起來，就是「佔領」與「路過」的差別。",
+        "所以要不要留一支部隊把它補起來，就是「佔領」與「路過」的差別。"
+        "只有能佔領的陸軍可以停進敵方城市；飛機、火砲與補給車都不行。",
         "城市除了收入之外还有城防。城防还在的时候，城里的部队只吃一半伤害，城市再替它多挡一层，"
         "所以攻下一座有守军的首都，代价是野战的好几倍。有城的省份在城防归零之前不会易主："
         "远远轰掉它，或是站上去慢慢磨，然后走进去。\\n\\n"
         "这个关系是双向的。城市替驻军回血的速度远高于野外，而城防也正是靠那支驻军补回来的 —— "
         "空城永远不会自己长回来，而且只要旁边有敌人，两边都停。打下来的城市只剩三分之一的城防，"
-        "所以要不要留一支部队把它补起来，就是「占领」与「路过」的差别。"),
+        "所以要不要留一支部队把它补起来，就是「占领」与「路过」的差别。"
+        "只有能占领的陆军可以停进敌方城市；飞机、火炮与补给车都不行。"),
     "help_victory": ("Winning", "勝利條件", "胜利条件"),
     "help_victory_body": (
         "Campaign missions state their objective up front — check the Goals panel any time. Finishing early earns more stars, "
