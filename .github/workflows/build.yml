@@ -6,6 +6,8 @@ name: Build
 on:
   push:
     branches: [ main ]
+    # 推 v* tag 會多跑下面的 release job，把簽好章的 APK 放進 GitHub Release。
+    tags: [ 'v*' ]
   pull_request:
   workflow_dispatch:
 
@@ -94,6 +96,11 @@ jobs:
           RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
         run: |
           if [ -z "$RELEASE_KEYSTORE" ]; then
+            # 發行版本不能沒有簽章：推 tag 時缺 secret 就直接失敗。
+            if [[ "$GITHUB_REF" == refs/tags/* ]]; then
+              echo "::error::RELEASE_KEYSTORE secret 沒有設定，無法簽章發行版本。"
+              exit 1
+            fi
             echo "::warning::RELEASE_KEYSTORE secret 沒有設定，只產出未簽章的 release APK。"
             exit 0
           fi
@@ -178,3 +185,64 @@ jobs:
             echo "請在本機執行 python3 tools/genworld.py && python3 tools/genstrings.py 之後一起 commit。"
             exit 1
           fi
+
+  # 推 v<versionName> tag 時發行：前面三個 job 都通過才會跑到這裡，
+  # 所以發出去的 APK 一定通過了測試、產生檔檢查與可重現建置檢查。
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [ build, reproducible, generated-assets ]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v5
+
+      # 版本號寫在原始碼裡（F-Droid 從原始碼讀它），tag 只是指向那個 commit。
+      # 兩者不一致代表忘了改 versionName，或 tag 打錯了 commit。
+      - name: Check the tag against the version in the source
+        id: version
+        run: |
+          name=$(sed -n 's/^ *versionName = "\(.*\)"$/\1/p' app/build.gradle.kts)
+          code=$(sed -n 's/^ *versionCode = \([0-9]*\)$/\1/p' app/build.gradle.kts)
+          if [ "$GITHUB_REF_NAME" != "v$name" ]; then
+            echo "::error::tag $GITHUB_REF_NAME 跟 app/build.gradle.kts 的 versionName $name 不一致。"
+            exit 1
+          fi
+          changelog="fastlane/metadata/android/en-US/changelogs/$code.txt"
+          if [ ! -f "$changelog" ]; then
+            echo "::error::找不到 versionCode $code 的更新說明 $changelog。"
+            exit 1
+          fi
+          echo "name=$name" >> "$GITHUB_OUTPUT"
+          echo "code=$code" >> "$GITHUB_OUTPUT"
+
+      - name: Download the signed APK
+        uses: actions/download-artifact@v5
+        with:
+          name: mapconquer-release
+          path: dist
+
+      - name: Create the GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NAME: ${{ steps.version.outputs.name }}
+          CODE: ${{ steps.version.outputs.code }}
+        run: |
+          apk="dist/mapconquer-$NAME.apk"
+          mv dist/mapconquer-release.apk "$apk"
+          {
+            cat "fastlane/metadata/android/en-US/changelogs/$CODE.txt"
+            for lang in zh-TW zh-CN; do
+              file="fastlane/metadata/android/$lang/changelogs/$CODE.txt"
+              if [ -f "$file" ]; then echo; echo "---"; echo; cat "$file"; fi
+            done
+            echo
+            echo "---"
+            echo
+            echo "SHA-256 of \`mapconquer-$NAME.apk\`: \`$(sha256sum "$apk" | cut -d' ' -f1)\`"
+          } > notes.md
+          gh release create "$GITHUB_REF_NAME" "$apk" \
+            --title "MapConquer $NAME" \
+            --notes-file notes.md \
+            --verify-tag
