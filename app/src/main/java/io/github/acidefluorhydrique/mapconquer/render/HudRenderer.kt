@@ -65,8 +65,8 @@ class HudRenderer(private val session: Session) {
         // 國旗 + 國色塊：emoji 認國家，色塊對應地圖上的領土色，兩者互補。
         var x = pad
         if (nation.flag.isNotEmpty()) {
-            Widgets.left(canvas, nation.flag, x, h * 0.68f, Ui.dp(15f), Colors.of(Widgets.INK))
-            x += Widgets.measure(nation.flag, Ui.dp(15f)) + Ui.dp(5f)
+            FlagArt.left(canvas, nation.flag, x, h * 0.68f, Ui.dp(15f), Colors.of(Widgets.INK))
+            x += FlagArt.measure(nation.flag, Ui.dp(15f)) + Ui.dp(5f)
         }
         rect.set(x, h * 0.28f, x + Ui.dp(5f), h * 0.72f)
         Widgets.fill(canvas, rect, Palette.nationColour(session, nation.id), Ui.dp(2f))
@@ -225,13 +225,20 @@ class HudRenderer(private val session: Session) {
 
         if (province != null) {
             val owner = session.provinceOwner[province.id]
+            // 國旗與國名分開畫：自製的國旗（蘇聯、東德……）不是文字，塞不進字串裡。
+            var nameX = x
             val ownerName = if (owner >= 0) {
                 val n = session.nations[owner]
-                (if (n.flag.isEmpty()) "" else n.flag + " ") + Strings.byName(n.nameKey)
+                if (n.flag.isNotEmpty()) {
+                    FlagArt.left(canvas, n.flag, nameX, top + Ui.dp(45f), Ui.dp(10.5f))
+                    nameX += FlagArt.measure(n.flag, Ui.dp(10.5f)) + Ui.dp(3f)
+                }
+                Strings.byName(n.nameKey)
             } else {
                 Strings.get(R.string.hud_neutral)
             }
-            Widgets.leftFit(canvas, ownerName, x, top + Ui.dp(45f), Ui.dp(10.5f), Ui.dp(130f),
+            Widgets.leftFit(canvas, ownerName, nameX, top + Ui.dp(45f), Ui.dp(10.5f),
+                Ui.dp(130f) - (nameX - x),
                 if (owner >= 0) Palette.nationColour(session, owner) else dim)
 
             // 城防：玩家得看得到還要磨幾回合，不然「打不下來」會像是壞掉。

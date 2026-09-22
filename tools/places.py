@@ -648,7 +648,7 @@ EXTRA_NATIONS = {
     # 基準壓到 1100：省份多會被資金公式放大（十五個省乘 1.75），照 2400 算
     # 出來是全球最有錢的國家。1939 年的中華民國正在打一場守勢戰爭，不是首富。
     "ROC":       ("Republic of China", "中華民國", "中华民国", "#B4454C", "BALANCED", 1100),
-    # 東德沒有 emoji 國旗可用，旗幟欄留空。
+    # 東德的國旗由 flag_for 依年份決定。
     "DDR":       ("East Germany", "東德", "东德", "#8C5A5A", "BALANCED", 700),
 }
 
@@ -773,3 +773,29 @@ FLAGS = {
     "RED": "🔴",
     "GRN": "🟢",
 }
+
+
+# 沒有 emoji 可用的國旗。以 @ 開頭的代號由遊戲端自己畫
+# （render/FlagArt.kt），其餘照舊交給系統的 emoji 字型。
+FLAG_SOVIET = "@su"
+FLAG_REICH = "@reich"
+FLAG_GDR = "@gdr"
+
+
+def flag_for(code, year):
+    """
+    某國在某一年該掛的國旗。
+
+    - 蘇聯（1922–1991）：紅底金色鐮刀錘子，不是俄羅斯的白藍紅。
+    - 納粹德國（1935–1945）：史實是卐字旗。這裡刻意改用德軍的鐵十字 ——
+      納粹標誌在德國與奧地利受法律限制，這是維護者的決定，不是史實。
+    - 東德：1949–1959 年的國旗跟西德一模一樣，就是黑紅金三色旗；1959 年起
+      中間才加上錘子、圓規與麥穗環。
+    """
+    if code == "RUS" and 1922 <= year < 1992:
+        return FLAG_SOVIET
+    if code == "DEU" and 1935 <= year < 1946:
+        return FLAG_REICH
+    if code == "DDR":
+        return FLAG_GDR if year >= 1959 else FLAGS["DEU"]
+    return FLAGS.get(code, "")

@@ -89,6 +89,22 @@ class ScenarioAssetTest {
      * 反過來驗：同陣營之間不該有任何 WAR，不同陣營之間每一對都要有。
      * 手寫關係表最典型的漏就是「對法國宣戰了但忘了對比利時宣戰」。
      */
+    /**
+     * 以 @ 開頭的國旗是遊戲自己畫的（render/FlagArt.kt），只認得這幾個代號。
+     * 產生器打錯一個字，那一國就會默默變成沒有國旗 —— 在這裡攔下來。
+     */
+    @Test
+    fun `every drawn flag is one the game knows how to draw`() {
+        val drawn = setOf("@su", "@reich", "@gdr")
+        for (id in TestAssets.scenarioIds()) {
+            for (nation in TestAssets.scenario(id).nations) {
+                if (nation.flag.startsWith("@")) {
+                    assertTrue("$id/${nation.code}: 不認得的國旗 ${nation.flag}", nation.flag in drawn)
+                }
+            }
+        }
+    }
+
     @Test
     fun `blocs and declared wars agree with each other`() {
         for (id in TestAssets.scenarioIds()) {

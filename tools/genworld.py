@@ -508,7 +508,7 @@ def write_conquest(built, scenario_id, name_key, desc_key, order, merge,
             code, (renames or {}).get(code, "nation_" + code.lower()),
             colour, capital, profile, funds,
             ",".join(str(v) for v in tech_for(funds)),
-            places.FLAGS.get(code, ""),
+            places.flag_for(code, start_year),
             bloc_of(code, blocs),
             (war_turns or {}).get(code, 1),
         ))
@@ -664,7 +664,7 @@ def write_campaign(built, mission):
             mission.get("renames", places.WW2_RENAMES).get(code, "nation_" + code.lower()),
             colour, capital, profile, funds,
             ",".join(str(v) for v in mission.get("tech", {}).get(code, [1, 1, 1, 0, 0, 1])),
-            places.FLAGS.get(code, ""),
+            places.flag_for(code, mission["year"]),
             bloc_of(code, mission["blocs"]),
             mission.get("entry", {}).get(code, 1),
         ))

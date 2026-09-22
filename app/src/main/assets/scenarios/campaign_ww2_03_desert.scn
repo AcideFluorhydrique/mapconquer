@@ -17,7 +17,7 @@ starTurns 20,28
 [nations]
 GBR|nation_gbr|#8C4C4C|9|BALANCED|1300|1,1,1,0,0,1|🇬🇧|ALLIES|1
 ITA|nation_ita|#5C9E6E|12|BALANCED|800|1,1,1,0,0,1|🇮🇹|AXIS|1
-DEU|nation_deu|#6E7A86|13|AGGRESSIVE|1000|1,1,1,0,0,1|🇩🇪|AXIS|1
+DEU|nation_deu|#6E7A86|13|AGGRESSIVE|1000|1,1,1,0,0,1|@reich|AXIS|1
 TUR|nation_tur|#A84C4C|4|TURTLE|500|1,1,1,0,0,1|🇹🇷||1
 ESP|nation_esp|#B08A3C|0|TURTLE|500|1,1,1,0,0,1|🇪🇸||1
 PRT|nation_prt|#4C8C7A|2|TURTLE|300|1,1,1,0,0,1|🇵🇹||1

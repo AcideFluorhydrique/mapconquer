@@ -173,7 +173,9 @@ A few decisions worth knowing before reading the code:
 - **Everything is drawn on a `Canvas`.** One `Activity`, one `SurfaceView`, no
   Compose, no fragments, no view hierarchy. Screens are states of `GameView`.
 - **No binary assets.** Unit symbols are drawn as vectors, the icon is a vector,
-  flags are emoji, and sound effects are synthesised at runtime. Nothing in the
+  flags are emoji — except the Soviet, East German and wartime German flags,
+  which no emoji font has and which are drawn in code in the same waving style —
+  and sound effects are synthesised at runtime. Nothing in the
   APK needs a provenance statement.
 - **Determinism.** The RNG is a seeded xorshift whose state is part of the save
   file, so a battle plays out the same way on a reload.

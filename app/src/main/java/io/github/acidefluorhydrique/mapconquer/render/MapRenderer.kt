@@ -324,7 +324,7 @@ class MapRenderer(private val session: Session) {
             paint.style = Paint.Style.FILL
 
             if (flag.isNotEmpty() && plateH >= Ui.dp(7f)) {
-                Widgets.centeredFit(
+                FlagArt.centeredFit(
                     canvas, flag, cx, cy + plateH * 0.36f,
                     plateH * 0.94f, plateW * 0.86f,
                     color = Colors.of("#FFF2F6FA")
@@ -477,7 +477,7 @@ class MapRenderer(private val session: Session) {
         // 缺字型的裝置會退化成兩個字母，仍然認得出國別。
         val flag = session.nations.getOrNull(unit.nationId)?.flag.orEmpty()
         if (flag.isNotEmpty() && size >= Ui.dp(11f)) {
-            Widgets.centered(
+            FlagArt.centered(
                 canvas, flag, cx - w / 2f + size * 0.13f, top + size * 0.2f,
                 size * 0.30f, color = Colors.of("#FFFFFFFF")
             )

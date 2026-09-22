@@ -16,8 +16,8 @@ starTurns 20,23
 
 [nations]
 POL|nation_pol|#B4535C|25|BALANCED|700|1,1,1,0,0,1|🇵🇱|ALLIES|1
-DEU|nation_deu|#6E7A86|19|AGGRESSIVE|1500|3,3,2,1,0,2|🇩🇪|AXIS|1
-RUS|nation_sun|#8C6E4C|43|TURTLE|600|1,1,1,0,0,1|🇷🇺||1
+DEU|nation_deu|#6E7A86|19|AGGRESSIVE|1500|3,3,2,1,0,2|@reich|AXIS|1
+RUS|nation_sun|#8C6E4C|43|TURTLE|600|1,1,1,0,0,1|@su||1
 SWE|nation_swe|#4C6E9E|32|TURTLE|400|1,1,1,0,0,1|🇸🇪||1
 GBR|nation_gbr|#8C4C4C|0|TURTLE|1100|1,1,1,0,0,1|🇬🇧||1
 IRL|nation_irl|#4C8C5C|3|TURTLE|260|1,1,1,0,0,1|🇮🇪||1

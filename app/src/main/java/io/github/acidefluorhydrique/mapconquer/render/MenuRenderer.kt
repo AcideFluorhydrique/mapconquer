@@ -314,7 +314,7 @@ class MenuRenderer {
             // 國旗擺在卡片最上面當主視覺，底下留一條國色 —— 那條色帶
             // 對應地圖上的領土色，讓玩家在選完之後認得出自己是哪一片。
             if (nation.flag.isNotEmpty()) {
-                Widgets.centered(
+                FlagArt.centered(
                     canvas, nation.flag, inner.centerX(), inner.top + Ui.dp(20f),
                     Ui.dp(17f), color = Colors.of(Widgets.INK)
                 )

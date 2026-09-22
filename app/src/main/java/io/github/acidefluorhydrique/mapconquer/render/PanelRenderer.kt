@@ -420,11 +420,15 @@ class PanelRenderer(private val session: Session) {
         val topCount = ranked.firstOrNull()?.let { session.provincesOf(it.id) }?.coerceAtLeast(1) ?: 1
         for (nation in shown) {
             val count = session.provincesOf(nation.id)
-            val label = (if (nation.flag.isEmpty()) "" else nation.flag + " ") +
-                Strings.byName(nation.nameKey)
+            // 國旗與國名分開畫：自製的國旗（蘇聯、東德……）不是文字，塞不進字串裡。
+            var labelX = panel.left + Ui.dp(16f)
+            if (nation.flag.isNotEmpty()) {
+                FlagArt.left(canvas, nation.flag, labelX, y, Ui.dp(10.5f))
+                labelX += FlagArt.measure(nation.flag, Ui.dp(10.5f)) + Ui.dp(3f)
+            }
             Widgets.leftFit(
-                canvas, label, panel.left + Ui.dp(16f), y,
-                Ui.dp(10.5f), Ui.dp(100f),
+                canvas, Strings.byName(nation.nameKey), labelX, y,
+                Ui.dp(10.5f), Ui.dp(100f) - (labelX - panel.left - Ui.dp(16f)),
                 if (nation.id == session.playerNationId) Colors.of("#F2D08A") else dim,
                 bold = nation.id == session.playerNationId
             )
