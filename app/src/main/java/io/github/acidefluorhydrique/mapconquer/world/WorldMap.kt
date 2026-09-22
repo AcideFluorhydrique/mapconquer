@@ -40,6 +40,34 @@ class WorldMap(
 
     val tileCount: Int get() = cols * rows
 
+    /**
+     * 地圖內容的指紋：尺寸、環繞、每格地形與省份、省份清單。
+     *
+     * 存檔裡的格子與省份都是陣列索引，只在「同一張地圖」上有意義。地圖是
+     * 產生出來的，改一條海岸線、加一座城，索引就整片位移 —— 舊存檔照樣讀得
+     * 進來，只是部隊會站在海上、省份會歸錯國家。存檔記下這個指紋，讀檔時
+     * 對不上就拒絕，而不是默默讀出一局壞掉的戰局。
+     *
+     * 64 位元 FNV-1a：不求密碼學強度，只求任何一格的改動都會改到它。
+     */
+    val fingerprint: String by lazy {
+        var h = FNV_OFFSET
+        fun mix(value: Int) {
+            h = (h xor (value.toLong() and 0xffffffffL)) * FNV_PRIME
+        }
+        mix(cols)
+        mix(rows)
+        mix(if (wrapX) 1 else 0)
+        for (b in terrain) mix(b.toInt())
+        for (p in provinceOf) mix(p)
+        for (p in provinces) {
+            mix(p.capitalTile)
+            mix(p.cityTier)
+            for (c in p.nameKey) mix(c.code)
+        }
+        java.lang.Long.toHexString(h)
+    }
+
     fun index(col: Int, row: Int): Int = row * cols + col
 
     fun colOf(index: Int): Int = index % cols
@@ -159,5 +187,10 @@ class WorldMap(
         for (h in buf) {
             if (inBounds(h.col, h.row)) out.add(indexWrapped(h.col, h.row))
         }
+    }
+
+    private companion object {
+        const val FNV_OFFSET = -0x340d631b7bdddcdbL // 0xcbf29ce484222325
+        const val FNV_PRIME = 0x100000001b3L
     }
 }

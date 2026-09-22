@@ -925,14 +925,17 @@ class GameView(context: Context) : SurfaceView(context), SurfaceHolder.Callback 
     }
 
     private fun continueGame() {
-        val restored = SaveGame.load(context)
-        if (restored == null) {
-            toast(Strings.get(R.string.toast_save_broken))
-            SaveGame.delete(context)
-            refreshSaveState()
-            return
+        when (val restored = SaveGame.load(context)) {
+            is SaveGame.Restore.Ok -> installSession(restored.session)
+            SaveGame.Restore.Outdated -> discardSave(R.string.toast_save_outdated)
+            SaveGame.Restore.Broken -> discardSave(R.string.toast_save_broken)
         }
-        installSession(restored)
+    }
+
+    private fun discardSave(message: Int) {
+        toast(Strings.get(message))
+        SaveGame.delete(context)
+        refreshSaveState()
     }
 
     private fun installSession(active: Session) {

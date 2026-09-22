@@ -18,6 +18,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import hexraster
 import places
 import scenarios as scn
+import topology
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 MAPS_DIR = os.path.join(ROOT, "app", "src", "main", "assets", "maps")
@@ -48,8 +49,9 @@ WORLD_LAT_BANDS = [
     ( -56.0, -35.0, 0.60),  # 南半球高緯
     ( -35.0,   0.0, 0.85),  # 南美南部、南非、澳洲
     (   0.0,  30.0, 1.00),  # 熱帶
-    (  30.0,  60.0, 1.75),  # 歐洲、日本、美國、中國
-    (  60.0,  78.0, 0.70),  # 北極圈
+    (  30.0,  66.0, 1.75),  # 歐洲、北歐、日本、美國、中國
+    (  66.0,  72.0, 1.00),  # 北極圈：拉普蘭、摩爾曼斯克、阿拉斯加北岸
+    (  72.0,  78.0, 0.30),  # 極地冰原
 ]
 
 MAP_DEFS = [
@@ -84,14 +86,19 @@ class BuiltMap:
         self.province_of = None              # 逐格的省份 id
 
 
-def nearest_land_tile(grid, is_land, lon, lat):
-    """把一個經緯度座標吸附到最近的陸地格。找不到就回 None。"""
+def nearest_land_tile(grid, is_land, lon, lat, allowed=None):
+    """
+    把一個經緯度座標吸附到最近的陸地格。找不到就回 None。
+
+    [allowed] 過濾候選格：城市只能落在自己那塊陸地上，否則福岡會被吸到
+    對岸的釜山旁邊，只因為那一格在網格上比九州近。
+    """
     best = None
     best_d = None
     for row in range(grid.rows):
         for col in range(grid.cols):
             i = grid.index(col, row)
-            if not is_land[i]:
+            if not is_land[i] or (allowed is not None and not allowed(i)):
                 continue
             glon, glat = grid.lonlat(col, row)
             dlon = glon - lon
@@ -133,21 +140,35 @@ def assign_provinces(grid, is_land, seeds):
             owner[j] = owner[tile]
             frontier.append(j)
 
-    # 沒被走到的陸地（離島）改用直線最近的種子。
+    # 沒被走到的陸地（沒有城市的離島）整座島歸給直線最近的種子。
+    # 以島為單位而不是逐格：逐格分的話，西西里這種夾在兩國之間的島會被
+    # 對半切給兩邊，憑空多出一條跨海的「國界」。
     for i in range(count):
         if not is_land[i] or owner[i] != -1:
             continue
-        col, row = i % grid.cols, i // grid.cols
-        lon, lat = grid.lonlat(col, row)
-        best, best_d = None, None
-        for pid, tile in enumerate(seeds):
-            if tile is None:
-                continue
-            slon, slat = grid.lonlat(tile % grid.cols, tile // grid.cols)
-            d = (slon - lon) ** 2 + (slat - lat) ** 2
-            if best_d is None or d < best_d:
-                best_d, best = d, pid
-        owner[i] = best if best is not None else -1
+        island = [i]
+        owner[i] = -2
+        head = 0
+        while head < len(island):
+            tile = island[head]
+            head += 1
+            for c, r in grid.neighbours(tile % grid.cols, tile // grid.cols):
+                j = grid.index(c, r)
+                if is_land[j] and owner[j] == -1:
+                    owner[j] = -2
+                    island.append(j)
+        best, best_d = -1, None
+        for tile in island:
+            lon, lat = grid.lonlat(tile % grid.cols, tile // grid.cols)
+            for pid, seed in enumerate(seeds):
+                if seed is None:
+                    continue
+                slon, slat = grid.lonlat(seed % grid.cols, seed // grid.cols)
+                d = (slon - lon) ** 2 + (slat - lat) ** 2
+                if best_d is None or d < best_d:
+                    best_d, best = d, pid
+        for tile in island:
+            owner[tile] = best
     return owner
 
 
@@ -179,7 +200,7 @@ def build_map(map_id, cols, rows, lon_min, lon_max, lat_max, lat_min,
     ]
 
     # 城市座標先於海岸線：每座城市所在的格子一定是陸地。
-    terrain, is_land = hexraster.build_terrain(
+    terrain, is_land, landmass, _anchors = hexraster.build_terrain(
         grid, [(p[1], p[2]) for p in candidates]
     )
 
@@ -201,7 +222,9 @@ def build_map(map_id, cols, rows, lon_min, lon_max, lat_max, lat_min,
     # 完全正常。省份數少一個，沒有任何一行輸出提到它。
     dropped = []
     for key, lon, lat, tier, nation, *_names in candidates:
-        tile, dist = nearest_land_tile(grid, is_land, lon, lat)
+        home = hexraster.landmass_of(lon, lat)
+        tile, dist = nearest_land_tile(grid, is_land, lon, lat,
+                                       lambda i, home=home: not hexraster.apart(landmass[i], home))
         if tile is None:
             dropped.append((key, "這張地圖上沒有陸地"))
             continue
@@ -215,7 +238,7 @@ def build_map(map_id, cols, rows, lon_min, lon_max, lat_max, lat_min,
             col, row = tile % cols, tile // cols
             for c, r in grid.neighbours(col, row):
                 j = grid.index(c, r)
-                if is_land[j] and j not in used:
+                if is_land[j] and j not in used and not hexraster.apart(landmass[j], home):
                     tile = j
                     moved = True
                     break
@@ -797,6 +820,13 @@ def main():
             print("    - %s 放不下：%s" % (key, reason))
 
     world = built_maps["world"]
+    errors = topology.check(world)
+    if errors:
+        print("世界地圖的拓撲檢查失敗（見 tools/topology.py）：", file=sys.stderr)
+        for line in errors:
+            print("    " + line, file=sys.stderr)
+        sys.exit(1)
+
     print(write_conquest(world, "conquest_1939", "scn_conquest_1939",
                          "scn_conquest_1939_desc", 10, places.WW2_MERGE, 1939,
                          turtle=places.WW2_NEUTRALS, blocs=places.WW2_BLOCS,

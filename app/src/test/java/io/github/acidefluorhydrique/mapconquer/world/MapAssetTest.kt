@@ -6,6 +6,7 @@ package io.github.acidefluorhydrique.mapconquer.world
 import io.github.acidefluorhydrique.mapconquer.TestAssets
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -122,5 +123,56 @@ class MapAssetTest {
         assertTrue("陸地比例 $ratio% 不合理", ratio in 20..45)
         assertTrue("城市太少", world.provinces.count { it.hasCity } > 100)
         assertTrue("首都級城市太少", world.provinces.count { it.cityTier >= 4 } >= 8)
+    }
+
+    @Test
+    fun `fingerprint is stable for the same map and differs between maps`() {
+        val ids = TestAssets.mapIds()
+        for (id in ids) {
+            assertEquals("$id: 同一份檔案讀兩次，指紋不同", TestAssets.map(id).fingerprint,
+                TestAssets.cachedMap(id).fingerprint)
+        }
+        val prints = ids.map { TestAssets.cachedMap(it).fingerprint }
+        assertEquals("兩張不同的地圖指紋相同", prints.size, prints.toSet().size)
+    }
+
+    @Test
+    fun `fingerprint notices a single changed tile`() {
+        val world = TestAssets.cachedMap("world")
+        val terrain = world.terrain.copyOf()
+        val tile = (0 until world.tileCount).first { world.isLand(it) }
+        terrain[tile] = (terrain[tile] + 1).toByte()
+        val edited = WorldMap(world.id, world.cols, world.rows, terrain, world.provinceOf,
+            world.provinces, world.wrapX)
+        assertNotEquals(world.fingerprint, edited.fingerprint)
+    }
+
+    /**
+     * 海峽兩岸的城市格在網格上曾經直接相鄰（釜山—福岡、佛羅里達—哈瓦那），
+     * 地圖上看起來隔著海，部隊卻走得過去。產生器現在有拓撲檢查
+     * （tools/topology.py），這裡在遊戲端的讀檔結果上再釘一次。
+     */
+    @Test
+    fun `straits on the world map are water all the way across`() {
+        val world = TestAssets.cachedMap("world")
+        val byKey = world.provinces.associateBy { it.nameKey }
+        val buf = IntArray(6)
+        fun landTouches(a: String, b: String): Boolean {
+            val pa = byKey.getValue(a)
+            val pb = byKey.getValue(b)
+            return pa.tiles.any { tile ->
+                val n = world.neighbours(tile, buf)
+                (0 until n).any { world.isLand(buf[it]) && world.provinceOf[buf[it]] == pb.id }
+            }
+        }
+        for ((a, b) in listOf(
+            "prov_busan" to "prov_fukuoka",
+            "prov_miami" to "prov_havana",
+            "prov_london" to "prov_paris",
+            "prov_helsinki" to "prov_riga",
+            "prov_taipei" to "prov_shanghai"
+        )) {
+            if (a in byKey && b in byKey) assertFalse("$a 與 $b 之間應該是海", landTouches(a, b))
+        }
     }
 }

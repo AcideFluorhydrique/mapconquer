@@ -112,6 +112,7 @@
     <string name="toast_commander_cleared">Commander stood down</string>
     <string name="toast_map_missing">That map could not be loaded</string>
     <string name="toast_save_broken">The save file could not be read</string>
+    <string name="toast_save_outdated">That save was made on an older version of the map and can\'t be continued</string>
     <string name="event_city_captured">%1$s captured by %2$s</string>
     <string name="event_province_captured">%2$s occupies %1$s</string>
     <string name="event_nation_eliminated">%1$s has been eliminated</string>
@@ -467,9 +468,14 @@
     <string name="prov_sofia">Sofia</string>
     <string name="prov_athens">Athens</string>
     <string name="prov_stockholm">Stockholm</string>
+    <string name="prov_gothenburg">Gothenburg</string>
+    <string name="prov_sundsvall">Sundsvall</string>
+    <string name="prov_kiruna">Kiruna</string>
     <string name="prov_oslo">Oslo</string>
     <string name="prov_copenhagen">Copenhagen</string>
+    <string name="prov_aarhus">Aarhus</string>
     <string name="prov_helsinki">Helsinki</string>
+    <string name="prov_oulu">Oulu</string>
     <string name="prov_riga">Riga</string>
     <string name="prov_reykjavik">Reykjavik</string>
     <string name="prov_narvik">Narvik</string>
@@ -559,6 +565,7 @@
     <string name="prov_bangalore">Bengaluru</string>
     <string name="prov_hyderabad">Hyderabad</string>
     <string name="prov_nagpur">Nagpur</string>
+    <string name="prov_guwahati">Guwahati</string>
     <string name="prov_karachi">Karachi</string>
     <string name="prov_lahore">Lahore</string>
     <string name="prov_dhaka">Dhaka</string>
@@ -584,6 +591,7 @@
     <string name="prov_seoul">Seoul</string>
     <string name="prov_busan">Busan</string>
     <string name="prov_pyongyang">Pyongyang</string>
+    <string name="prov_hamhung">Hamhung</string>
     <string name="prov_tokyo">Tokyo</string>
     <string name="prov_osaka">Osaka</string>
     <string name="prov_fukuoka">Fukuoka</string>

@@ -112,6 +112,7 @@
     <string name="toast_commander_cleared">已解除指挥官职务</string>
     <string name="toast_map_missing">地图加载失败</string>
     <string name="toast_save_broken">存档无法读取</string>
+    <string name="toast_save_outdated">这个存档用的是旧版地图，无法继续</string>
     <string name="event_city_captured">%2$s 攻下 %1$s</string>
     <string name="event_province_captured">%2$s 占领 %1$s</string>
     <string name="event_nation_eliminated">%1$s 已被消灭</string>
@@ -467,9 +468,14 @@
     <string name="prov_sofia">索菲亚</string>
     <string name="prov_athens">雅典</string>
     <string name="prov_stockholm">斯德哥尔摩</string>
+    <string name="prov_gothenburg">哥德堡</string>
+    <string name="prov_sundsvall">松兹瓦尔</string>
+    <string name="prov_kiruna">基律纳</string>
     <string name="prov_oslo">奥斯陆</string>
     <string name="prov_copenhagen">哥本哈根</string>
+    <string name="prov_aarhus">奥胡斯</string>
     <string name="prov_helsinki">赫尔辛基</string>
+    <string name="prov_oulu">奥卢</string>
     <string name="prov_riga">里加</string>
     <string name="prov_reykjavik">雷克雅未克</string>
     <string name="prov_narvik">纳尔维克</string>
@@ -559,6 +565,7 @@
     <string name="prov_bangalore">班加罗尔</string>
     <string name="prov_hyderabad">海得拉巴</string>
     <string name="prov_nagpur">那格浦尔</string>
+    <string name="prov_guwahati">古瓦哈蒂</string>
     <string name="prov_karachi">卡拉奇</string>
     <string name="prov_lahore">拉合尔</string>
     <string name="prov_dhaka">达卡</string>
@@ -584,6 +591,7 @@
     <string name="prov_seoul">首尔</string>
     <string name="prov_busan">釜山</string>
     <string name="prov_pyongyang">平壤</string>
+    <string name="prov_hamhung">咸兴</string>
     <string name="prov_tokyo">东京</string>
     <string name="prov_osaka">大阪</string>
     <string name="prov_fukuoka">福冈</string>

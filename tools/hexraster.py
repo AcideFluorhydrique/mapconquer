@@ -192,8 +192,142 @@ def polyline_cells(grid, points, step=0.12):
     return cells
 
 
+def _island_by_polygon():
+    out = {}
+    for group, names in geodata.ISLANDS.items():
+        for name in names:
+            out[name] = group
+    return out
+
+
+_ISLAND_OF = _island_by_polygon()
+_SEAS = {frozenset(pair) for pair in geodata.SEAS}
+
+
+def apart(a, b):
+    """
+    兩個陸地多邊形之間是否一定隔著海。
+
+    島嶼群組只跟同群組相連；[geodata.SEAS] 列出的大陸多邊形兩兩不相連；
+    其餘的大陸多邊形彼此相連（歐洲與斯堪地那維亞、中國與朝鮮）。
+    """
+    if a == b:
+        return False
+    ga, gb = _ISLAND_OF.get(a), _ISLAND_OF.get(b)
+    if ga is not None or gb is not None:
+        return ga != gb
+    return frozenset((a, b)) in _SEAS
+
+
+def _ring_distance(lon, lat, polygon):
+    if point_in_polygon(lon, lat, polygon):
+        return 0.0
+    return distance_to_polyline(lon, lat, list(polygon) + [polygon[0]])
+
+
+def landmass_of(lon, lat):
+    """
+    一個點屬於哪個陸地多邊形（[geodata.LAND] 的鍵）。
+
+    落在好幾個多邊形裡時以大陸為準 —— 薩哈林的多邊形跟西伯利亞有重疊，
+    重疊處算西伯利亞，島嶼規則只管真正獨立的那一塊。都不在的點
+    （城市錨點常常落在手繪海岸線外面一點）取最近的多邊形。
+    """
+    best_name, best_d = None, None
+    for name, polygon in geodata.LAND.items():
+        d = _ring_distance(lon, lat, polygon)
+        if d == 0.0 and name not in _ISLAND_OF:
+            return name
+        if best_d is None or d < best_d:
+            best_name, best_d = name, d
+    return best_name
+
+
+def separate_landmasses(grid, is_land, landmass, kept):
+    """
+    讓每一對 [apart] 的陸地之間至少隔一格海。
+
+    兩格相鄰卻屬於不該相連的陸地時挖掉一格：先挖不是城市的那一格；
+    兩格都不是城市時，島嶼對大陸挖大陸那一側（島嶼格子稀缺，日本全部
+    也就十幾格），否則挖格子多的那一塊。兩格都是城市時，把其中一座城
+    （島上的優先）搬到同一塊陸地上最近、且四周沒有對岸陸地的格子 ——
+    城市座標只是錨點，站在哪一格是這裡決定的。
+
+    [kept] 是 {格子: 城市經緯度}，搬家時一併更新。
+    """
+    size = {}
+    for i, name in enumerate(landmass):
+        if is_land[i]:
+            size[name] = size.get(name, 0) + 1
+
+    def neighbours(i):
+        return [grid.index(c, r) for c, r in grid.neighbours(i % grid.cols, i // grid.cols)]
+
+    def touches_across(i, ignore=None):
+        return any(
+            k != ignore and is_land[k] and apart(landmass[k], landmass[i])
+            for k in neighbours(i)
+        )
+
+    def relocate(tile):
+        lon0, lat0 = grid.lonlat(tile % grid.cols, tile // grid.cols)
+        best, best_d = None, None
+        for j in range(len(is_land)):
+            if j == tile or not is_land[j] or j in kept:
+                continue
+            if apart(landmass[j], landmass[tile]) or touches_across(j, ignore=tile):
+                continue
+            lon, lat = grid.lonlat(j % grid.cols, j // grid.cols)
+            d = (lon - lon0) ** 2 + (lat - lat0) ** 2
+            if best_d is None or d < best_d:
+                best, best_d = j, d
+        if best is None:
+            raise ValueError("找不到能安置城市 %r 的格子" % (kept[tile],))
+        kept[best] = kept.pop(tile)
+        landmass[best] = landmass[tile]
+        is_land[tile] = False
+
+    def bigger(i, j):
+        return i if size.get(landmass[i], 0) >= size.get(landmass[j], 0) else j
+
+    changed = True
+    while changed:
+        changed = False
+        for i in range(len(is_land)):
+            if not is_land[i]:
+                continue
+            for j in neighbours(i):
+                if not is_land[i]:
+                    break
+                if not is_land[j] or not apart(landmass[i], landmass[j]):
+                    continue
+                island_i = landmass[i] in _ISLAND_OF
+                island_j = landmass[j] in _ISLAND_OF
+                if (i in kept) != (j in kept):
+                    victim = j if i in kept else i
+                elif i in kept:
+                    relocate(i if island_i or not island_j else j)
+                    changed = True
+                    continue
+                elif island_i != island_j:
+                    victim = j if island_i else i
+                else:
+                    victim = bigger(i, j)
+                is_land[victim] = False
+                changed = True
+    # 防呆：跑完之後不應該還有任何一對不該相連的陸地相鄰。
+    for i in range(len(is_land)):
+        if is_land[i] and touches_across(i):
+            raise AssertionError("陸塊分離沒有收斂：格子 %d" % i)
+
+
 def build_terrain(grid, anchors=()):
-    """回傳 (terrain_codes, is_land)，兩者都是逐格的一維串列。"""
+    """
+    回傳 (terrain_codes, is_land, landmass, anchor_tiles)，前三者是逐格的一維串列。
+
+    landmass 是每一格所屬的陸地多邊形（見 [landmass_of]），海洋格是 None。
+    anchor_tiles 是 {城市經緯度: 格子}，陸塊分離搬過家的城市以它為準。
+    """
     land_polys = list(geodata.LAND.values())
     sea_polys = list(geodata.SEA.values())
     desert_polys = list(geodata.DESERTS.values())
@@ -221,6 +355,19 @@ def build_terrain(grid, anchors=()):
             if i not in kept:
                 is_land[i] = False
 
+    # 城市格的陸塊看城市本身，不看格子中心：格子中心可能落在對岸。
+    landmass = [None] * count
+    for i in range(count):
+        if not is_land[i]:
+            continue
+        lon, lat = kept[i] if i in kept else lonlat[i]
+        landmass[i] = landmass_of(lon, lat)
+    separate_landmasses(grid, is_land, landmass, kept)
+    for i in range(count):
+        if not is_land[i]:
+            landmass[i] = None
+    anchor_tiles = {coord: tile for tile, coord in kept.items()}
+
     terrain = ['~'] * count
     for row in range(grid.rows):
         for col in range(grid.cols):
@@ -235,7 +382,7 @@ def build_terrain(grid, anchors=()):
 
     apply_mountains(grid, terrain, is_land, lonlat)
     apply_rivers(grid, terrain, is_land, lonlat)
-    return terrain, is_land
+    return terrain, is_land, landmass, anchor_tiles
 
 
 def classify_land(lon, lat, desert_polys, jungle_polys, farm_polys):

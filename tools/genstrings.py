@@ -165,6 +165,8 @@ UI = {
     "toast_commander_cleared": ("Commander stood down", "已解除指揮官職務", "已解除指挥官职务"),
     "toast_map_missing": ("That map could not be loaded", "地圖載入失敗", "地图加载失败"),
     "toast_save_broken": ("The save file could not be read", "存檔無法讀取", "存档无法读取"),
+    "toast_save_outdated": ("That save was made on an older version of the map and can't be continued",
+                            "這個存檔用的是舊版地圖，無法繼續", "这个存档用的是旧版地图，无法继续"),
 
     # 事件
     "event_city_captured": ("%1$s captured by %2$s", "%2$s 攻下 %1$s", "%2$s 攻下 %1$s"),

@@ -27,6 +27,16 @@ object SaveGame {
     private const val FILE_NAME = "session.save"
     private const val VERSION = 1
 
+    /** 讀檔的結果。存檔舊了跟存檔壞了是兩回事，玩家該看到不同的說明。 */
+    sealed class Restore {
+        class Ok(val session: Session) : Restore()
+
+        /** 存檔建立在另一個版本的地圖上（見 [io.github.acidefluorhydrique.mapconquer.world.WorldMap.fingerprint]）。 */
+        object Outdated : Restore()
+
+        object Broken : Restore()
+    }
+
     fun file(context: Context): File = File(context.filesDir, FILE_NAME)
 
     fun exists(context: Context): Boolean = file(context).let { it.exists() && it.length() > 0 }
@@ -43,6 +53,7 @@ object SaveGame {
         val sb = StringBuilder(8 * 1024)
         sb.append("v ").append(VERSION).append('\n')
         sb.append("scenario ").append(session.scenario.id).append('\n')
+        sb.append("map ").append(session.map.fingerprint).append('\n')
         sb.append("difficulty ").append(session.difficulty.name).append('\n')
         sb.append("player ").append(session.nations[session.playerNationId].code).append('\n')
         sb.append("turn ").append(session.turn).append('\n')
@@ -140,11 +151,15 @@ object SaveGame {
         if (scenarioId.isEmpty()) null else Summary(scenarioId, playerCode, difficulty, turn)
     }.getOrNull()
 
-    fun load(context: Context): Session? = runCatching {
+    fun load(context: Context): Restore = runCatching { restore(context) }
+        .getOrNull() ?: Restore.Broken
+
+    private fun restore(context: Context): Restore {
         val lines = file(context).readLines()
-        if (lines.isEmpty()) return null
+        if (lines.isEmpty()) return Restore.Broken
 
         var scenarioId = ""
+        var mapPrint = ""
         var playerCode = ""
         var difficulty = Difficulty.OFFICER
         var turn = 1
@@ -165,6 +180,7 @@ object SaveGame {
             val value = line.substring(sep + 1).trim()
             when (key) {
                 "scenario" -> scenarioId = value
+                "map" -> mapPrint = value
                 "player" -> playerCode = value
                 "difficulty" -> difficulty = Difficulty.byName(value)
                 "turn" -> turn = value.toIntOrNull() ?: 1
@@ -180,10 +196,13 @@ object SaveGame {
                 "unit" -> unitLines.add(value)
             }
         }
-        if (scenarioId.isEmpty()) return null
+        if (scenarioId.isEmpty()) return Restore.Broken
 
         val scenario = ScenarioLoader.load(context, scenarioId)
         val map = MapLoader.load(context, scenario.mapId)
+        // 沒有指紋的存檔來自加上指紋之前的版本，而那一版之後地圖已經重新產生過，
+        // 所以一律視為舊的。
+        if (mapPrint != map.fingerprint) return Restore.Outdated
         val session = Session(map, scenario, difficulty, playerCode, rngState)
 
         session.turn = turn
@@ -252,6 +271,6 @@ object SaveGame {
         session.sortieBases.clear()
         sorties.split(',').mapNotNullTo(session.sortieBases) { it.trim().toIntOrNull() }
         session.refreshSupplyView()
-        session
-    }.getOrNull()
+        return Restore.Ok(session)
+    }
 }

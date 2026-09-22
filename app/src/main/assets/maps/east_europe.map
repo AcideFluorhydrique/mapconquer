@@ -7,14 +7,14 @@ cols 48
 rows 34
 
 [terrain]
-ffffff-~~~~~~~~-----ffffffffffffffffffffffffffff
-fffff-~~~~~~~~-fffffffffffffffffffffffffffffffff
-fffff-~~~~~~~--fffffffffffffffffffffffffffffffff
-ffff-~~~~~~~-fffffffffffffffffffffffffffffffffff
--fff-~~~~~~--ffffffffffffffffffffffffrrrrfffffff
+ffffff-~~~~~~-------ffffffffffffffffffffffffffff
+fffff-~~~~~~-fffffffffffffffffffffffffffffffffff
+fffff-~~~~~~-fffffffffffffffffffffffffffffffffff
+ffff-~~~~~~-ffffffffffffffffffffffffffffffffffff
+-fff-~~~~~~-fffffffffffffffffffffffffrrrrfffffff
 fff-~~~~~~-fffffffffffffffffffffffffrrrrrfffffff
-----~~~~~~-ffffffffffffffffffffffffffrrrrrffffff
-~~~~~~~~--fffffffffffffffffffffffffffrrrrrffffff
+----~~~~~--ffffffffffffffffffffffffffrrrrrffffff
+~~~~~~~~-ffffffffffffffffffffffffffffrrrrrffffff
 ---------fffffffffffffffffffffffffffffrrrrrfffff
 ffffffffffffffffff::::::::::::::::::ffrrrrrfffff
 -fffff:::::::::::::::::::::::::::::::::rrrrfffff
@@ -44,13 +44,13 @@ hhhrrr^^^^^^^^^^^^^-~~~~----~~~~-----hhhhhh--~~~
 
 [provinces]
 6:9 14:-1 8:16 7:15 9:17 4:18
-5:9 10:-1 1:10 11:16 8:15 8:17 5:18
-5:9 10:-1 2:10 10:16 8:15 9:17 4:18
-4:9 9:-1 4:10 9:16 9:15 8:17 5:18
-1:-1 3:9 9:-1 5:10 8:16 9:15 9:17 4:18
+5:9 8:-1 3:10 11:16 8:15 8:17 5:18
+5:9 8:-1 4:10 10:16 8:15 9:17 4:18
+4:9 8:-1 5:10 9:16 9:15 8:17 5:18
+1:-1 3:9 8:-1 6:10 8:16 9:15 9:17 4:18
 3:9 8:-1 7:10 3:14 4:16 10:15 8:17 5:18
 11:-1 6:10 6:14 2:16 10:15 9:17 4:18
-10:-1 6:10 8:14 11:15 8:17 5:18
+9:-1 7:10 8:14 11:15 8:17 5:18
 9:-1 1:3 6:10 9:14 11:15 7:17 5:18
 4:2 7:3 4:10 9:14 1:11 10:15 8:17 5:18
 1:-1 3:2 9:3 1:10 10:14 2:11 1:13 9:15 7:17 5:18
