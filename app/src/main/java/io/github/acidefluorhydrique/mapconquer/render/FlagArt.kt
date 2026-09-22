@@ -266,8 +266,9 @@ object FlagArt {
     }
 
     /**
-     * 東德（1959 年起）：黑紅金三色，中間是麥穗環圍著錘子與圓規。
-     * 1959 年以前的東德國旗跟西德一樣，那一段直接用 emoji（見 places.flag_for）。
+     * 東德：黑紅金三色，中間是麥穗環圍著錘子與圓規。
+     * 1959 年以前的東德國旗其實跟西德一樣；1950 年的劇本刻意也用這一面，
+     * 否則兩德同時在地圖上時分不出來（見 places.flag_for）。
      */
     private fun gdr(canvas: Canvas, w: Float, h: Float) {
         val paint = Paint(Paint.ANTI_ALIAS_FLAG)

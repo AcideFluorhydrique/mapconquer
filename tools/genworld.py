@@ -373,8 +373,10 @@ def garrison_lines(built, owners, nation_funds):
     依國力鋪開局部隊。
 
     原則：每個國家一定有能守首都的東西，但不會多到讓開局變成清兵。
-    大國多一支裝甲與一架戰機，臨海的大國多一艘驅逐艦 ——
-    這樣玩家第一眼就看得出誰是強權。
+    大國多一支裝甲，臨海的大國多一艘驅逐艦 —— 這樣玩家第一眼就看得出
+    誰是強權。強國（資金 900 以上）的首都再多一支步兵。史實上的艦隊與前線
+    部隊另外由劇本的 extra_units 擺放 —— 原本 1939 年的德國整個國家只有五支
+    部隊，連一艘潛艇都沒有。
     """
     lines = []
     occupied = set()
@@ -389,6 +391,9 @@ def garrison_lines(built, owners, nation_funds):
             wanted.append((capital_pid, "ARTILLERY", 1))
         if funds >= 700:
             wanted.append((capital_pid, "ARMOUR", 1))
+        major = funds >= 900
+        if major:
+            wanted.append((capital_pid, "INFANTRY", 1))
         # 其他大城各留一支守備。
         for pid in province_ids:
             if pid == capital_pid:
@@ -876,19 +881,21 @@ def main():
                          turtle=places.WW2_NEUTRALS, blocs=places.WW2_BLOCS,
                          overrides=places.WW2_PROVINCE_OWNERS,
                          renames=places.WW2_RENAMES,
-                         war_turns=places.WW2_WAR_TURNS, start_month=9))
+                         war_turns=places.WW2_WAR_TURNS, start_month=9,
+                         extra_units=places.CONQUEST_EXTRA_UNITS.get(1939, ())))
     print(write_conquest(world, "conquest_1943", "scn_conquest_1943",
                          "scn_conquest_1943_desc", 20, places.WW2_MERGE, 1943,
                          turtle=places.WW2_NEUTRALS, blocs=places.WW2_1943_BLOCS,
                          overrides=places.WW2_1943_PROVINCE_OWNERS,
-                         renames=places.WW2_RENAMES, start_month=3))
+                         renames=places.WW2_RENAMES, start_month=3,
+                         extra_units=places.CONQUEST_EXTRA_UNITS.get(1943, ())))
     print(write_conquest(world, "conquest_1950", "scn_conquest_1950",
                          "scn_conquest_1950_desc", 30, places.COLD_WAR_1950_MERGE, 1950,
                          turtle=unaligned(places.COLD_WAR_1950_BLOCS),
                          blocs=places.COLD_WAR_1950_BLOCS,
                          overrides=places.COLD_WAR_1950_PROVINCE_OWNERS,
                          renames=places.COLD_WAR_RENAMES, start_month=1,
-                         extra_units=places.COLD_WAR_1950_EXTRA_UNITS))
+                         extra_units=places.CONQUEST_EXTRA_UNITS.get(1950, ())))
     print(write_conquest(world, "conquest_1980", "scn_conquest_1980",
                          "scn_conquest_1980_desc", 40, places.COLD_WAR_1980_MERGE, 1980,
                          turtle=unaligned(places.COLD_WAR_1980_BLOCS),
