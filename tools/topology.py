@@ -24,6 +24,10 @@
 LAND_BORDERS = [
     # 北歐：芬蘭夾在瑞典與俄羅斯之間，不是一塊浮在波羅的海上的地。
     ("FIN", "SWE"), ("FIN", "RUS"), ("NOR", "SWE"),
+    # 北愛爾蘭：愛爾蘭島上唯一的陸上國界。
+    ("GBR", "IRL"),
+    # 直布羅陀
+    ("GBR", "ESP"),
     # 西歐與中歐
     ("ESP", "FRA"), ("ESP", "PRT"), ("FRA", "BEL"), ("FRA", "DEU"),
     ("FRA", "CHE"), ("FRA", "ITA"), ("DEU", "POL"), ("DEU", "NLD"),
@@ -45,22 +49,26 @@ LAND_BORDERS = [
 
 SEA_BETWEEN = [
     # 島國對大陸
-    ("GBR", "FRA"), ("GBR", "IRL"), ("GBR", "BEL"), ("GBR", "NLD"),
+    ("GBR", "FRA"), ("GBR", "BEL"), ("GBR", "NLD"),
     ("JPN", "KOR"), ("JPN", "PRK"), ("JPN", "CHN"), ("JPN", "RUS"),
     ("TWN", "CHN"), ("LKA", "IND"), ("CUB", "USA"), ("MDG", "MOZ"),
     ("AUS", "IDN"), ("AUS", "PNG"), ("NZL", "AUS"), ("PHL", "CHN"),
     ("PHL", "MYS"), ("ISL", "GBR"), ("ISL", "NOR"),
     # 波羅的海與北海：芬蘭灣、波的尼亞灣、斯卡格拉克。
     ("FIN", "LVA"), ("FIN", "BLR"), ("SWE", "LVA"), ("SWE", "POL"),
-    ("SWE", "DEU"), ("NOR", "DNK"),
+    ("SWE", "DEU"), ("NOR", "DNK"), ("DNK", "SWE"),
     # 地中海
-    ("ITA", "TUN"), ("ITA", "LBY"), ("ESP", "MAR"), ("GRC", "EGY"),
+    ("ITA", "TUN"), ("ITA", "LBY"), ("ESP", "MAR"), ("GBR", "MAR"), ("GRC", "EGY"),
     ("GRC", "LBY"), ("TUR", "EGY"), ("SYR", "EGY"),
     # 紅海、曼德海峽、荷莫茲、阿拉伯海
     ("SAU", "SDN"), ("SAU", "EGY"), ("YEM", "ETH"), ("YEM", "SOM"),
     ("ARE", "IRN"), ("OMN", "IRN"), ("OMN", "PAK"), ("OMN", "IND"),
     ("SAU", "IRN"),
 ]
+
+# 本土必須連成一片的國家（不含離島）。挪威曾經被瑞典的省從中間切斷：
+# 松茲瓦爾一路長到大西洋岸，奧斯陸與納爾維克之間沒有陸路。
+CONTIGUOUS = ["NOR", "SWE", "FIN", "DNK", "CHL", "VNM", "KOR", "PRK", "ESP", "FRA", "DEU", "POL"]
 
 
 def _neighbours(grid, tile, wrap):
@@ -111,4 +119,26 @@ def check(built, wrap=True):
     for a, b in SEA_BETWEEN:
         if a in present and b in present and touching(a, b):
             errors.append("%s 與 %s 之間應該隔著海，地圖上卻陸地相鄰" % (a, b))
+    for code in CONTIGUOUS:
+        pieces = _land_pieces(built, code, wrap)
+        if pieces > 1:
+            errors.append("%s 的國土被切成 %d 塊" % (code, pieces))
     return errors
+
+
+def _land_pieces(built, code, wrap):
+    """[code] 的陸地格分成幾個連通塊。"""
+    nation = [p[2] for p in built.provinces]
+    tiles = {t for t, land in enumerate(built.is_land)
+             if land and nation[built.province_of[t]] == code}
+    pieces = 0
+    while tiles:
+        pieces += 1
+        stack = [tiles.pop()]
+        while stack:
+            t = stack.pop()
+            for n in _neighbours(built.grid, t, wrap):
+                if n in tiles:
+                    tiles.remove(n)
+                    stack.append(n)
+    return pieces

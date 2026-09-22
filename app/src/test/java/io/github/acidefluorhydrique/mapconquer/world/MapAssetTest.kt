@@ -173,7 +173,9 @@ class MapAssetTest {
             "prov_miami" to "prov_havana",
             "prov_london" to "prov_paris",
             "prov_helsinki" to "prov_riga",
-            "prov_taipei" to "prov_shanghai"
+            "prov_taipei" to "prov_shanghai",
+            "prov_copenhagen" to "prov_gothenburg",
+            "prov_gibraltar" to "prov_casablanca"
         )) {
             if (a in byKey && b in byKey) assertFalse("$a 與 $b 之間應該是海", landTouches(a, b))
         }

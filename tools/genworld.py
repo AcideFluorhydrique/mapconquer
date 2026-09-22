@@ -111,13 +111,15 @@ def nearest_land_tile(grid, is_land, lon, lat, allowed=None):
     return best, (best_d if best_d is not None else 1e9)
 
 
-def assign_provinces(grid, is_land, seeds):
+def assign_provinces(grid, is_land, seeds, no_expand=frozenset()):
     """
     多源 BFS：每個陸地格歸給「沿陸地走最近」的那顆種子。
 
     走陸地連通而不是直線距離，是為了讓省界看起來合理 ——
     直線 Voronoi 會讓海峽對面的島被劃進大陸的省裡。
     孤立的小島（沒有種子可以走到）最後再用直線距離補上。
+
+    [no_expand] 裡的省份只佔種子那一格（見 places.SINGLE_TILE）。
     """
     count = grid.cols * grid.rows
     owner = [-1] * count
@@ -132,6 +134,8 @@ def assign_provinces(grid, is_land, seeds):
     while head < len(frontier):
         tile = frontier[head]
         head += 1
+        if owner[tile] in no_expand:
+            continue
         col, row = tile % grid.cols, tile // grid.cols
         for c, r in grid.neighbours(col, row):
             j = grid.index(c, r)
@@ -249,7 +253,8 @@ def build_map(map_id, cols, rows, lon_min, lon_max, lat_max, lat_min,
         seeds.append(tile)
         provinces.append((key, tier, nation, tile))
 
-    province_of = assign_provinces(grid, is_land, seeds)
+    single = frozenset(pid for pid, p in enumerate(provinces) if p[0] in places.SINGLE_TILE)
+    province_of = assign_provinces(grid, is_land, seeds, single)
     built = BuiltMap(map_id, grid, terrain, is_land, provinces)
     built.province_of = province_of
     built.dropped = dropped
@@ -411,9 +416,45 @@ def garrison_lines(built, owners, nation_funds):
     return lines
 
 
+SEA_KINDS = {"DESTROYER", "CRUISER", "BATTLESHIP", "CARRIER", "SUBMARINE", "TRANSPORT_SHIP"}
+
+
+def placed_units(built, units, taken_lines):
+    """
+    把指定經緯度的部隊放到最近的空格：軍艦找海，陸軍找陸地。
+
+    用來擺開局不在自己領土上的部隊（1950 年滇緬邊境的國軍、外海的艦隊）。
+    已經被守軍佔用的格子從 [taken_lines] 讀出來。
+    """
+    grid = built.grid
+    taken = set()
+    for line in taken_lines:
+        col, row = map(int, line.split("|")[1].split(","))
+        taken.add(grid.index(col, row))
+    out = []
+    for code, lon, lat, kind, level in units:
+        want_water = kind in SEA_KINDS
+        best, best_d = None, None
+        for tile in range(grid.cols * grid.rows):
+            if tile in taken or (built.terrain[tile] in "~-") != want_water:
+                continue
+            if not want_water and tile in (p[3] for p in built.provinces):
+                continue    # 不站在別人的城市格上
+            glon, glat = grid.lonlat(tile % grid.cols, tile // grid.cols)
+            d = (glon - lon) ** 2 + (glat - lat) ** 2
+            if best_d is None or d < best_d:
+                best, best_d = tile, d
+        if best is None:
+            raise ValueError("放不下 %s 的 %s" % (code, kind))
+        taken.add(best)
+        out.append("%s|%d,%d|%s|%d|-" % (code, best % grid.cols, best // grid.cols, kind, level))
+    return out
+
+
 def write_conquest(built, scenario_id, name_key, desc_key, order, merge,
                    start_year, turtle=None, blocs=None, overrides=None,
-                   renames=None, war_turns=None, start_month=None, turn_limit=0):
+                   renames=None, war_turns=None, start_month=None, turn_limit=0,
+                   extra_units=()):
     """把 places 的國家分佈展開成一份征服劇本。"""
     owners = {}
     for pid, (key, _tier, nation, _tile) in enumerate(built.provinces):
@@ -482,7 +523,9 @@ def write_conquest(built, scenario_id, name_key, desc_key, order, merge,
         lines.append("%s: %s" % (code, compress_ids(owners[code])))
     lines.append("")
     lines.append("[units]")
-    lines.extend(garrison_lines(built, owners, nation_funds))
+    garrison = garrison_lines(built, owners, nation_funds)
+    lines.extend(garrison)
+    lines.extend(placed_units(built, extra_units, garrison))
     lines.append("")
     lines.append("[playable]")
     # 可選國家：有陣營的才能選。中立國不參戰、也沒有敵對陣營可打垮，
@@ -844,7 +887,8 @@ def main():
                          turtle=unaligned(places.COLD_WAR_1950_BLOCS),
                          blocs=places.COLD_WAR_1950_BLOCS,
                          overrides=places.COLD_WAR_1950_PROVINCE_OWNERS,
-                         renames=places.COLD_WAR_RENAMES, start_month=1))
+                         renames=places.COLD_WAR_RENAMES, start_month=1,
+                         extra_units=places.COLD_WAR_1950_EXTRA_UNITS))
     print(write_conquest(world, "conquest_1980", "scn_conquest_1980",
                          "scn_conquest_1980_desc", 40, places.COLD_WAR_1980_MERGE, 1980,
                          turtle=unaligned(places.COLD_WAR_1980_BLOCS),

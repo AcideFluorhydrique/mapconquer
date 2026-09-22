@@ -13,12 +13,17 @@ PROVINCES 每一列：
 城市等級：0 = 無城、1 = 城鎮、2 = 城市、3 = 大城、4 = 核心城市。
 """
 
+# 只佔一格的省份：據點，不是一片領土。香港、直布羅陀、北愛爾蘭的面積在這張
+# 地圖上連一格都不到，照一般省份從城市往外長，會吃掉鄰國一大塊地。
+SINGLE_TILE = {"prov_hong_kong", "prov_gibraltar", "prov_belfast"}
+
 PROVINCES = [
     # ---- 西歐 ----
     ("prov_london",       -0.1,  51.5, 4, "GBR", "London",        "倫敦",     "伦敦"),
     ("prov_manchester",   -2.2,  53.5, 2, "GBR", "Manchester",    "曼徹斯特", "曼彻斯特"),
     ("prov_edinburgh",    -3.2,  55.9, 2, "GBR", "Edinburgh",     "愛丁堡",   "爱丁堡"),
     ("prov_dublin",       -6.3,  53.3, 2, "IRL", "Dublin",        "都柏林",   "都柏林"),
+    ("prov_belfast",      -5.9,  54.6, 1, "GBR", "Belfast",       "貝爾法斯特", "贝尔法斯特"),
     ("prov_paris",         2.35, 48.9, 4, "FRA", "Paris",         "巴黎",     "巴黎"),
     ("prov_lyon",          4.8,  45.8, 2, "FRA", "Lyon",          "里昂",     "里昂"),
     ("prov_bordeaux",     -0.6,  44.8, 2, "FRA", "Bordeaux",      "波爾多",   "波尔多"),
@@ -27,6 +32,7 @@ PROVINCES = [
     ("prov_madrid",       -3.7,  40.4, 3, "ESP", "Madrid",        "馬德里",   "马德里"),
     ("prov_barcelona",     2.2,  41.4, 2, "ESP", "Barcelona",     "巴塞隆納", "巴塞罗那"),
     ("prov_seville",      -6.0,  37.4, 2, "ESP", "Seville",       "塞維利亞", "塞维利亚"),
+    ("prov_gibraltar",    -5.35, 36.1, 1, "GBR", "Gibraltar",     "直布羅陀", "直布罗陀"),
     ("prov_lisbon",       -9.1,  38.7, 2, "PRT", "Lisbon",        "里斯本",   "里斯本"),
     ("prov_rome",         12.5,  41.9, 3, "ITA", "Rome",          "羅馬",     "罗马"),
     ("prov_milan",         9.2,  45.5, 3, "ITA", "Milan",         "米蘭",     "米兰"),
@@ -50,8 +56,10 @@ PROVINCES = [
     ("prov_stockholm",    18.1,  59.3, 2, "SWE", "Stockholm",     "斯德哥爾摩", "斯德哥尔摩"),
     ("prov_gothenburg",   12.0,  57.7, 1, "SWE", "Gothenburg",    "哥德堡",   "哥德堡"),
     ("prov_sundsvall",    17.3,  62.4, 1, "SWE", "Sundsvall",     "松茲瓦爾", "松兹瓦尔"),
-    ("prov_kiruna",       20.2,  67.9, 1, "SWE", "Kiruna",        "基律納",   "基律纳"),
+    ("prov_lulea",        22.15, 65.6, 1, "SWE", "Lulea",         "呂勒奧",   "吕勒奥"),
     ("prov_oslo",         10.7,  59.9, 2, "NOR", "Oslo",          "奧斯陸",   "奥斯陆"),
+    ("prov_trondheim",    10.4,  63.4, 1, "NOR", "Trondheim",     "特隆赫姆", "特隆赫姆"),
+    ("prov_hammerfest",   23.7,  70.7, 1, "NOR", "Hammerfest",    "哈默菲斯特", "哈默菲斯特"),
     ("prov_copenhagen",   12.6,  55.7, 2, "DNK", "Copenhagen",    "哥本哈根", "哥本哈根"),
     ("prov_aarhus",       10.2,  56.2, 1, "DNK", "Aarhus",        "奧胡斯",   "奥胡斯"),
     ("prov_helsinki",     25.0,  60.2, 2, "FIN", "Helsinki",      "赫爾辛基", "赫尔辛基"),
@@ -258,10 +266,13 @@ PROVINCES = [
     ("prov_la_paz",      -68.1, -16.5, 1, "BOL", "La Paz",        "拉巴斯",   "拉巴斯"),
     ("prov_santiago",    -70.7, -33.4, 3, "CHL", "Santiago",      "聖地牙哥", "圣地亚哥"),
     ("prov_antofagasta", -70.4, -23.6, 1, "CHL", "Antofagasta",   "安托法加斯塔", "安托法加斯塔"),
+    ("prov_temuco",      -72.6, -38.7, 1, "CHL", "Temuco",        "特木科",   "特木科"),
+    ("prov_coyhaique",   -72.1, -45.6, 1, "CHL", "Coyhaique",     "科伊艾克", "科伊艾克"),
     ("prov_punta_arenas", -70.9, -53.2, 1, "CHL", "Punta Arenas", "蓬塔阿雷納斯", "蓬塔阿雷纳斯"),
     ("prov_buenos_aires", -58.4, -34.6, 4, "ARG", "Buenos Aires", "布宜諾斯艾利斯", "布宜诺斯艾利斯"),
     ("prov_cordoba_ar",  -64.2, -31.4, 2, "ARG", "Cordoba",       "科爾多瓦", "科尔多瓦"),
-    ("prov_bariloche",   -71.3, -41.1, 1, "ARG", "Bariloche",     "巴里洛切", "巴里洛切"),
+    ("prov_neuquen",     -68.1, -39.0, 1, "ARG", "Neuquen",       "內烏肯",   "内乌肯"),
+    ("prov_comodoro",    -67.5, -45.9, 1, "ARG", "Comodoro Rivadavia", "里瓦達維亞海軍准將城", "里瓦达维亚海军准将城"),
     ("prov_montevideo",  -56.2, -34.9, 1, "URY", "Montevideo",    "蒙特維多", "蒙得维的亚"),
     ("prov_asuncion",    -57.6, -25.3, 1, "PRY", "Asuncion",      "亞松森",   "亚松森"),
     ("prov_sao_paulo",   -46.6, -23.5, 4, "BRA", "Sao Paulo",     "聖保羅",   "圣保罗"),
@@ -435,8 +446,9 @@ WW2_MERGE = {
     "GRL": "DNK", "ISL": "DNK",
     "PNG": "AUS",  # 1939 年是澳洲代管地，不是 1914 年以前的德屬新幾內亞。
 
-    # 美國：菲律賓與加勒比。
-    "PHL": "USA", "CUB": "USA", "DOM": "USA", "PAN": "USA",
+    # 美國：菲律賓（自治邦）。古巴、多明尼加、巴拿馬是獨立國家，
+    # 開戰時中立，不併進美國（見 WW2_NEUTRALS）。
+    "PHL": "USA",
 
     # 日本：朝鮮與臺灣是併入的領土。
     "KOR": "JPN", "PRK": "JPN", "TWN": "JPN",
@@ -488,6 +500,9 @@ WW2_PROVINCE_OWNERS = {
 # 顯示用的翻譯鍵。蘇聯沒有對應的 emoji 國旗，暫時沿用 🇷🇺。
 WW2_RENAMES = {
     "RUS": "nation_sun",
+    # 二戰時的中國就是中華民國，國旗 🇹🇼，名字直接叫「中國」。
+    # 冷戰年代才分成中華人民共和國與中華民國（見 COLD_WAR_RENAMES）。
+    "ROC": "nation_chn",
 }
 
 # 1939 年不參戰的國家。它們有城市、有守軍、也擋在路上，但 AI 走 TURTLE：
@@ -496,7 +511,9 @@ WW2_RENAMES = {
 WW2_NEUTRALS = {
     "CHE", "SWE", "PRT", "ESP", "IRL", "TUR", "IRN", "AFG", "SAU",
     "BRA", "ARG", "CHL", "COL", "PER", "VEN", "ECU", "BOL", "PRY", "URY",
-    "GTM", "MEX",
+    "GTM", "MEX", "CUB", "DOM", "PAN",
+    # 1943 年的衣索比亞是獨立國家（1941 年光復），不列入同盟陣營。
+    "ETH",
 }
 
 
@@ -510,7 +527,7 @@ WW2_1943_PROVINCE_OWNERS.update({
     # 德國：法國全境（1942 年 11 月之後）、低地國、北歐、波蘭、巴爾幹、蘇聯西部
     "prov_paris": "DEU", "prov_lyon": "DEU", "prov_bordeaux": "DEU",
     "prov_amsterdam": "DEU", "prov_brussels": "DEU", "prov_copenhagen": "DEU", "prov_aarhus": "DEU",
-    "prov_oslo": "DEU", "prov_narvik": "DEU",
+    "prov_oslo": "DEU", "prov_narvik": "DEU", "prov_trondheim": "DEU", "prov_hammerfest": "DEU",
     "prov_warsaw": "DEU", "prov_krakow": "DEU",
     "prov_belgrade": "DEU", "prov_athens": "DEU",
     "prov_riga": "DEU", "prov_minsk": "DEU", "prov_kyiv": "DEU", "prov_kharkiv": "DEU",
@@ -532,12 +549,12 @@ WW2_1943_PROVINCE_OWNERS.update({
 })
 
 # 芬蘭（繼續戰爭）、羅馬尼亞、匈牙利、保加利亞、泰國都是實際跟軸心並肩作戰的。
-# 西班牙與土耳其不是 —— 別的遊戲把西班牙排進軸心，那不對。衣索比亞在 1942 年
-# 底對軸心宣戰。巴西與墨西哥雖然也宣戰了，但在棋盤上跟中立沒有差別，
-# 放進同盟只會讓軸心玩家必須去滅掉它們才算贏。
+# 西班牙與土耳其不是 —— 別的遊戲把西班牙排進軸心，那不對。衣索比亞、巴西、
+# 墨西哥雖然也在 1942 年宣戰了，但在棋盤上跟中立沒有差別，放進同盟只會讓
+# 軸心玩家必須去滅掉它們才算贏。
 WW2_1943_BLOCS = {
     "AXIS": ["DEU", "ITA", "JPN", "FIN", "ROU", "HUN", "BGR", "THA"],
-    "ALLIES": ["GBR", "USA", "RUS", "ROC", "FRA", "CAN", "AUS", "NZL", "ETH"],
+    "ALLIES": ["GBR", "USA", "RUS", "ROC", "FRA", "CAN", "AUS", "NZL"],
 }
 
 # ----------------------------------------------------------------------
@@ -605,12 +622,25 @@ COLD_WAR_1980_BLOCS = {
     "PACT": ["RUS", "POL", "CZE", "HUN", "ROU", "BGR", "DDR"],
 }
 
-# 冷戰年代的名字：蘇聯、西德、在臺灣的中華民國。
+# 冷戰年代的名字：蘇聯、西德、中華人民共和國、在臺灣的中華民國。
 COLD_WAR_RENAMES = {
     "RUS": "nation_sun",
     "DEU": "nation_frg",
+    "CHN": "nation_prc",
     "TWN": "nation_roc",
 }
+
+# 1950 年開局時中華民國在大陸以外的殘部：滇緬邊境的孤軍、昆明附近的部隊、
+# 上海與福建外海的艦隊。(國家, 經度, 緯度, 兵種, 等級)，產生器會找最近的
+# 空格（陸軍找陸地、軍艦找海）。
+COLD_WAR_1950_EXTRA_UNITS = [
+    ("TWN", 99.0, 21.5, "INFANTRY", 2),     # 緬甸撣邦，滇緬邊境
+    ("TWN", 98.0, 22.8, "INFANTRY", 1),
+    ("TWN", 103.5, 24.2, "INFANTRY", 1),    # 昆明東南
+    ("TWN", 122.8, 30.8, "DESTROYER", 1),   # 上海外海（舟山）
+    ("TWN", 120.5, 25.8, "DESTROYER", 1),   # 福建外海
+    ("TWN", 119.8, 24.8, "CRUISER", 1),
+]
 
 
 # 合併後才出現的新勢力，需要自己的名字。

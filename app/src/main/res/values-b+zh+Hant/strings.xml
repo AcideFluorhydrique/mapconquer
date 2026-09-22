@@ -136,6 +136,7 @@
     <string name="difficulty_marshal">元帥</string>
     <string name="nation_sun">蘇聯</string>
     <string name="nation_frg">西德</string>
+    <string name="nation_prc">中華人民共和國</string>
     <string name="chapter_ww2_europe">二戰 · 歐洲</string>
     <string name="chapter_ww2_pacific">二戰 · 太平洋</string>
     <string name="chapter_cold_war">冷戰</string>
@@ -442,6 +443,7 @@
     <string name="prov_manchester">曼徹斯特</string>
     <string name="prov_edinburgh">愛丁堡</string>
     <string name="prov_dublin">都柏林</string>
+    <string name="prov_belfast">貝爾法斯特</string>
     <string name="prov_paris">巴黎</string>
     <string name="prov_lyon">里昂</string>
     <string name="prov_bordeaux">波爾多</string>
@@ -450,6 +452,7 @@
     <string name="prov_madrid">馬德里</string>
     <string name="prov_barcelona">巴塞隆納</string>
     <string name="prov_seville">塞維利亞</string>
+    <string name="prov_gibraltar">直布羅陀</string>
     <string name="prov_lisbon">里斯本</string>
     <string name="prov_rome">羅馬</string>
     <string name="prov_milan">米蘭</string>
@@ -471,8 +474,10 @@
     <string name="prov_stockholm">斯德哥爾摩</string>
     <string name="prov_gothenburg">哥德堡</string>
     <string name="prov_sundsvall">松茲瓦爾</string>
-    <string name="prov_kiruna">基律納</string>
+    <string name="prov_lulea">呂勒奧</string>
     <string name="prov_oslo">奧斯陸</string>
+    <string name="prov_trondheim">特隆赫姆</string>
+    <string name="prov_hammerfest">哈默菲斯特</string>
     <string name="prov_copenhagen">哥本哈根</string>
     <string name="prov_aarhus">奧胡斯</string>
     <string name="prov_helsinki">赫爾辛基</string>
@@ -661,10 +666,13 @@
     <string name="prov_la_paz">拉巴斯</string>
     <string name="prov_santiago">聖地牙哥</string>
     <string name="prov_antofagasta">安托法加斯塔</string>
+    <string name="prov_temuco">特木科</string>
+    <string name="prov_coyhaique">科伊艾克</string>
     <string name="prov_punta_arenas">蓬塔阿雷納斯</string>
     <string name="prov_buenos_aires">布宜諾斯艾利斯</string>
     <string name="prov_cordoba_ar">科爾多瓦</string>
-    <string name="prov_bariloche">巴里洛切</string>
+    <string name="prov_neuquen">內烏肯</string>
+    <string name="prov_comodoro">里瓦達維亞海軍准將城</string>
     <string name="prov_montevideo">蒙特維多</string>
     <string name="prov_asuncion">亞松森</string>
     <string name="prov_sao_paulo">聖保羅</string>

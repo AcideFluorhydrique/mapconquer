@@ -88,7 +88,8 @@ CAMPAIGN = [
         "forces": {
             "DEU": ["prov_berlin", "prov_hamburg", "prov_munich", "prov_cologne"],
             "FRA": ["prov_paris", "prov_lyon", "prov_bordeaux"],
-            "GBR": ["prov_london", "prov_manchester", "prov_edinburgh"],
+            "GBR": ["prov_london", "prov_manchester", "prov_edinburgh", "prov_belfast",
+                    "prov_gibraltar"],
             "BEL": ["prov_brussels"],
             "NLD": ["prov_amsterdam"],
             "CHE": ["prov_zurich"],
@@ -125,7 +126,8 @@ CAMPAIGN = [
         "turn_limit": 35,
         "stars": (20, 28),
         "forces": {
-            "GBR": ["prov_cairo", "prov_alexandria", "prov_aswan", "prov_khartoum"],
+            "GBR": ["prov_cairo", "prov_alexandria", "prov_aswan", "prov_khartoum",
+                    "prov_gibraltar"],
             "ITA": ["prov_tripoli"],
             "DEU": ["prov_tunis"],
             "TUR": ["prov_ankara", "prov_izmir"],
@@ -303,7 +305,8 @@ CAMPAIGN = [
             # 柏林在東德。原本整省算西德的，那是在沒有東德可用的時候將就的。
             "DEU": ["prov_hamburg", "prov_munich", "prov_cologne"],
             "FRA": ["prov_paris", "prov_lyon", "prov_bordeaux"],
-            "GBR": ["prov_london", "prov_manchester", "prov_edinburgh"],
+            "GBR": ["prov_london", "prov_manchester", "prov_edinburgh", "prov_belfast",
+                    "prov_gibraltar"],
             "NLD": ["prov_amsterdam"],
             "BEL": ["prov_brussels"],
             "DNK": ["prov_copenhagen", "prov_aarhus"],

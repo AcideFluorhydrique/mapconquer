@@ -15,28 +15,28 @@ startYear 1940
 starTurns 20,23
 
 [nations]
-DEU|nation_deu|#6E7A86|17|AGGRESSIVE|1600|3,3,2,1,0,2|🇩🇪|AXIS|1
-FRA|nation_fra|#4C5C9E|4|TURTLE|1100|2,1,2,0,0,1|🇫🇷|ALLIES|1
+DEU|nation_deu|#6E7A86|19|AGGRESSIVE|1600|3,3,2,1,0,2|🇩🇪|AXIS|1
+FRA|nation_fra|#4C5C9E|5|TURTLE|1100|2,1,2,0,0,1|🇫🇷|ALLIES|1
 GBR|nation_gbr|#8C4C4C|0|BALANCED|1000|1,1,1,0,0,1|🇬🇧|ALLIES|1
-BEL|nation_bel|#9E8C4C|7|TURTLE|400|1,1,1,0,0,1|🇧🇪|ALLIES|1
-NLD|nation_nld|#C4813C|8|TURTLE|400|1,1,1,0,0,1|🇳🇱|ALLIES|1
-CHE|nation_che|#B45C5C|16|TURTLE|500|1,1,1,0,0,1|🇨🇭||1
-ESP|nation_esp|#B08A3C|9|TURTLE|500|1,1,1,0,0,1|🇪🇸||1
+BEL|nation_bel|#9E8C4C|8|TURTLE|400|1,1,1,0,0,1|🇧🇪|ALLIES|1
+NLD|nation_nld|#C4813C|9|TURTLE|400|1,1,1,0,0,1|🇳🇱|ALLIES|1
+CHE|nation_che|#B45C5C|18|TURTLE|500|1,1,1,0,0,1|🇨🇭||1
+ESP|nation_esp|#B08A3C|10|TURTLE|500|1,1,1,0,0,1|🇪🇸||1
 IRL|nation_irl|#4C8C5C|3|TURTLE|260|1,1,1,0,0,1|🇮🇪||1
-PRT|nation_prt|#4C8C7A|12|TURTLE|300|1,1,1,0,0,1|🇵🇹||1
-ITA|nation_ita|#5C9E6E|13|TURTLE|700|1,1,1,0,0,1|🇮🇹||1
-POL|nation_pol|#B4535C|23|TURTLE|520|1,1,1,0,0,1|🇵🇱||1
-HUN|nation_hun|#9E7A4C|25|TURTLE|300|1,1,1,0,0,1|🇭🇺||1
-ROU|nation_rou|#8C7A3C|26|TURTLE|320|1,1,1,0,0,1|🇷🇴||1
-SRB|nation_srb|#8C5C4C|27|TURTLE|260|1,1,1,0,0,1|🇷🇸||1
-BGR|nation_bgr|#6E8C5C|28|TURTLE|240|1,1,1,0,0,1|🇧🇬||1
-GRC|nation_grc|#4C7AA8|29|TURTLE|300|1,1,1,0,0,1|🇬🇷||1
-SWE|nation_swe|#4C6E9E|30|TURTLE|420|1,1,1,0,0,1|🇸🇪||1
-NOR|nation_nor|#5C7EA8|32|TURTLE|380|1,1,1,0,0,1|🇳🇴||1
-DNK|nation_dnk|#A85C6E|33|TURTLE|320|1,1,1,0,0,1|🇩🇰||1
-FIN|nation_fin|#7A9EB4|35|TURTLE|320|1,1,1,0,0,1|🇫🇮||1
-RUS|nation_sun|#8C6E4C|41|TURTLE|1500|1,1,1,0,0,1|🇷🇺||1
-TUR|nation_tur|#A84C4C|44|TURTLE|740|1,1,1,0,0,1|🇹🇷||1
+PRT|nation_prt|#4C8C7A|14|TURTLE|300|1,1,1,0,0,1|🇵🇹||1
+ITA|nation_ita|#5C9E6E|15|TURTLE|700|1,1,1,0,0,1|🇮🇹||1
+POL|nation_pol|#B4535C|25|TURTLE|520|1,1,1,0,0,1|🇵🇱||1
+HUN|nation_hun|#9E7A4C|27|TURTLE|300|1,1,1,0,0,1|🇭🇺||1
+ROU|nation_rou|#8C7A3C|28|TURTLE|320|1,1,1,0,0,1|🇷🇴||1
+SRB|nation_srb|#8C5C4C|29|TURTLE|260|1,1,1,0,0,1|🇷🇸||1
+BGR|nation_bgr|#6E8C5C|30|TURTLE|240|1,1,1,0,0,1|🇧🇬||1
+GRC|nation_grc|#4C7AA8|31|TURTLE|300|1,1,1,0,0,1|🇬🇷||1
+SWE|nation_swe|#4C6E9E|32|TURTLE|420|1,1,1,0,0,1|🇸🇪||1
+NOR|nation_nor|#5C7EA8|34|TURTLE|380|1,1,1,0,0,1|🇳🇴||1
+DNK|nation_dnk|#A85C6E|35|TURTLE|320|1,1,1,0,0,1|🇩🇰||1
+FIN|nation_fin|#7A9EB4|37|TURTLE|320|1,1,1,0,0,1|🇫🇮||1
+RUS|nation_sun|#8C6E4C|43|TURTLE|1500|1,1,1,0,0,1|🇷🇺||1
+TUR|nation_tur|#A84C4C|46|TURTLE|740|1,1,1,0,0,1|🇹🇷||1
 
 [relations]
 DEU FRA WAR
@@ -45,28 +45,28 @@ DEU BEL WAR
 DEU NLD WAR
 
 [owners]
-DEU: 17-22
-FRA: 4-6,47-48
-GBR: 0-2
-BEL: 7
-NLD: 8
-CHE: 16
-ESP: 9-11
+DEU: 19-24
+FRA: 5-7,49-50
+GBR: 0-2,4,13
+BEL: 8
+NLD: 9
+CHE: 18
+ESP: 10-12
 IRL: 3
-PRT: 12
-ITA: 13-15
-POL: 23-24
-HUN: 25
-ROU: 26
-SRB: 27
-BGR: 28
-GRC: 29
-SWE: 30-31
-NOR: 32
-DNK: 33-34
-FIN: 35
-RUS: 36-43
-TUR: 44-46
+PRT: 14
+ITA: 15-17
+POL: 25-26
+HUN: 27
+ROU: 28
+SRB: 29
+BGR: 30
+GRC: 31
+SWE: 32-33
+NOR: 34
+DNK: 35-36
+FIN: 37
+RUS: 38-45
+TUR: 46-48
 
 [units]
 DEU|25,14|HEADQUARTERS|1|-
@@ -146,4 +146,4 @@ TUR|38,35|INFANTRY|1|-
 FRA
 
 [objectives]
-HOLD_PROVINCES|4|20
+HOLD_PROVINCES|5|20

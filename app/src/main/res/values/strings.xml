@@ -136,6 +136,7 @@
     <string name="difficulty_marshal">Marshal</string>
     <string name="nation_sun">Soviet Union</string>
     <string name="nation_frg">West Germany</string>
+    <string name="nation_prc">People\'s Republic of China</string>
     <string name="chapter_ww2_europe">WWII · Europe</string>
     <string name="chapter_ww2_pacific">WWII · Pacific</string>
     <string name="chapter_cold_war">Cold War</string>
@@ -442,6 +443,7 @@
     <string name="prov_manchester">Manchester</string>
     <string name="prov_edinburgh">Edinburgh</string>
     <string name="prov_dublin">Dublin</string>
+    <string name="prov_belfast">Belfast</string>
     <string name="prov_paris">Paris</string>
     <string name="prov_lyon">Lyon</string>
     <string name="prov_bordeaux">Bordeaux</string>
@@ -450,6 +452,7 @@
     <string name="prov_madrid">Madrid</string>
     <string name="prov_barcelona">Barcelona</string>
     <string name="prov_seville">Seville</string>
+    <string name="prov_gibraltar">Gibraltar</string>
     <string name="prov_lisbon">Lisbon</string>
     <string name="prov_rome">Rome</string>
     <string name="prov_milan">Milan</string>
@@ -471,8 +474,10 @@
     <string name="prov_stockholm">Stockholm</string>
     <string name="prov_gothenburg">Gothenburg</string>
     <string name="prov_sundsvall">Sundsvall</string>
-    <string name="prov_kiruna">Kiruna</string>
+    <string name="prov_lulea">Lulea</string>
     <string name="prov_oslo">Oslo</string>
+    <string name="prov_trondheim">Trondheim</string>
+    <string name="prov_hammerfest">Hammerfest</string>
     <string name="prov_copenhagen">Copenhagen</string>
     <string name="prov_aarhus">Aarhus</string>
     <string name="prov_helsinki">Helsinki</string>
@@ -661,10 +666,13 @@
     <string name="prov_la_paz">La Paz</string>
     <string name="prov_santiago">Santiago</string>
     <string name="prov_antofagasta">Antofagasta</string>
+    <string name="prov_temuco">Temuco</string>
+    <string name="prov_coyhaique">Coyhaique</string>
     <string name="prov_punta_arenas">Punta Arenas</string>
     <string name="prov_buenos_aires">Buenos Aires</string>
     <string name="prov_cordoba_ar">Cordoba</string>
-    <string name="prov_bariloche">Bariloche</string>
+    <string name="prov_neuquen">Neuquen</string>
+    <string name="prov_comodoro">Comodoro Rivadavia</string>
     <string name="prov_montevideo">Montevideo</string>
     <string name="prov_asuncion">Asuncion</string>
     <string name="prov_sao_paulo">Sao Paulo</string>

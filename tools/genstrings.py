@@ -202,6 +202,7 @@ UI = {
     # AI 性格
     "nation_sun": ("Soviet Union", "蘇聯", "苏联"),
     "nation_frg": ("West Germany", "西德", "西德"),
+    "nation_prc": ("People's Republic of China", "中華人民共和國", "中华人民共和国"),
 
     "chapter_ww2_europe": ("WWII · Europe", "二戰 · 歐洲", "二战 · 欧洲"),
     "chapter_ww2_pacific": ("WWII · Pacific", "二戰 · 太平洋", "二战 · 太平洋"),

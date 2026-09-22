@@ -18,7 +18,7 @@ starTurns 26,29
 USA|nation_usa|#4C7BA8|22|AGGRESSIVE|2000|3,3,3,3,0,3|🇺🇸|ALLIES|1
 JPN|nation_jpn|#C45C5C|20|BALANCED|1400|2,2,2,3,0,2|🇯🇵|AXIS|1
 THA|nation_tha|#5C86A8|7|TURTLE|400|1,1,1,0,0,1|🇹🇭|AXIS|1
-ROC|nation_roc|#B4454C|1|TURTLE|1100|1,1,1,0,0,1|🇹🇼||1
+ROC|nation_chn|#B4454C|1|TURTLE|1100|1,1,1,0,0,1|🇹🇼||1
 
 [relations]
 JPN USA WAR
