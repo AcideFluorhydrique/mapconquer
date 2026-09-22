@@ -99,7 +99,11 @@ class Session(
 
     init {
         val built = ArrayList<Nation>(scenario.nations.size)
-        scenario.nations.forEachIndexed { index, sn ->
+        // 玩家永遠排第一：每一輪由玩家先動，AI 在玩家結束回合之後才依序行動。
+        // 劇本檔的順序（依國力排）只決定 AI 之間的先後。開新局時不該先看著
+        // 一百多個 AI 跑完一輪才輪到自己。
+        val order = scenario.nations.sortedBy { if (it.code == playerCode) 0 else 1 }
+        order.forEachIndexed { index, sn ->
             val nation = Nation(
                 index, sn.code, sn.nameKey, sn.colour,
                 sn.aiProfile, sn.capitalProvince, sn.flag, sn.bloc, sn.warTurn

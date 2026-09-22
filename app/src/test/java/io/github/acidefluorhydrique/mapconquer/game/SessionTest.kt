@@ -875,6 +875,18 @@ class SessionTest {
     }
 
     @Test
+    fun `a new game starts on the player's turn, before any AI moves`() {
+        val scenario = TestAssets.scenario("conquest_1939")
+        val map = TestAssets.cachedMap(scenario.mapId)
+        // 挑劇本檔裡排得最後面的可選國家：原本它要等前面所有 AI 跑完才輪到。
+        val code = scenario.playable.last()
+        val s = Session(map, scenario, Difficulty.OFFICER, code, 1L)
+        assertEquals(code, s.playerNation.code)
+        assertEquals(1, s.turn)
+        assertTrue("開局第一個行動的就是玩家", s.isPlayerTurn)
+    }
+
+    @Test
     fun `losing everything ends the game`() {
         val s = session(
             units = listOf(ScenarioUnit("BBB", 5, 1, "INFANTRY", 1, "")),

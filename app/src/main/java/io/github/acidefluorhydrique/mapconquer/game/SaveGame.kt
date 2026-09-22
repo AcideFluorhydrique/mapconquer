@@ -25,7 +25,11 @@ import java.io.File
 object SaveGame {
 
     private const val FILE_NAME = "session.save"
-    private const val VERSION = 1
+    /**
+     * 存檔格式版本。規則改變了索引的意義時要加一，舊版存檔會被當成過時拒絕：
+     * 2 = 國家順序改成玩家第一（國家 id 全部位移）。
+     */
+    private const val VERSION = 2
 
     /** 讀檔的結果。存檔舊了跟存檔壞了是兩回事，玩家該看到不同的說明。 */
     sealed class Restore {
@@ -158,6 +162,7 @@ object SaveGame {
         val lines = file(context).readLines()
         if (lines.isEmpty()) return Restore.Broken
 
+        var version = 0
         var scenarioId = ""
         var mapPrint = ""
         var playerCode = ""
@@ -179,6 +184,7 @@ object SaveGame {
             val key = line.substring(0, sep)
             val value = line.substring(sep + 1).trim()
             when (key) {
+                "v" -> version = value.toIntOrNull() ?: 0
                 "scenario" -> scenarioId = value
                 "map" -> mapPrint = value
                 "player" -> playerCode = value
@@ -197,6 +203,7 @@ object SaveGame {
             }
         }
         if (scenarioId.isEmpty()) return Restore.Broken
+        if (version != VERSION) return Restore.Outdated
 
         val scenario = ScenarioLoader.load(context, scenarioId)
         val map = MapLoader.load(context, scenario.mapId)
