@@ -413,7 +413,7 @@ def garrison_lines(built, owners, nation_funds):
 
 def write_conquest(built, scenario_id, name_key, desc_key, order, merge,
                    start_year, turtle=None, blocs=None, overrides=None,
-                   renames=None, war_turns=None, start_month=None):
+                   renames=None, war_turns=None, start_month=None, turn_limit=0):
     """把 places 的國家分佈展開成一份征服劇本。"""
     owners = {}
     for pid, (key, _tier, nation, _tile) in enumerate(built.provinces):
@@ -447,7 +447,8 @@ def write_conquest(built, scenario_id, name_key, desc_key, order, merge,
     lines.append("nameKey %s" % name_key)
     lines.append("descKey %s" % desc_key)
     lines.append("order %d" % order)
-    lines.append("turnLimit 0")
+    # 超過回合上限判負（docs/original-behavior.md「征服的勝利條件」）。0 = 不設限。
+    lines.append("turnLimit %d" % turn_limit)
     lines.append("startYear %d" % start_year)
     if start_month:
         lines.append("startMonth %d" % start_month)

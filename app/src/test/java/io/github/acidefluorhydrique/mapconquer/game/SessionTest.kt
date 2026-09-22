@@ -724,7 +724,8 @@ class SessionTest {
         cTier: Int,
         cOwner: String,
         units: List<ScenarioUnit>,
-        relations: List<Triple<String, String, Relation>>
+        relations: List<Triple<String, String, Relation>>,
+        turnLimit: Int = 50
     ): Session {
         val text = """
             format 1
@@ -764,7 +765,7 @@ class SessionTest {
         ownership[cOwner] = (ownership[cOwner] ?: IntArray(0)) + 2
         val scenario = Scenario(
             id = "test3", mapId = "test3", mode = GameMode.CONQUEST,
-            nameKey = "n", descKey = "d", order = 1, turnLimit = 50,
+            nameKey = "n", descKey = "d", order = 1, turnLimit = turnLimit,
             startYear = 2026, startMonth = 1, nations = nations, relations = relations,
             ownership = ownership, startingUnits = units, playable = listOf("AAA"),
             objectives = emptyList(), starTurns = intArrayOf(10, 20)
@@ -844,6 +845,21 @@ class SessionTest {
         assertTrue(Orders.declareWar(s, 0, 2))
         takeCityB(s)
         assertEquals("被宣戰的中立國就是敵國，還沒打下來", SessionStatus.PLAYING, s.status)
+    }
+
+    @Test
+    fun `a conquest still undecided past its turn limit is lost`() {
+        val s = threeProvinceSession(
+            cTier = 2, cOwner = "BBB",
+            units = listOf(ScenarioUnit("AAA", 1, 1, "INFANTRY", 1, "")),
+            relations = listOf(Triple("AAA", "BBB", Relation.WAR)),
+            turnLimit = 2
+        )
+        while (s.turn <= 2) {
+            assertEquals("上限之內還在打", SessionStatus.PLAYING, s.status)
+            s.advanceToNextNation()
+        }
+        assertEquals("超過回合上限判負", SessionStatus.DEFEAT, s.status)
     }
 
     @Test
