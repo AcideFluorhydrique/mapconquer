@@ -65,44 +65,94 @@ jobs:
             app/build/reports/lint-results-debug.xml
           if-no-files-found: warn
 
-      # 沒有這一步，每台全新的 runner 都會自己產生一把 debug keystore，
-      # 每次產出的 debug APK 簽名都不一樣，裝在手機上的版本永遠無法覆蓋更新。
-      # 固定的那一把以 base64 存在 repo secret DEBUG_KEYSTORE，還原到 Android
-      # 建置工具預設讀取的位置，Gradle 設定不必動。這把只簽 debug 版；
-      # F-Droid 的 release 由 F-Droid 自己簽。來自 fork 的 PR 拿不到 secret，
-      # 會退回隨機金鑰並留一則警告，不讓建置失敗。
-      - name: Restore the shared debug keystore
-        env:
-          DEBUG_KEYSTORE: ${{ secrets.DEBUG_KEYSTORE }}
-        run: |
-          if [ -n "$DEBUG_KEYSTORE" ]; then
-            mkdir -p ~/.android
-            echo "$DEBUG_KEYSTORE" | base64 -d > ~/.android/debug.keystore
-          else
-            echo "::warning::DEBUG_KEYSTORE secret 沒有設定，debug APK 會用隨機金鑰簽名，無法覆蓋更新。"
-          fi
-
-      - name: Build debug APK
-        run: ./gradlew assembleDebug --stacktrace
-
-      - name: Upload debug APK
-        uses: actions/upload-artifact@v5
-        with:
-          name: mapconquer-debug
-          path: app/build/outputs/apk/debug/app-debug.apk
-          if-no-files-found: error
-
-      # F-Droid 建的是 release variant，這裡也走一遍同一條路徑。
-      # 專案沒有簽章設定，所以產出的是未簽章的 APK。
+      # F-Droid 建的是 release variant，這裡也走同一條路徑。Gradle 沒有簽章設定，
+      # 產出的是未簽章的 APK —— 跟 F-Droid 從原始碼建出來的應該位元相同，
+      # 這是 reproducible build 的前提（見下面的 reproducible job）。
       - name: Build release APK
         run: ./gradlew assembleRelease --stacktrace
 
-      - name: Upload release APK
+      - name: Upload unsigned release APK
         uses: actions/upload-artifact@v5
         with:
           name: mapconquer-release-unsigned
-          path: app/build/outputs/apk/release/*.apk
+          path: app/build/outputs/apk/release/app-release-unsigned.apk
           if-no-files-found: error
+
+      # 用正式金鑰簽名。簽名刻意不放進 Gradle：建置產物保持跟 F-Droid 的一致，
+      # 簽名是建置之後的一步，F-Droid 比對時把這份的簽章複製到它自己建的 APK 上
+      # 驗證即可。
+      #
+      # 金鑰以 base64 存在 repo secret RELEASE_KEYSTORE，密碼與別名另外三個
+      # secret。keystore 只在這一步寫進 runner 的暫存目錄，簽完立刻刪除。
+      # 拿不到 secret 的情況（來自 fork 的 PR）只留警告，不讓建置失敗。
+      - name: Sign release APK
+        id: sign
+        env:
+          RELEASE_KEYSTORE: ${{ secrets.RELEASE_KEYSTORE }}
+          RELEASE_KEYSTORE_PASSWORD: ${{ secrets.RELEASE_KEYSTORE_PASSWORD }}
+          RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
+          RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
+        run: |
+          if [ -z "$RELEASE_KEYSTORE" ]; then
+            echo "::warning::RELEASE_KEYSTORE secret 沒有設定，只產出未簽章的 release APK。"
+            exit 0
+          fi
+          apksigner="$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -n 1)/apksigner"
+          keystore="$RUNNER_TEMP/release.keystore"
+          trap 'rm -f "$keystore"' EXIT
+          echo "$RELEASE_KEYSTORE" | base64 -d > "$keystore"
+          "$apksigner" sign \
+            --ks "$keystore" \
+            --ks-pass env:RELEASE_KEYSTORE_PASSWORD \
+            --ks-key-alias "$RELEASE_KEY_ALIAS" \
+            --key-pass env:RELEASE_KEY_PASSWORD \
+            --out app/build/outputs/apk/release/mapconquer-release.apk \
+            app/build/outputs/apk/release/app-release-unsigned.apk
+          # 憑證指紋印在 log 上：F-Droid metadata 的 AllowedAPKSigningKeys 填的就是它。
+          "$apksigner" verify --print-certs app/build/outputs/apk/release/mapconquer-release.apk
+          echo "signed=true" >> "$GITHUB_OUTPUT"
+
+      - name: Upload signed release APK
+        if: steps.sign.outputs.signed == 'true'
+        uses: actions/upload-artifact@v5
+        with:
+          name: mapconquer-release
+          path: app/build/outputs/apk/release/mapconquer-release.apk
+          if-no-files-found: error
+
+  # 可重現建置的檢查：在另一個目錄、關掉 build cache 再建一次 release，
+  # 兩份未簽章 APK 必須位元相同。F-Droid 從原始碼建出來的 APK 跟我們簽的
+  # 那份（去掉簽章後）一致，才會發布我們簽的版本；不一致的話那一版不會上架。
+  # 這裡先在 CI 抓出時間戳、絕對路徑、排序不穩定這類問題。
+  reproducible:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v5
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Build twice from two different directories
+        run: |
+          ./gradlew assembleRelease --no-build-cache --stacktrace
+          cp app/build/outputs/apk/release/app-release-unsigned.apk "$RUNNER_TEMP/first.apk"
+          copy="$RUNNER_TEMP/second-checkout"
+          git worktree add "$copy" HEAD
+          (cd "$copy" && ./gradlew assembleRelease --no-build-cache --stacktrace)
+          cp "$copy/app/build/outputs/apk/release/app-release-unsigned.apk" "$RUNNER_TEMP/second.apk"
+          sha256sum "$RUNNER_TEMP/first.apk" "$RUNNER_TEMP/second.apk"
+          if ! cmp -s "$RUNNER_TEMP/first.apk" "$RUNNER_TEMP/second.apk"; then
+            echo "::error::兩次建置的 release APK 不一致，這個版本不可重現。"
+            (cd "$RUNNER_TEMP" && mkdir a b && unzip -q first.apk -d a && unzip -q second.apk -d b && diff -r a b | head -50) || true
+            exit 1
+          fi
+          echo "兩次建置位元相同。"
 
   # 地圖與翻譯都是產生出來的，重跑產生器之後不該有任何差異 ——
   # 否則代表有人手動改了 assets，下一次重新產生就會被蓋掉。
