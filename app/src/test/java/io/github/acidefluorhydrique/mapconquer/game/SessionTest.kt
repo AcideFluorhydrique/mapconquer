@@ -712,6 +712,152 @@ class SessionTest {
         assertEquals(SessionStatus.VICTORY, s.status)
     }
 
+    // ------------------------------------------------------------------
+    // 投降與征服的勝利條件（docs/original-behavior.md）
+    // ------------------------------------------------------------------
+
+    /**
+     * 三省地圖：A 省（AAA 的城）、B 省（BBB 的城）、C 省（[cTier] 級，歸 [cOwner]）。
+     * 最下面一列是海。
+     */
+    private fun threeProvinceSession(
+        cTier: Int,
+        cOwner: String,
+        units: List<ScenarioUnit>,
+        relations: List<Triple<String, String, Relation>>
+    ): Session {
+        val text = """
+            format 1
+            id test3
+            cols 9
+            rows 6
+
+            [terrain]
+            .........
+            .........
+            .........
+            .........
+            .........
+            ~~~~~~~~~
+
+            [provinces]
+            3:0 3:1 3:2
+            3:0 3:1 3:2
+            3:0 3:1 3:2
+            3:0 3:1 3:2
+            3:0 3:1 3:2
+            9:-1
+
+            [meta]
+            0|prov_a|3|1,1
+            1|prov_b|3|4,1
+            2|prov_c|$cTier|7,1
+        """.trimIndent()
+        val map = MapLoader.parse(text.reader().buffered(), "test3")
+        val nations = listOf(
+            ScenarioNation("AAA", "nation_aaa", "#FF0000", 0, AiProfile.BALANCED, 5000, IntArray(6)),
+            ScenarioNation("BBB", "nation_bbb", "#0000FF", 1, AiProfile.BALANCED, 5000, IntArray(6)),
+            ScenarioNation("CCC", "nation_ccc", "#00FF00", if (cOwner == "CCC") 2 else -1,
+                AiProfile.BALANCED, 5000, IntArray(6))
+        )
+        val ownership = mutableMapOf("AAA" to intArrayOf(0), "BBB" to intArrayOf(1))
+        ownership[cOwner] = (ownership[cOwner] ?: IntArray(0)) + 2
+        val scenario = Scenario(
+            id = "test3", mapId = "test3", mode = GameMode.CONQUEST,
+            nameKey = "n", descKey = "d", order = 1, turnLimit = 50,
+            startYear = 2026, startMonth = 1, nations = nations, relations = relations,
+            ownership = ownership, startingUnits = units, playable = listOf("AAA"),
+            objectives = emptyList(), starTurns = intArrayOf(10, 20)
+        )
+        return Session(map, scenario, Difficulty.OFFICER, "AAA", 4321L)
+    }
+
+    /** 讓 AAA 在 (3,1) 的步兵走進 B 省的城，城防先歸零。 */
+    private fun takeCityB(s: Session) {
+        val unit = s.units.first { it.nationId == 0 && it.kind == UnitKind.INFANTRY }
+        s.cityHp[1] = 0
+        Orders.computeReachable(s, unit, ArrayList())
+        Orders.move(s, unit, s.map.provinces[1].capitalTile, ArrayList())
+        assertEquals("步兵該站上 B 城", s.map.provinces[1].capitalTile, unit.tile)
+    }
+
+    @Test
+    fun `losing the last city is a surrender - units vanish, leftover land goes to the captor`() {
+        val s = threeProvinceSession(
+            cTier = 0, cOwner = "BBB",
+            units = listOf(
+                ScenarioUnit("AAA", 3, 1, "INFANTRY", 1, ""),
+                ScenarioUnit("BBB", 7, 3, "INFANTRY", 1, ""),
+                ScenarioUnit("BBB", 7, 5, "DESTROYER", 1, "")
+            ),
+            relations = listOf(Triple("AAA", "BBB", Relation.WAR))
+        )
+        assertFalse("C 省沒有城", s.map.provinces[2].hasCity)
+        takeCityB(s)
+
+        val bbb = s.nationByCode("BBB")!!
+        assertTrue("最後一座城丟了就投降", bbb.eliminated)
+        assertTrue("投降國的部隊全部消失，包括海上的", s.unitsOf(bbb.id).isEmpty())
+        assertEquals("剩下的領土歸攻下最後一城的國家", 0, s.provinceOwner[2])
+        assertTrue(s.events.any { it.key == "event_nation_surrendered" })
+        assertEquals("唯一的敵國投降，征服完成", SessionStatus.VICTORY, s.status)
+    }
+
+    @Test
+    fun `losing one of several cities is not a surrender`() {
+        val s = threeProvinceSession(
+            cTier = 2, cOwner = "BBB",
+            units = listOf(
+                ScenarioUnit("AAA", 3, 1, "INFANTRY", 1, ""),
+                ScenarioUnit("BBB", 7, 3, "INFANTRY", 1, "")
+            ),
+            relations = listOf(Triple("AAA", "BBB", Relation.WAR))
+        )
+        takeCityB(s)
+
+        val bbb = s.nationByCode("BBB")!!
+        assertFalse("還有一座城就還在打", bbb.eliminated)
+        assertEquals(1, s.unitsOf(bbb.id).size)
+        assertEquals(bbb.id, s.provinceOwner[2])
+        assertEquals(SessionStatus.PLAYING, s.status)
+    }
+
+    @Test
+    fun `conquest is won without touching neutrals`() {
+        val s = threeProvinceSession(
+            cTier = 2, cOwner = "CCC",
+            units = listOf(ScenarioUnit("AAA", 3, 1, "INFANTRY", 1, "")),
+            relations = listOf(Triple("AAA", "BBB", Relation.WAR))
+        )
+        takeCityB(s)
+        assertFalse("中立國不必打", s.nationByCode("CCC")!!.eliminated)
+        assertEquals(SessionStatus.VICTORY, s.status)
+    }
+
+    @Test
+    fun `a neutral you declared war on has to be conquered too`() {
+        val s = threeProvinceSession(
+            cTier = 2, cOwner = "CCC",
+            units = listOf(ScenarioUnit("AAA", 3, 1, "INFANTRY", 1, "")),
+            relations = listOf(Triple("AAA", "BBB", Relation.WAR))
+        )
+        assertTrue(Orders.declareWar(s, 0, 2))
+        takeCityB(s)
+        assertEquals("被宣戰的中立國就是敵國，還沒打下來", SessionStatus.PLAYING, s.status)
+    }
+
+    @Test
+    fun `nobody to fight means no conquest victory`() {
+        val s = threeProvinceSession(
+            cTier = 2, cOwner = "CCC",
+            units = listOf(ScenarioUnit("AAA", 1, 1, "INFANTRY", 1, "")),
+            relations = emptyList()
+        )
+        repeat(s.nations.size) { s.advanceToNextNation() }
+        s.refreshOutcome()
+        assertEquals(SessionStatus.PLAYING, s.status)
+    }
+
     @Test
     fun `losing everything ends the game`() {
         val s = session(

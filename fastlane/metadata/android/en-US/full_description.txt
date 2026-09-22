@@ -10,7 +10,8 @@ commanders who then serve you in every later game.
 
 CONQUEST
 The whole world map, a hundred-odd nations, everyone at peace on turn one. Pick anyone
-— a superpower or a country with a single city — and take 80% of the planet.
+— a superpower or a country with a single city — and take every city your enemies hold.
+A nation that loses its last city surrenders.
 
 WHAT MAKES A BATTLE
 Every unit has four separate attack values: against infantry, armour, ships and

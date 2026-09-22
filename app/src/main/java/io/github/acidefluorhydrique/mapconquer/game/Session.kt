@@ -294,8 +294,38 @@ class Session(
             province.capitalTile,
             newOwner
         )
-        if (old >= 0) checkElimination(old)
+        if (old >= 0) {
+            if (province.hasCity && !ownsAnyCity(old)) surrender(old, newOwner) else checkElimination(old)
+        }
         return true
+    }
+
+    fun ownsAnyCity(nationId: Int): Boolean =
+        map.provinces.any { it.hasCity && provinceOwner[it.id] == nationId }
+
+    /**
+     * 投降：失去最後一座城市的國家退出戰局。
+     *
+     * 規則取自原版的可觀察行為（docs/original-behavior.md「投降」）：它剩下的
+     * 部隊全部消失 —— 包括還在海上、還在別國境內的 —— 剩下的領土歸給攻下
+     * 最後那座城的國家。這讓「打下它的城市」就是打垮一個國家的全部條件，
+     * 不必把散在各處的最後幾支部隊一一追殺乾淨。
+     */
+    private fun surrender(nationId: Int, captor: Int) {
+        val nation = nations[nationId]
+        if (nation.eliminated) return
+        for (pid in provinceOwner.indices) {
+            if (provinceOwner[pid] == nationId) provinceOwner[pid] = captor
+        }
+        // 載具沉沒時會連同貨艙一起處理，已經死掉的就跳過，免得重複計入損失。
+        for (unit in units.filter { it.nationId == nationId }) if (unit.isAlive) destroyUnit(unit)
+        nation.eliminated = true
+        pushEvent(
+            "event_nation_surrendered",
+            listOf(nation.nameKey, nations[captor].nameKey),
+            -1,
+            nationId
+        )
     }
 
     private fun checkElimination(nationId: Int) {
@@ -622,26 +652,15 @@ class Session(
             status = SessionStatus.VICTORY
             return
         }
-        // 征服模式沒寫目標時的預設：打垮敵對陣營。
-        //
-        // 原本是「拿下地圖上八成的省份」，那條規則會逼玩家去打友軍與中立國 ——
-        // 八成的地圖本來就不可能只從敵人身上拿。這個模式是兩大陣營之間的
-        // 戰爭，贏的定義就該是敵人沒了。
+        // 征服模式沒寫目標時的預設：攻下所有敵國的城市（見 docs/original-behavior.md
+        // 「征服的勝利條件」）。敵國失去最後一座城就投降，所以「敵人全部投降」
+        // 跟「敵人的城市全在你手上」是同一件事。盟國與中立國不算 —— 原本的
+        // 「拿下八成地圖」會逼玩家去打它們，那不是這個模式的勝利。
         if (objectives.isEmpty()) {
-            val enemies = blocEnemiesOf(playerNationId)
-            if (enemies.isNotEmpty()) {
-                if (enemies.all { it.eliminated }) {
-                    status = SessionStatus.VICTORY
-                    return
-                }
-            } else {
-                // 玩家選了中立國：沒有陣營可打垮，回到面積規則。
-                val owned = provincesOf(playerNationId)
-                val total = map.provinces.count { it.tiles.isNotEmpty() }
-                if (total > 0 && owned * 100 / total >= CONQUEST_VICTORY_PERCENT) {
-                    status = SessionStatus.VICTORY
-                    return
-                }
+            val enemies = conquestEnemiesOf(playerNationId)
+            if (enemies.isNotEmpty() && enemies.all { it.eliminated }) {
+                status = SessionStatus.VICTORY
+                return
             }
         }
         if (scenario.turnLimit > 0 && turn > scenario.turnLimit) {
@@ -857,6 +876,16 @@ class Session(
         }
     }
 
+    /**
+     * 征服模式裡 [nationId] 必須打垮的國家：敵對陣營的全部成員（包括還沒到
+     * 參戰回合的），加上目前跟它交戰中的任何國家（例如被它宣戰的中立國）。
+     * 盟國與沒有交戰的中立國不在其中。
+     */
+    fun conquestEnemiesOf(nationId: Int): List<Nation> {
+        val bloc = blocEnemiesOf(nationId)
+        return nations.filter { it.id != nationId && (it in bloc || diplomacy.isAtWar(nationId, it.id)) }
+    }
+
     /** 與 [nationId] 分屬敵對陣營的國家；兩邊都要有陣營才算數。 */
     fun blocEnemiesOf(nationId: Int): List<Nation> {
         val bloc = nations.getOrNull(nationId)?.bloc.orEmpty()
@@ -937,8 +966,6 @@ class Session(
         const val STARVATION_DAMAGE = 8
         const val CITY_REPAIR = 22
         const val FIELD_REPAIR = 6
-
-        const val CONQUEST_VICTORY_PERCENT = 80
 
         /**
          * 有守軍時城防每回合的修復量。

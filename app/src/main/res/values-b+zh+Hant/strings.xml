@@ -116,6 +116,7 @@
     <string name="event_city_captured">%2$s 攻下 %1$s</string>
     <string name="event_province_captured">%2$s 佔領 %1$s</string>
     <string name="event_nation_eliminated">%1$s 已被消滅</string>
+    <string name="event_nation_surrendered">%1$s 向 %2$s 投降</string>
     <string name="event_unit_destroyed">%2$s 損失一支 %1$s</string>
     <string name="event_unit_starved">%1$s 補給耗盡</string>
     <string name="event_unit_built">%2$s 生產了 %1$s</string>
@@ -127,8 +128,8 @@
     <string name="objective_eliminate">消滅 %3$s</string>
     <string name="objective_survive">撐過第 %2$d 回合</string>
     <string name="objective_control">控制 %1$d 個省份</string>
-    <string name="objective_conquest">消滅敵對陣營的所有國家</string>
-    <string name="objective_conquest_solo">控制世界 %1$d%% 的省份</string>
+    <string name="objective_conquest">攻下所有敵國的全部城市（盟國與中立國不算）</string>
+    <string name="objective_conquest_solo">你與所有國家和平相處，宣戰之後才有征服的對象</string>
     <string name="difficulty_recruit">新兵</string>
     <string name="difficulty_officer">軍官</string>
     <string name="difficulty_commander">指揮官</string>

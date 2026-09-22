@@ -376,8 +376,8 @@ class PanelRenderer(private val session: Session) {
         if (objectives.isEmpty()) {
             Widgets.leftFit(
                 canvas,
-                if (session.blocEnemiesOf(session.playerNationId).isEmpty()) {
-                    Strings.format(R.string.objective_conquest_solo, Session.CONQUEST_VICTORY_PERCENT)
+                if (session.conquestEnemiesOf(session.playerNationId).isEmpty()) {
+                    Strings.get(R.string.objective_conquest_solo)
                 } else {
                     Strings.get(R.string.objective_conquest)
                 },

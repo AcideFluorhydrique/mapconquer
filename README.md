@@ -16,7 +16,8 @@ Two modes:
   that has to be taken by sea and air, a defensive battle you win by not losing,
   and a mountain offensive where your vehicles cannot follow you.
 - **Conquest** — the whole world map, a hundred-odd nations, everyone at peace on
-  turn one. Pick anyone and take 80% of the planet.
+  turn one. Pick anyone and take every city your enemies hold — a nation
+  that loses its last city surrenders.
 
 Traditional Chinese, Simplified Chinese and English, switchable inside the app.
 

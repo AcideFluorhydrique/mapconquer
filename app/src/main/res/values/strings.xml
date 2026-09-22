@@ -116,6 +116,7 @@
     <string name="event_city_captured">%1$s captured by %2$s</string>
     <string name="event_province_captured">%2$s occupies %1$s</string>
     <string name="event_nation_eliminated">%1$s has been eliminated</string>
+    <string name="event_nation_surrendered">%1$s has surrendered to %2$s</string>
     <string name="event_unit_destroyed">%2$s lost a %1$s</string>
     <string name="event_unit_starved">%1$s ran out of supply</string>
     <string name="event_unit_built">%1$s built in %2$s</string>
@@ -127,8 +128,8 @@
     <string name="objective_eliminate">Eliminate %3$s</string>
     <string name="objective_survive">Survive until turn %2$d</string>
     <string name="objective_control">Control %1$d provinces</string>
-    <string name="objective_conquest">Eliminate every nation of the opposing bloc</string>
-    <string name="objective_conquest_solo">Control %1$d%% of the world</string>
+    <string name="objective_conquest">Take every city of every nation at war with you (allies and neutrals don\'t count)</string>
+    <string name="objective_conquest_solo">You are at peace with everyone: declare war to have something to conquer</string>
     <string name="difficulty_recruit">Recruit</string>
     <string name="difficulty_officer">Officer</string>
     <string name="difficulty_commander">Commander</string>
