@@ -1,6 +1,7 @@
 First release.
 
-- Campaign: five training exercises
-- Conquest: the world map with 100+ nations
-- 20 unit types, six research branches, 16 commanders
+- Campaign: three chapters, nine battles, each playable from either side
+- Conquest: the world in 1939, 1943, 1950 and 1980
+- A nation that loses its last city surrenders
+- 17 unit types, air missions, six research branches, 16 commanders
 - Traditional Chinese, Simplified Chinese and English

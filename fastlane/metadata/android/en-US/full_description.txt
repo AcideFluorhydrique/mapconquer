@@ -2,21 +2,23 @@ A turn-based grand-strategy game on a hex grid. Move armies, hold supply lines, 
 cities, and decide who the next war is with.
 
 CAMPAIGN
-Five training exercises, each built around one idea: an amphibious crossing, a supply
-line stretched across a desert, an island chain that can only be taken by sea and air,
-a defensive battle won by not losing, and a mountain offensive your vehicles cannot
-follow you into. Finish faster for more stars; stars pay out medals you spend on
+Three chapters — World War II in Europe, World War II in the Pacific, the Cold War —
+and nine battles from Poland 1939 to the Central Front 1985. Every battle can be fought
+from either side, and each side has its own goal: take the named cities, or hold them
+until the given turn. Finish faster for more stars; stars pay out medals you spend on
 commanders who then serve you in every later game.
 
 CONQUEST
-The whole world map, a hundred-odd nations, everyone at peace on turn one. Pick anyone
-— a superpower or a country with a single city — and take every city your enemies hold.
-A nation that loses its last city surrenders.
+The whole world in 1939, 1943, 1950 or 1980, with that year's blocs already drawn up.
+Take every city of every nation at war with you; allies and neutrals do not count.
+A nation that loses its last city surrenders, its army disappears and its land is yours.
+You always move first in a round.
 
 WHAT MAKES A BATTLE
 Every unit has four separate attack values: against infantry, armour, ships and
-aircraft. Anti-tank guns shred armour and bounce off infantry. Fighters own the sky and
-do nothing on the ground. Artillery strikes from range and takes no return fire, but is
+aircraft. Anti-tank guns shred armour and bounce off infantry. Air power is a mission you
+pay for: a fighter strike tears into infantry, a bomber strike smashes tanks, ships
+and city walls, and anti-aircraft fire blunts both. Artillery strikes from range and takes no return fire, but is
 nearly helpless once something reaches it. Terrain, city walls and entrenchment all
 protect the defender, so where you fight matters as much as what you bring.
 
@@ -26,7 +28,8 @@ more to reach across than plains do. An army that outruns its logistics loses st
 every turn and eventually starves. Supply trucks and headquarters carry a small bubble
 with them — that is how an offensive keeps moving.
 
-20 unit types across land, sea and air. Six research branches. 16 commanders with
+17 unit types on land and sea, plus fighter, bomber and airdrop missions. Six
+research branches. 16 commanders with
 stacking skills. Diplomacy with war, peace and alliances.
 
 FREE SOFTWARE
