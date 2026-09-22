@@ -65,6 +65,23 @@ jobs:
             app/build/reports/lint-results-debug.xml
           if-no-files-found: warn
 
+      # 沒有這一步，每台全新的 runner 都會自己產生一把 debug keystore，
+      # 每次產出的 debug APK 簽名都不一樣，裝在手機上的版本永遠無法覆蓋更新。
+      # 固定的那一把以 base64 存在 repo secret DEBUG_KEYSTORE，還原到 Android
+      # 建置工具預設讀取的位置，Gradle 設定不必動。這把只簽 debug 版；
+      # F-Droid 的 release 由 F-Droid 自己簽。來自 fork 的 PR 拿不到 secret，
+      # 會退回隨機金鑰並留一則警告，不讓建置失敗。
+      - name: Restore the shared debug keystore
+        env:
+          DEBUG_KEYSTORE: ${{ secrets.DEBUG_KEYSTORE }}
+        run: |
+          if [ -n "$DEBUG_KEYSTORE" ]; then
+            mkdir -p ~/.android
+            echo "$DEBUG_KEYSTORE" | base64 -d > ~/.android/debug.keystore
+          else
+            echo "::warning::DEBUG_KEYSTORE secret 沒有設定，debug APK 會用隨機金鑰簽名，無法覆蓋更新。"
+          fi
+
       - name: Build debug APK
         run: ./gradlew assembleDebug --stacktrace
 
