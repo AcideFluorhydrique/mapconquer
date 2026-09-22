@@ -52,6 +52,8 @@ class UnitMoveRules(
                 val blocker = session.unitAt(to, domain) ?: continue
                 if (!session.diplomacy.isAllied(blocker.nationId, unit.nationId)) return -1
             }
+            // 還有城防的敵城也一樣擋路：要先把城防打光才進得去。
+            if (session.isCityShutTo(to, unit.nationId)) return -1
         }
 
         return when {
@@ -156,6 +158,7 @@ object Orders {
         val owner = session.provinceOwner[pid]
         if (owner >= 0 && session.diplomacy.isAllied(owner, unit.nationId)) return true
         if (owner >= 0 && !session.isHostile(owner, unit.nationId)) return false
+        if (session.isCityShutTo(tile, unit.nationId)) return false
         return unit.kind.canCapture && unit.kind.domain == Domain.LAND
     }
 

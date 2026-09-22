@@ -155,6 +155,8 @@ object AirOps {
         if (!terrain.isLand || !session.isTileFree(tile)) return false
         val pid = session.cityProvinceAt(tile)
         if (pid < 0) return true
+        // 還有城防的敵城落不下去，跟走不進去是同一條規則。
+        if (session.isCityShutTo(tile, nationId)) return false
         // 跟走路進城同一條規則：自己與盟友的城、交戰國的城、無主的城可以；
         // 沒在打仗的第三國不行。
         val owner = session.provinceOwner[pid]

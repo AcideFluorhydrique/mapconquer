@@ -742,6 +742,22 @@ class Session(
     }
 
     /**
+     * 這格是不是一座對 [nationId] 關著門的城：交戰國或無主的城，而且城防還在。
+     *
+     * 還有城防的城跟一支敵軍一樣擋路 —— 走不進、穿不過、空降也落不下去。
+     * 要先從旁邊把城防打到零，城裡沒有守軍時才能走進去佔領
+     * （docs/original-behavior.md「佔領城市」）。原本部隊可以直接走進還有城防
+     * 的空城，站在裡面慢慢圍，旗子卻還是對方的，看起來就像佔了又沒佔。
+     */
+    fun isCityShutTo(tile: Int, nationId: Int): Boolean {
+        val pid = cityProvinceAt(tile)
+        if (pid < 0 || cityHp[pid] <= 0) return false
+        val owner = provinceOwner[pid]
+        if (owner == nationId) return false
+        return owner < 0 || isHostile(owner, nationId)
+    }
+
+    /**
      * 這支部隊是否正受到城防保護。
      *
      * 只有站在城市格上的陸軍算數：飛機在天上，船在水裡，兩者都不在城牆後面。
@@ -806,11 +822,11 @@ class Session(
     }
 
     /**
-     * 圍攻：站在敵方城市格上的陸軍，每回合削掉一截城防，歸零就易主。
+     * 收下城防已經歸零、而且己方陸軍正站在裡面的敵城。
      *
-     * 沒有這一條，「城防歸零才能佔領」會把無人防守的城市變成永遠打不下來 ——
-     * 城裡沒有部隊可以攻擊，城防就永遠不會掉。圍攻讓佔領從「走到就拿」
-     * 變成「站住並且守得夠久」，這也正是城防該表達的意思。
+     * 正常情況下佔領發生在走進城的那一刻（[Orders.tryCapture]），城防還在的城
+     * 根本走不進去（[isCityShutTo]）。這裡只是安全網：劇本把部隊直接擺在敵城上、
+     * 或城防在部隊進城之後才被打光時，下一個己方回合照樣易主。
      */
     private fun pressCities(nationId: Int) {
         for (province in map.provinces) {
@@ -820,9 +836,6 @@ class Session(
             if (owner >= 0 && !isHostile(owner, nationId)) continue
             val besieger = unitAt(province.capitalTile, Domain.LAND) ?: continue
             if (besieger.nationId != nationId || !besieger.isAlive || !besieger.kind.canCapture) continue
-            // 城防已經是零的也要收：部隊可能是在城防還在時走進來，之後城防才
-            // 被別的方式打光。原本這裡先濾掉零城防，那種城就永遠卡在原主手上。
-            damageCity(province.id, SIEGE_PER_TURN)
             if (cityHp[province.id] <= 0) captureProvince(province.id, nationId)
         }
     }
@@ -981,9 +994,6 @@ class Session(
          * 這個是「駐軍替城市補城防」。兩個方向都有，互為代價。
          */
         const val CITY_DEFENCE_REPAIR = 12
-
-        /** 佔住城市格的敵軍每回合削掉的城防。 */
-        const val SIEGE_PER_TURN = 50
 
         /** 易主之後城防剩下的比例：新主人接手的是一座殘城。 */
         const val CITY_HP_AFTER_CAPTURE_PERCENT = 35

@@ -176,24 +176,38 @@ class SessionTest {
     }
 
     @Test
-    fun `a city does not change hands until its defence is gone`() {
+    fun `a city with defence left is shut until it is worn down, then taken by walking in`() {
         val s = session(listOf(ScenarioUnit("AAA", 5, 1, "INFANTRY", 1, "")))
         val unit = s.units.first()
         val enemyCapital = s.map.provinces[1].capitalTile
-        assertTrue("測試地圖的 B 省要有城", s.map.provinces[1].maxCityHp > 0)
+        assertTrue("測試地圖的 B 省要有城", s.cityHp[1] > 0)
 
-        Orders.computeReachable(s, unit, ArrayList())
+        val reachable = ArrayList<Int>()
+        Orders.computeReachable(s, unit, reachable)
+        assertFalse("還有城防的敵城走不進去", reachable.contains(enemyCapital))
+        assertFalse(Orders.mayStandIn(s, unit, enemyCapital))
+        assertTrue("但可以從旁邊打它的城防", Orders.canAttack(s, unit, enemyCapital))
+
+        // 城防打光之後，城裡沒人，走進去的那一刻就易主。
+        s.cityHp[1] = 0
+        Orders.computeReachable(s, unit, reachable)
+        assertTrue(reachable.contains(enemyCapital))
         Orders.move(s, unit, enemyCapital, ArrayList())
-        assertEquals("站上去不算佔領", 1, s.provinceOwner[1])
+        assertEquals("城防歸零、城裡沒人，走進去就佔領", 0, s.provinceOwner[1])
+    }
 
-        // 圍攻：每輪己方回合削一截，歸零就易主。
-        var guard = 0
-        while (s.provinceOwner[1] == 1 && guard < 20) {
-            repeat(s.nations.size) { s.advanceToNextNation() }
-            guard++
-        }
-        assertEquals("圍攻夠久就該拿下", 0, s.provinceOwner[1])
-        assertTrue("不該一回合就結束", guard > 1)
+    @Test
+    fun `nobody passes through a city that still has its defence`() {
+        // 走路、空降都不能進還有城防的敵城；城防歸零之後空降才落得下去。
+        val s = session(listOf(ScenarioUnit("AAA", 5, 1, "RECON", 1, "")))
+        val unit = s.units.first()
+        val enemyCapital = s.map.provinces[1].capitalTile
+        val reachable = ArrayList<Int>()
+        Orders.computeReachable(s, unit, reachable)
+        assertFalse(reachable.contains(enemyCapital))
+        assertFalse("空降也落不進還有城防的敵城", AirOps.canDropAt(s, 0, enemyCapital))
+        s.cityHp[1] = 0
+        assertTrue(AirOps.canDropAt(s, 0, enemyCapital))
     }
 
     /** 兩國各有一省的陣營劇本，參戰回合與初始關係自己指定。 */
