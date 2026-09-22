@@ -119,8 +119,11 @@ class MapAssetTest {
         val world = TestAssets.cachedMap("world")
         val land = (0 until world.tileCount).count { world.isLand(it) }
         val ratio = land * 100 / world.tileCount
-        // 排除南極與高緯度之後，陸地大約佔三成。這是防止產生器徹底壞掉的護欄。
-        assertTrue("陸地比例 $ratio% 不合理", ratio in 20..45)
+        // 這是防止產生器徹底壞掉（整張變海或整張變陸）的護欄，不是真實世界的
+        // 海陸比。世界地圖刻意把太平洋與大西洋壓扁、把北緯 60–72 度拉寬，
+        // 陸地佔比本來就遠高於真實的三成 —— 補上芬蘭、日德蘭、印度河流域之後
+        // 約在 46%。
+        assertTrue("陸地比例 $ratio% 不合理", ratio in 20..55)
         assertTrue("城市太少", world.provinces.count { it.hasCity } > 100)
         assertTrue("首都級城市太少", world.provinces.count { it.cityTier >= 4 } >= 8)
     }
