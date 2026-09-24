@@ -225,6 +225,38 @@ class MapRenderer(private val session: Session) {
     }
 
     /**
+     * 補給車的補給圈：只描外框，不填色。
+     *
+     * 移動範圍已經用填色表示，補給圈再填一層就會疊成一團。描出邊界，
+     * 形狀（沿平原伸得遠、遇山縮回）一眼就看得出來，也不擋住底下的移動範圍。
+     */
+    private fun drawSupplyBubble(canvas: Canvas, camera: Camera, overlay: MapOverlay) {
+        val layout = camera.layout
+        paint.style = Paint.Style.STROKE
+        paint.strokeCap = Paint.Cap.ROUND
+        paint.strokeWidth = Ui.dp(2f)
+        paint.color = Palette.SUPPLY_BUBBLE
+        for (row in bounds[1]..bounds[3]) {
+            for (col in bounds[0]..bounds[2]) {
+                val tile = map.indexWrapped(col, row)
+                if (!overlay.supplyBubble[tile]) continue
+                layout.corners(
+                    camera.screenX(layout.centerXOffset(col, row)),
+                    camera.screenY(layout.centerYOffset(row)),
+                    corners
+                )
+                map.neighboursByDirection(tile, neighbourBuf)
+                for (i in 0 until 6) {
+                    val other = neighbourBuf[i]
+                    if (other >= 0 && overlay.supplyBubble[other]) continue
+                    drawEdge(canvas, directionToEdge(i))
+                }
+            }
+        }
+        paint.style = Paint.Style.FILL
+    }
+
+    /**
      * 方向索引 → 六角形的哪一條邊。
      *
      * 頂點順序從正上方（-90°）開始順時針；鄰居順序是東、東北、西北、西、西南、東南。
@@ -265,6 +297,8 @@ class MapRenderer(private val session: Session) {
                 canvas.restore()
             }
         }
+
+        if (overlay.hasSupplyBubble) drawSupplyBubble(canvas, camera, overlay)
 
         // 選取框最後畫，才不會被範圍色蓋掉。
         val selected = overlay.selectedTile

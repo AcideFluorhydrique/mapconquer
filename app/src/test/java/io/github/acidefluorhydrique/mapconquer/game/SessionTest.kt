@@ -913,6 +913,14 @@ class SessionTest {
     }
 
     @Test
+    fun `a supply column beside your own city still reaches over the border`() {
+        // 補給車就停在自家城市附近：城市的補給已經蓋到它腳下，但城市的補給過不了國界，
+        // 伸進 B 國的那一圈只能靠補給車自己。
+        val s = session(listOf(ScenarioUnit("AAA", 3, 2, "SUPPLY_TRUCK", 1, "")))
+        assertTrue(s.isSupplied(s.map.index(5, 2)))
+    }
+
+    @Test
     fun `a fleet far from port thins out but never starves`() {
         val s = session(listOf(ScenarioUnit("AAA", 7, 5, "DESTROYER", 1, "")))
         val ship = s.units.first()
@@ -948,6 +956,16 @@ class SessionTest {
         assertTrue("旁邊的部隊也要吃得到", s.isSupplied(s.map.index(7, 2)))
         // 但補給圈只有五點預算：隔著一座山就到不了。
         assertFalse("補給車不是第二座城市", s.isSupplied(s.map.index(4, 1)))
+
+        // 畫在地圖上的補給圈要跟實際生效的範圍一模一樣。
+        val truck = s.units.first { it.kind == UnitKind.SUPPLY_TRUCK }
+        val bubble = BooleanArray(s.map.tileCount)
+        s.supplyBubble(truck, bubble)
+        assertTrue(bubble[s.map.index(7, 2)])
+        assertFalse("圈的形狀跟著地形走，山擋住就縮回來", bubble[s.map.index(4, 1)])
+        for (tile in 0 until s.map.tileCount) {
+            if (bubble[tile]) assertTrue("圈裡的格子 $tile 必須真的有補給", s.isSupplied(tile))
+        }
     }
 
     @Test

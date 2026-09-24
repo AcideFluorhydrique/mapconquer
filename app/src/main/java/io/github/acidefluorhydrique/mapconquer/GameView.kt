@@ -620,6 +620,10 @@ class GameView(context: Context) : SurfaceView(context), SurfaceHolder.Callback 
         over.setMovable(reachable)
         Orders.collectTargets(active, unit, attackTargets)
         over.setAttackable(attackTargets)
+        if (unit.kind.isSupplier) {
+            active.supplyBubble(unit, over.supplyBubble)
+            over.hasSupplyBubble = true
+        }
     }
 
     private fun performMove(active: Session, unit: ArmyUnit, target: Int) {

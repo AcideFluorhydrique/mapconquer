@@ -26,6 +26,10 @@ class MapOverlay(tileCount: Int) {
     val movable = BooleanArray(tileCount)
     val attackable = BooleanArray(tileCount)
 
+    /** 選到補給車或司令部時，它撐起的補給圈（見 Session.supplyBubble）。 */
+    val supplyBubble = BooleanArray(tileCount)
+    var hasSupplyBubble: Boolean = false
+
     /** 正在預覽的行軍路線。 */
     val path = ArrayList<Int>(24)
 
@@ -82,6 +86,8 @@ class MapOverlay(tileCount: Int) {
     fun clearHighlights() {
         java.util.Arrays.fill(movable, false)
         java.util.Arrays.fill(attackable, false)
+        if (hasSupplyBubble) java.util.Arrays.fill(supplyBubble, false)
+        hasSupplyBubble = false
         path.clear()
     }
 

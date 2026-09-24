@@ -79,6 +79,13 @@ class Session(
     private val suppliedTiles = BooleanArray(map.tileCount)
     private val supplyCost = IntArray(map.tileCount)
 
+    /**
+     * 補給車與司令部那一段擴散自己的成本表。跟城市的分開算：城市的成本比較低的
+     * 格子，補給車仍然要從自己的五點預算往外推 —— 否則停在自家城市旁邊的補給車
+     * 會被整台跳過，它伸進敵境的那一圈就不生效了。
+     */
+    private val columnCost = IntArray(map.tileCount)
+
     var turn: Int = 1
         internal set
 
@@ -439,28 +446,54 @@ class Session(
         }
         spreadSupply(fromCities, nationId, throughEnemyLand = false)
 
+        java.util.Arrays.fill(columnCost, Int.MAX_VALUE)
         val fromColumns = ArrayDeque<Int>()
         for (unit in units) {
-            if (unit.nationId != nationId || !unit.isAlive || !unit.kind.isSupplier) continue
+            if (unit.nationId != nationId || !unit.isAlive || unit.isLoaded || !unit.kind.isSupplier) continue
             // 自己都快餓死的補給車發不出補給。
             if (unit.supply < ArmyUnit.SUPPLY_CRITICAL) continue
             val start = SUPPLY_RANGE - MOBILE_SUPPLY_RANGE
-            if (supplyCost[unit.tile] <= start) continue
+            if (columnCost[unit.tile] <= start) continue
             suppliedTiles[unit.tile] = true
-            supplyCost[unit.tile] = start
+            columnCost[unit.tile] = start
             fromColumns.add(unit.tile)
         }
-        spreadSupply(fromColumns, nationId, throughEnemyLand = true)
+        spreadSupply(fromColumns, nationId, throughEnemyLand = true, cost = columnCost)
+    }
+
+    /**
+     * 一支補給車或司令部自己撐起的補給圈，寫進 [out]（顯示用）。
+     *
+     * 跟 [computeSupply] 的第二段走同一支擴散，只是換一組陣列 —— 畫出來的範圍
+     * 永遠就是實際生效的範圍。形狀不是圓：沿平原伸得遠，遇到山、河就縮回來。
+     * 自己補給不足（低於 [ArmyUnit.SUPPLY_CRITICAL]）的補給車發不出補給，圈是空的。
+     */
+    fun supplyBubble(unit: ArmyUnit, out: BooleanArray) {
+        java.util.Arrays.fill(out, false)
+        if (!unit.isAlive || unit.isLoaded || !unit.kind.isSupplier) return
+        if (unit.supply < ArmyUnit.SUPPLY_CRITICAL) return
+        val cost = IntArray(map.tileCount) { Int.MAX_VALUE }
+        cost[unit.tile] = SUPPLY_RANGE - MOBILE_SUPPLY_RANGE
+        out[unit.tile] = true
+        val frontier = ArrayDeque<Int>()
+        frontier.add(unit.tile)
+        spreadSupply(frontier, unit.nationId, throughEnemyLand = true, cost = cost, reached = out)
     }
 
     /**
      * 補給的擴散。走 BFS 而不是 Dijkstra：補給距離的上限很小，代價又都是個位數，
      * 重複入列的次數遠比維護一個堆積便宜。
      */
-    private fun spreadSupply(frontier: ArrayDeque<Int>, nationId: Int, throughEnemyLand: Boolean) {
+    private fun spreadSupply(
+        frontier: ArrayDeque<Int>,
+        nationId: Int,
+        throughEnemyLand: Boolean,
+        cost: IntArray = supplyCost,
+        reached: BooleanArray = suppliedTiles
+    ) {
         while (frontier.isNotEmpty()) {
             val tile = frontier.removeFirst()
-            val spent = supplyCost[tile]
+            val spent = cost[tile]
             if (spent == Int.MAX_VALUE) continue
             val n = map.neighbours(tile, neighbourBuf)
             for (i in 0 until n) {
@@ -474,9 +507,9 @@ class Session(
                 }
                 val total = spent + step
                 if (total > SUPPLY_RANGE) continue
-                if (supplyCost[next] <= total) continue
-                supplyCost[next] = total
-                suppliedTiles[next] = true
+                if (cost[next] <= total) continue
+                cost[next] = total
+                reached[next] = true
                 frontier.add(next)
             }
         }
