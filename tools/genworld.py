@@ -882,12 +882,14 @@ def main():
                          overrides=places.WW2_PROVINCE_OWNERS,
                          renames=places.WW2_RENAMES,
                          war_turns=places.WW2_WAR_TURNS, start_month=9,
+                         turn_limit=places.CONQUEST_TURN_LIMIT,
                          extra_units=places.CONQUEST_EXTRA_UNITS.get(1939, ())))
     print(write_conquest(world, "conquest_1943", "scn_conquest_1943",
                          "scn_conquest_1943_desc", 20, places.WW2_MERGE, 1943,
                          turtle=places.WW2_NEUTRALS, blocs=places.WW2_1943_BLOCS,
                          overrides=places.WW2_1943_PROVINCE_OWNERS,
                          renames=places.WW2_RENAMES, start_month=3,
+                         turn_limit=places.CONQUEST_TURN_LIMIT,
                          extra_units=places.CONQUEST_EXTRA_UNITS.get(1943, ())))
     print(write_conquest(world, "conquest_1950", "scn_conquest_1950",
                          "scn_conquest_1950_desc", 30, places.COLD_WAR_1950_MERGE, 1950,
@@ -895,13 +897,15 @@ def main():
                          blocs=places.COLD_WAR_1950_BLOCS,
                          overrides=places.COLD_WAR_1950_PROVINCE_OWNERS,
                          renames=places.COLD_WAR_RENAMES, start_month=1,
+                         turn_limit=places.CONQUEST_TURN_LIMIT,
                          extra_units=places.CONQUEST_EXTRA_UNITS.get(1950, ())))
     print(write_conquest(world, "conquest_1980", "scn_conquest_1980",
                          "scn_conquest_1980_desc", 40, places.COLD_WAR_1980_MERGE, 1980,
                          turtle=unaligned(places.COLD_WAR_1980_BLOCS),
                          blocs=places.COLD_WAR_1980_BLOCS,
                          overrides=places.COLD_WAR_1980_PROVINCE_OWNERS,
-                         renames=places.COLD_WAR_RENAMES, start_month=1))
+                         renames=places.COLD_WAR_RENAMES, start_month=1,
+                         turn_limit=places.CONQUEST_TURN_LIMIT))
 
     for mission in scn.CAMPAIGN:
         built = built_maps[mission["map"]]

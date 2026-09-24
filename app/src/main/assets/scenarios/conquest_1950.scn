@@ -8,7 +8,7 @@ mode CONQUEST
 nameKey scn_conquest_1950
 descKey scn_conquest_1950_desc
 order 30
-turnLimit 0
+turnLimit 200
 startYear 1950
 startMonth 1
 
