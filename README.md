@@ -37,7 +37,7 @@ Traditional Chinese, Simplified Chinese and English, switchable inside the app.
 | Air power | Not units on the board but missions you pay for: fighter strikes, bomber strikes (which can also hit an empty city's walls) and airdrops, flown from cities and carriers (bombers need a large city). Anti-air, cruisers and destroyers blunt strikes near them. |
 | Combat | Ratio-based (`55·A/(A+D)`), bounded by construction, ±8% deterministic variance. Artillery fires from range and takes no return fire; it is nearly helpless in melee. A unit inside a city takes half the damage, and the city's walls take a further 70% of the blow. |
 | Zones of control | Moving next to an enemy ends your move. Armour ignores this once per move, which is what makes it the tool for opening a breach. |
-| Supply | Spreads from your own cities along your own territory, priced in movement cost — so mountains break a supply line faster than plains do. Out of supply means losing strength, then dying. Supply trucks and headquarters carry a small supply bubble with them. |
+| Supply | Spreads from your own cities along your own territory, priced in movement cost — so mountains break a supply line faster than plains do. Out of supply means losing strength, then dying. Supply trucks and headquarters carry a small supply bubble with them, even into enemy land. Ships carry their own stores: away from port they weaken to four fifths of their strength but never starve. |
 | Experience | Units level 1→5 from damage dealt and kills. |
 | Commanders | 16 fictional commanders with stacking skills, unlocked with medals earned from campaign stars, usable in every later game. |
 | Research | Six branches, five levels each, +8% per level. |

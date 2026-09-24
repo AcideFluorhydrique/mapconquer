@@ -913,6 +913,29 @@ class SessionTest {
     }
 
     @Test
+    fun `a fleet far from port thins out but never starves`() {
+        val s = session(listOf(ScenarioUnit("AAA", 7, 5, "DESTROYER", 1, "")))
+        val ship = s.units.first()
+        assertFalse("這艘船要在補給範圍外，測試才有意義", s.isSupplied(ship.tile))
+
+        repeat(20) { repeat(s.nations.size) { s.advanceToNextNation() } }
+        assertEquals("補給滑到八成戰力的門檻就停住", ArmyUnit.SUPPLY_CRITICAL, ship.supply)
+        assertEquals("海上不會餓死", ArmyUnit.MAX_HP, ship.hp)
+        assertTrue(ship.isAlive)
+    }
+
+    @Test
+    fun `an army cut off from supply still starves`() {
+        val s = session(listOf(ScenarioUnit("AAA", 7, 2, "INFANTRY", 1, "")))
+        val soldier = s.units.first()
+        assertFalse(s.isSupplied(soldier.tile))
+
+        repeat(6) { repeat(s.nations.size) { s.advanceToNextNation() } }
+        assertEquals("陸軍的補給會見底", 0, soldier.supply)
+        assertTrue("見底之後開始失血", soldier.hp < ArmyUnit.MAX_HP)
+    }
+
+    @Test
     fun `a supply column keeps an offensive fed inside enemy territory`() {
         val s = session(
             listOf(

@@ -298,14 +298,17 @@ UI = {
         "Supply spreads out from your own cities along your own territory, and mountains cost more to reach across than plains. "
         "A unit inside supply refills and repairs each turn; a unit outside it loses supply, then strength, then dies. "
         "Supply trucks and headquarters carry a small supply bubble with them, and theirs reaches into enemy land as "
-        "well, which is how an offensive keeps moving once it has outrun its cities. Turn on the Supply overlay to see exactly how far your logistics reach.",
+        "well, which is how an offensive keeps moving once it has outrun its cities. Ships carry their own stores: away from port they weaken, but never below four "
+        "fifths of their strength, and they never starve. Turn on the Supply overlay to see exactly how far your logistics reach.",
         "補給從你自己的城市沿著自己的領土擴散，而越過山脈要付出的代價遠高於平原。"
         "在補給範圍內的部隊每回合會回補與整補；範圍外的部隊會先掉補給、再掉戰力，最後餓死。"
         "補給車與司令部自帶一個小型補給圈，而且那個圈在敵境一樣有效，攻勢跑贏城市之後就靠它們續命。"
+        "軍艦自帶物資：離港會慢慢變弱，但不會低於八成戰力，也不會餓死。"
         "打開「補給」圖層，就看得到自己的後勤到底伸得多遠。",
         "补给从你自己的城市沿着自己的领土扩散，而越过山脉要付出的代价远高于平原。"
         "在补给范围内的部队每回合会回补与整补；范围外的部队会先掉补给、再掉战力，最后饿死。"
         "补给车与司令部自带一个小型补给圈，而且那个圈在敌境一样有效，攻势跑赢城市之后就靠它们续命。"
+        "军舰自带物资：离港会慢慢变弱，但不会低于八成战力，也不会饿死。"
         "打开「补给」图层，就看得到自己的后勤到底伸得多远。"),
     "help_formations": ("Formations", "編制", "编制"),
     "help_formations_body": (

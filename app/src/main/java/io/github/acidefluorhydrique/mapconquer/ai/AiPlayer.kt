@@ -413,8 +413,10 @@ class AiPlayer(private val session: Session, private val nationId: Int) {
             var score = (currentDistance - map.distance(tile, goal)) * 10f
             // 同樣的推進距離下，挑防禦地形好的那一格。
             score += map.terrainAt(tile).defenceBonus * 0.25f
-            // 別走出補給範圍。
-            if (!session.isSupplied(tile)) score -= 12f
+            // 別走出補給範圍。軍艦自帶物資，離港只是慢慢變弱，罰得輕得多。
+            if (!session.isSupplied(tile)) {
+                score -= if (unit.kind.domain == Domain.SEA) 3f else 12f
+            }
             // 浮渡中的陸軍防禦幾乎歸零，是活靶。AI 只有在能大幅拉近距離時
             // 才值得下水 —— 這個懲罰讓它願意渡窄海峽，但不會整批走進大洋。
             if (unit.kind.domain == Domain.LAND && map.terrainAt(tile).isWater) score -= 35f

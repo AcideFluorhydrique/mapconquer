@@ -496,12 +496,13 @@ class Session(
                 val repair = repairRate(unit)
                 if (repair > 0 && unit.hp < ArmyUnit.MAX_HP) unit.heal(repair)
             } else {
-                val drain = if (unit.commander?.has(CommanderSkill.IRON_WILL) == true) {
-                    ATTRITION_RATE / 2
-                } else {
-                    ATTRITION_RATE
-                }
-                unit.supply = (unit.supply - drain).coerceAtLeast(0)
+                // 軍艦出港時就帶著幾週的油料與糧食，補給斷了會變弱，不會沉。
+                // 陸軍不一樣：彈藥與糧食是每天要送上去的，斷了就會餓死。
+                val ship = unit.kind.domain == Domain.SEA
+                var drain = if (ship) NAVAL_ATTRITION_RATE else ATTRITION_RATE
+                if (unit.commander?.has(CommanderSkill.IRON_WILL) == true) drain /= 2
+                val floor = if (ship) ArmyUnit.SUPPLY_CRITICAL else 0
+                unit.supply = (unit.supply - drain).coerceAtLeast(floor)
                 // 完全斷補給就開始失血 —— 深入敵境的孤軍必須有代價。
                 if (unit.supply <= 0) unit.damage(STARVATION_DAMAGE)
             }
@@ -995,6 +996,17 @@ class Session(
 
         const val RESUPPLY_RATE = 34
         const val ATTRITION_RATE = 22
+
+        /**
+         * 軍艦離開補給範圍時每回合掉的補給。
+         *
+         * 只有陸軍的三分之一，而且掉到 [ArmyUnit.SUPPLY_CRITICAL] 就停住 ——
+         * 遠洋的艦隊會滑到八成戰力，得回自己的港口才補得回來，但不會在海上
+         * 餓死。原本海軍跟陸軍同一條規則，可是補給出海只伸得出兩格
+         * （水域一格就吃掉 [SEA_SUPPLY_COST]），一支艦隊離岸三格待著，
+         * 十幾回合後會自己沉光 —— 橫渡大洋因此是不可能的。
+         */
+        const val NAVAL_ATTRITION_RATE = 7
         const val STARVATION_DAMAGE = 8
         const val CITY_REPAIR = 22
         const val FIELD_REPAIR = 6
