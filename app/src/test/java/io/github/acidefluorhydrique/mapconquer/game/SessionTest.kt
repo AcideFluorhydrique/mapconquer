@@ -913,6 +913,21 @@ class SessionTest {
     }
 
     @Test
+    fun `a supply column keeps an offensive fed inside enemy territory`() {
+        val s = session(
+            listOf(
+                ScenarioUnit("AAA", 7, 2, "INFANTRY", 1, ""),
+                ScenarioUnit("AAA", 7, 1, "SUPPLY_TRUCK", 1, "")
+            )
+        )
+        // 兩支部隊都深在 B 國境內，城市的補給沿自己的領土走不過來。
+        assertTrue("補給車自己站的那格有補給", s.isSupplied(s.map.index(7, 1)))
+        assertTrue("旁邊的部隊也要吃得到", s.isSupplied(s.map.index(7, 2)))
+        // 但補給圈只有五點預算：隔著一座山就到不了。
+        assertFalse("補給車不是第二座城市", s.isSupplied(s.map.index(4, 1)))
+    }
+
+    @Test
     fun `transports carry land units over water`() {
         val s = session(
             listOf(

@@ -418,33 +418,46 @@ class Session(
      *
      * 用移動成本當距離而不是格數，是為了讓地形自然產生補給難題 ——
      * 越過山脈的攻勢會比沿著平原推進更快斷補給，而玩家不必讀任何說明就能感覺到。
+     *
+     * 補給車與司令部是第二種來源，而且**不受領土限制**：它們就是隨軍的補給站，
+     * 推到哪裡撐到哪裡。原本它們跟城市走同一條規則，結果在敵境只供應自己站的
+     * 那一格 —— 攻城部隊就在隔壁也拿不到，等於「帶著補給車進攻」完全沒有作用。
+     * 它們傳得比城市近（[MOBILE_SUPPLY_RANGE]），所以補給線仍然要靠打下城市才真的前移。
      */
     private fun computeSupply(nationId: Int) {
         java.util.Arrays.fill(suppliedTiles, false)
         java.util.Arrays.fill(supplyCost, Int.MAX_VALUE)
-        val frontier = ArrayDeque<Int>()
 
+        val fromCities = ArrayDeque<Int>()
         for (province in map.provinces) {
             if (provinceOwner[province.id] != nationId) continue
             if (!province.hasCity) continue
             val tile = province.capitalTile
             suppliedTiles[tile] = true
             supplyCost[tile] = 0
-            frontier.add(tile)
+            fromCities.add(tile)
         }
-        // 補給車與司令部本身就是移動的補給站，但傳得比城市近。
+        spreadSupply(fromCities, nationId, throughEnemyLand = false)
+
+        val fromColumns = ArrayDeque<Int>()
         for (unit in units) {
             if (unit.nationId != nationId || !unit.isAlive || !unit.kind.isSupplier) continue
+            // 自己都快餓死的補給車發不出補給。
             if (unit.supply < ArmyUnit.SUPPLY_CRITICAL) continue
             val start = SUPPLY_RANGE - MOBILE_SUPPLY_RANGE
             if (supplyCost[unit.tile] <= start) continue
             suppliedTiles[unit.tile] = true
             supplyCost[unit.tile] = start
-            frontier.add(unit.tile)
+            fromColumns.add(unit.tile)
         }
+        spreadSupply(fromColumns, nationId, throughEnemyLand = true)
+    }
 
-        // 走 BFS 而不是 Dijkstra：補給距離的上限很小，代價又都是個位數，
-        // 重複入列的次數遠比維護一個堆積便宜。
+    /**
+     * 補給的擴散。走 BFS 而不是 Dijkstra：補給距離的上限很小，代價又都是個位數，
+     * 重複入列的次數遠比維護一個堆積便宜。
+     */
+    private fun spreadSupply(frontier: ArrayDeque<Int>, nationId: Int, throughEnemyLand: Boolean) {
         while (frontier.isNotEmpty()) {
             val tile = frontier.removeFirst()
             val spent = supplyCost[tile]
@@ -455,8 +468,10 @@ class Session(
                 val terrain = map.terrainAt(next)
                 // 補給沿陸地走；水域成本高到只夠把補給遞過一道海峽。
                 val step = if (terrain.isWater) SEA_SUPPLY_COST else terrain.moveCost
-                val owner = ownerOfTile(next)
-                if (terrain.isLand && owner >= 0 && !diplomacy.isAllied(owner, nationId)) continue
+                if (!throughEnemyLand) {
+                    val owner = ownerOfTile(next)
+                    if (terrain.isLand && owner >= 0 && !diplomacy.isAllied(owner, nationId)) continue
+                }
                 val total = spent + step
                 if (total > SUPPLY_RANGE) continue
                 if (supplyCost[next] <= total) continue
