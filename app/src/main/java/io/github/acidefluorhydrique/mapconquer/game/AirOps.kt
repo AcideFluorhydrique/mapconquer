@@ -178,6 +178,15 @@ object AirOps {
         return launchBase(session, nationId, mission, tile) >= 0
     }
 
+    /** 這次出擊會從地圖上哪一格起飛（城市或航艦所在格）；沒有能飛的起飛點回 -1。給出擊動畫找起點用。 */
+    fun launchTile(session: Session, nationId: Int, mission: AirMission, target: Int): Int {
+        val key = launchBase(session, nationId, mission, target)
+        if (key < 0) return -1
+        val provinces = session.map.provinces
+        return if (key < provinces.size) provinces[key].capitalTile
+        else session.unitById(key - provinces.size)?.tile ?: -1
+    }
+
     /** 所有合法目標。範圍用每個起飛點各掃一次，比整張地圖逐格試便宜得多。 */
     fun collectTargets(session: Session, nationId: Int, mission: AirMission, into: MutableList<Int>) {
         into.clear()

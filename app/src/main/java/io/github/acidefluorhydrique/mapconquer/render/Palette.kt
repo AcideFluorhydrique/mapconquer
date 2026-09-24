@@ -14,11 +14,12 @@ import io.github.acidefluorhydrique.mapconquer.world.Terrain
  * 一張戰略地圖同時要傳達三件事：地形、歸屬、以及戰爭迷霧。
  * 三者都用顏色表達，很容易互相打架 —— 所以這裡定死了各自的手法：
  *
- *  - **地形**用色相（綠＝植被、褐＝乾旱、藍＝水），並帶一點依格子雜湊的明度抖動，
- *    讓大片平原不會看起來像一塊死板的色塊；
- *  - **歸屬**用疊在地形上的半透明國色，飽和度刻意壓低，
- *    這樣同一塊地既看得出是誰的、也還看得出底下是山還是平原；
- *  - **迷霧**只降明度、不改色相，因為改色相會讓玩家誤以為地形變了。
+ *  - **歸屬**獨佔陸地的底色：一格是誰的，就整格塗誰的國色；
+ *  - **地形**不用顏色，改成印在國色上的符號（見 [TerrainGlyphs]）。
+ *    早期的做法是地形色上疊半透明國色，結果兩者混成一片泥色，
+ *    既看不出國界、也看不出山在哪；
+ *  - **水域**是唯一保留地形色的地方，海色與國色分得開，海陸關係一眼可讀；
+ *  - **迷霧**只降明度、不改色相，因為改色相會讓玩家誤以為換了主人。
  */
 object Palette {
 
@@ -51,33 +52,30 @@ object Palette {
     fun blocNameKey(bloc: String): String =
         if (bloc.isEmpty()) "bloc_neutral" else "bloc_" + bloc.lowercase()
 
-    /** 依格子索引做一點明暗抖動，成本只有一次乘法與位移。 */
-    fun terrainColour(terrain: Terrain, tile: Int): Int {
-        val base = Colors.of(terrain.fill)
-        if (terrain.isWater) return base
-        val noise = ((tile * 2654435761L.toInt()) ushr 24) and 0x1F
-        val factor = 0.93f + noise / 255f
-        return Colors.scale(base, factor)
-    }
-
     fun nationColour(session: Session, nationId: Int): Int =
         if (nationId < 0 || nationId >= session.nations.size) Colors.of("#7A8794")
         else Colors.of(session.nations[nationId].colour)
 
     /**
-     * 疊在地形上的領土色。
+     * 一格的底色。
      *
-     * alpha 刻意壓得很低。第一版用 0x8C／0x70，結果整張地圖變成一片平塗的國色，
-     * 地形完全看不見 —— 更糟的是玩家會把自己的藍色領土誤認成海。
-     * 歸屬的主要視覺線索應該是**國界線**（粗、亮、只畫在邊上），
-     * 填色只負責「這一片大致是誰的」，不該壓過底下的森林與山地。
+     * 水域用地形色；陸地用擁有者的國色，無主之地一律是灰。國色往深藍灰拉一點：
+     * 劇本裡的國色是為小色塊（旗底、長條圖）調的，整片平塗會太刺眼，
+     * 而且壓暗後地形符號的黑墨與城市徽章才浮得起來。
+     *
+     * 明度抖動只有幾個百分點，一次乘法與位移的成本，讓大片國土不像死板的色塊，
+     * 又不至於被誤讀成兩個國家。
      */
-    fun ownershipTint(session: Session, nationId: Int): Int {
-        if (nationId < 0) return 0
-        val base = nationColour(session, nationId)
-        val alpha = if (nationId == session.playerNationId) 0x4A else 0x3A
-        return Colors.alpha(base, alpha)
+    fun tileColour(session: Session, terrain: Terrain, owner: Int, tile: Int): Int {
+        if (terrain.isWater) return Colors.of(terrain.fill)
+        val base = if (owner < 0) Colors.of(UNCLAIMED_LAND)
+        else Colors.lerp(nationColour(session, owner), Colors.of(LAND_SHADE), 0.14f)
+        val noise = ((tile * 2654435761L.toInt()) ushr 24) and 0x1F
+        return Colors.scale(base, 0.97f + noise / 765f)
     }
+
+    private const val UNCLAIMED_LAND = "#6F746C"
+    private const val LAND_SHADE = "#27313B"
 
     /** 海岸線。陸地與水域之間畫一道亮線，是海陸分界最便宜也最有效的線索。 */
     val COASTLINE: Int get() = Colors.of("#B37FC4E0")

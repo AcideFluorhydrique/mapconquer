@@ -38,6 +38,47 @@ class MapOverlay(tileCount: Int) {
     var animProgress: Float = 1f
     var animUnit: ArmyUnit? = null
 
+    /** 飛行中、或正在播命中效果的空中出擊；null 代表沒有。 */
+    var sortie: Sortie? = null
+
+    /**
+     * 一次空中出擊的動畫。
+     *
+     * 出擊的結果要等飛機**到了**才結算 —— 先結算的話，目標會在飛機還在半路時
+     * 就掉血甚至消失，動畫變成事後補拍。所以這裡只記路線與時間，
+     * 抵達時由 GameView 呼叫 AirOps.fly，並把傷害填回 [damage] 給飄字用。
+     */
+    class Sortie(val mission: AirMission, val from: Int, val to: Int, val flightMs: Int) {
+        var elapsedMs = 0
+
+        /** 已經在抵達時結算過了。 */
+        var resolved = false
+
+        /** 命中飄字的數字；-1 代表不顯示（空降、或出擊失敗）。 */
+        var damage = -1
+
+        val arrived: Boolean get() = elapsedMs >= flightMs
+
+        /** 飛行進度 0..1。 */
+        val flight: Float get() = (elapsedMs / flightMs.toFloat()).coerceAtMost(1f)
+
+        /** 抵達之後的命中（或開傘）效果進度 0..1。 */
+        val impact: Float get() = ((elapsedMs - flightMs) / IMPACT_MS.toFloat()).coerceIn(0f, 1f)
+
+        companion object {
+            const val IMPACT_MS = 520
+        }
+    }
+
+    /** 飛機還在路上：這段期間不接受任何操作，免得在結算之前換了回合或又下了別的命令。 */
+    val sortieInFlight: Boolean get() = sortie?.arrived == false
+
+    fun tickSortie(deltaMs: Int) {
+        val s = sortie ?: return
+        s.elapsedMs += deltaMs
+        if (s.resolved && s.impact >= 1f) sortie = null
+    }
+
     fun clearHighlights() {
         java.util.Arrays.fill(movable, false)
         java.util.Arrays.fill(attackable, false)

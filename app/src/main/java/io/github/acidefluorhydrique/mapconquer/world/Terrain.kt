@@ -24,6 +24,10 @@ enum class Terrain(
     val isDeep: Boolean,
     /** 輪車與履帶（裝甲、火炮、卡車）能不能進。 */
     val vehiclePassable: Boolean,
+    /**
+     * 地圖上的底色。只有水域真的拿來畫 —— 陸地格的底色是國色，
+     * 地形改由 render.TerrainGlyphs 的符號表達。陸地的值留著當地形的代表色。
+     */
     val fill: String,
     /** 每回合的基礎產值，城市會在這之上再加。 */
     val income: Int

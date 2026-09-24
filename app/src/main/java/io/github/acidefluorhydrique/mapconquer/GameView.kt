@@ -195,6 +195,10 @@ class GameView(context: Context) : SurfaceView(context), SurfaceHolder.Callback 
         if (toastTimer > 0) toastTimer -= deltaMs
         val active = session ?: return
         overlay?.tickAnimation(if (animationsEnabled) deltaMs / 180f else 1f)
+        overlay?.let { over ->
+            over.tickSortie(deltaMs)
+            over.sortie?.let { if (it.arrived && !it.resolved) landSortie(active, it) }
+        }
 
         if (active.status != SessionStatus.PLAYING) {
             if (panel != Panel.RESULT) onGameFinished(active)
@@ -412,6 +416,7 @@ class GameView(context: Context) : SurfaceView(context), SurfaceHolder.Callback 
     }
 
     private fun onTap(x: Float, y: Float) {
+        if (screen == Screen.GAME && overlay?.sortieInFlight == true) return
         val hit = buttons.hit(x, y)
         if (hit != null) {
             if (!hit.enabled) {
@@ -665,17 +670,46 @@ class GameView(context: Context) : SurfaceView(context), SurfaceHolder.Callback 
         over.clearHighlights()
     }
 
+    /**
+     * 點了目標就起飛。有動畫時先只放飛機出去，抵達才在 [landSortie] 結算；
+     * 關掉動畫就當場結算。
+     */
     private fun performMission(active: Session, mission: AirMission, tile: Int) {
         undoRecord = null
-        val target = AirOps.strikeTarget(active, active.playerNationId, mission, tile)
-        val result = AirOps.fly(active, active.playerNationId, mission, tile)
         cancelMission()
-        if (result == null) {
+        val nationId = active.playerNationId
+        if (!AirOps.canFly(active, nationId, mission, tile)) {
             Audio.play(Sfx.DENIED)
             return
         }
+        val over = overlay
+        if (!animationsEnabled || over == null) {
+            resolveMission(active, mission, tile)
+            return
+        }
+        val from = AirOps.launchTile(active, nationId, mission, tile)
+        val distance = if (from < 0) 0 else active.map.distance(from, tile)
+        over.sortie = MapOverlay.Sortie(
+            mission, from, tile,
+            flightMs = (SORTIE_BASE_MS + SORTIE_MS_PER_TILE * distance).coerceAtMost(SORTIE_MAX_MS)
+        )
+    }
+
+    private fun landSortie(active: Session, sortie: MapOverlay.Sortie) {
+        sortie.resolved = true
+        sortie.damage = resolveMission(active, sortie.mission, sortie.to)
+    }
+
+    /** 真正出擊並播報結果。回傳要飄在目標上的傷害，沒有就回 -1。 */
+    private fun resolveMission(active: Session, mission: AirMission, tile: Int): Int {
+        val target = AirOps.strikeTarget(active, active.playerNationId, mission, tile)
+        val result = AirOps.fly(active, active.playerNationId, mission, tile)
+        if (result == null) {
+            Audio.play(Sfx.DENIED)
+            return -1
+        }
         val dropped = result.dropped
-        when {
+        return when {
             dropped != null -> {
                 Audio.play(Sfx.BUILD)
                 toast(Strings.get(R.string.toast_airdrop))
@@ -683,6 +717,7 @@ class GameView(context: Context) : SurfaceView(context), SurfaceHolder.Callback 
                     it.selectedUnit = dropped
                     it.selectedTile = tile
                 }
+                -1
             }
             target != null -> {
                 Audio.play(Sfx.ATTACK)
@@ -692,6 +727,7 @@ class GameView(context: Context) : SurfaceView(context), SurfaceHolder.Callback 
                         Strings.byName(target.kind.key), result.damageToUnit
                     )
                 )
+                result.damageToUnit
             }
             else -> {
                 Audio.play(Sfx.ATTACK)
@@ -702,6 +738,7 @@ class GameView(context: Context) : SurfaceView(context), SurfaceHolder.Callback 
                         result.damageToCity
                     )
                 )
+                result.damageToCity
             }
         }
     }
@@ -995,5 +1032,10 @@ class GameView(context: Context) : SurfaceView(context), SurfaceHolder.Callback 
          */
         private const val AI_STEPS_PER_FRAME = 8
         private const val TOAST_MS = 2200
+
+        /** 出擊的飛行時間：起步加每格一點，遠程轟炸也不該讓玩家乾等超過一秒。 */
+        private const val SORTIE_BASE_MS = 320
+        private const val SORTIE_MS_PER_TILE = 70
+        private const val SORTIE_MAX_MS = 900
     }
 }

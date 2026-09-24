@@ -11,6 +11,7 @@ import io.github.acidefluorhydrique.mapconquer.core.Colors
 import io.github.acidefluorhydrique.mapconquer.core.Strings
 import io.github.acidefluorhydrique.mapconquer.core.Ui
 import io.github.acidefluorhydrique.mapconquer.core.Widgets
+import io.github.acidefluorhydrique.mapconquer.game.AirMission
 import io.github.acidefluorhydrique.mapconquer.game.Session
 import io.github.acidefluorhydrique.mapconquer.units.ArmyUnit
 import io.github.acidefluorhydrique.mapconquer.units.Domain
@@ -37,6 +38,7 @@ class MapRenderer(private val session: Session) {
     private val neighbourBuf = IntArray(6)
     private val rect = RectF()
     private val corners = FloatArray(12)
+    private val glyphs = TerrainGlyphs()
 
     /** visibleCol 的「不在畫面上」哨兵值。 */
     private val OFFSCREEN = Int.MIN_VALUE
@@ -51,6 +53,7 @@ class MapRenderer(private val session: Session) {
         drawOverlayTiles(canvas, camera, overlay)
         drawCities(canvas, camera)
         drawUnits(canvas, camera, overlay)
+        drawSortie(canvas, camera, overlay)
         drawPath(canvas, camera, overlay)
     }
 
@@ -100,18 +103,22 @@ class MapRenderer(private val session: Session) {
     }
 
     private fun drawTerrain(canvas: Canvas, camera: Camera, overlay: MapOverlay) {
+        val size = camera.hexSize
+        // 地形符號在遠景時淡出：縮到整張大陸都在畫面上時，玩家看的是勢力版圖，
+        // 每格一撮小圖案只會變成雜訊。
+        val glyphFade = ((size - Ui.dp(8f)) / Ui.dp(4f)).coerceIn(0f, 1f)
         paint.style = Paint.Style.FILL
         forEachVisibleTile(camera) { tile, cx, cy ->
             canvas.save()
             canvas.translate(cx, cy)
             paint.shader = null
-            paint.color = Palette.terrainColour(map.terrainAt(tile), tile)
+            val terrain = map.terrainAt(tile)
+            paint.color = Palette.tileColour(session, terrain, session.ownerOfTile(tile), tile)
             canvas.drawPath(hexPath, paint)
 
-            val owner = session.ownerOfTile(tile)
-            if (owner >= 0) {
-                paint.color = Palette.ownershipTint(session, owner)
-                canvas.drawPath(hexPath, paint)
+            if (glyphFade > 0f && terrain.isLand) {
+                val mirror = ((tile * 40503) ushr 7) and 1 == 1
+                glyphs.draw(canvas, terrain, size, mirror, glyphFade)
             }
             if (overlay.showSupply && session.isSupplied(tile)) {
                 paint.color = Palette.SUPPLY_HINT
@@ -138,7 +145,7 @@ class MapRenderer(private val session: Session) {
      * 海岸線。
      *
      * 只畫「陸地格朝向水域的那一條邊」。這是整張地圖上最重要的一條線 ——
-     * 六角格的地形色再怎麼調，遠看都會糊成一片，而一道亮邊可以讓
+     * 國色再怎麼調，總有幾國的藍會跟海相近，而一道亮邊可以讓
      * 海陸關係在任何縮放下都是瞬間可讀的。
      */
     private fun drawCoastline(canvas: Canvas, camera: Camera) {
@@ -439,7 +446,8 @@ class MapRenderer(private val session: Session) {
 
         if (size >= Ui.dp(10f)) {
             paint.color = Palette.domainAccent(unit.kind.domain)
-            UnitGlyphs.draw(canvas, unit.kind, rect.centerX(), rect.centerY(), w, h, paint)
+            // 剪影往右下偏一點，讓出左上角的國旗。
+            UnitGlyphs.draw(canvas, unit.kind, rect.centerX() + size * 0.06f, rect.centerY() + size * 0.02f, w, h, paint)
         }
 
         // 血條。滿血就不畫 —— 地圖上該只有「出事了」的部隊會吸引注意力。
@@ -489,6 +497,103 @@ class MapRenderer(private val session: Session) {
             paint.color = Palette.supplyColour(unit.supply / ArmyUnit.MAX_SUPPLY.toFloat())
             canvas.drawCircle(cx + w / 2f - size * 0.09f, top + h - size * 0.09f, size * 0.07f, paint)
         }
+    }
+
+    /**
+     * 空中出擊。
+     *
+     * 飛行段：飛機沿著一道微微拱起的弧線從起飛點飛向目標，地上拖一個影子 ——
+     * 影子與機身之間的距離就是「在天上」的全部說法，比任何高度數字都直觀。
+     * 抵達段：打擊任務是火光加一圈擴散的衝擊波與飄起來的傷害數字，
+     * 轟炸機連爆三下；空降是一頂傘從上空飄落到新的那支部隊上。
+     */
+    private fun drawSortie(canvas: Canvas, camera: Camera, overlay: MapOverlay) {
+        val sortie = overlay.sortie ?: return
+        val layout = camera.layout
+        val size = camera.hexSize
+        val toRow = map.rowOf(sortie.to)
+        val toColVisible = visibleCol(map.colOf(sortie.to))
+        val toCol = if (toColVisible == OFFSCREEN) map.colOf(sortie.to) else toColVisible
+        val tx = camera.screenX(layout.centerXOffset(toCol, toRow))
+        val ty = camera.screenY(layout.centerYOffset(toRow))
+        val unit = size * 0.4f
+
+        if (!sortie.arrived) {
+            val from = if (sortie.from >= 0) sortie.from else sortie.to
+            // 起點用「相對目標差幾欄」來定位，環繞地圖上才會走短的那一側。
+            var dCol = map.colOf(from) - map.colOf(sortie.to)
+            if (map.wrapX) dCol = Math.floorMod(dCol + map.cols / 2, map.cols) - map.cols / 2
+            val fromRow = map.rowOf(from)
+            val fx = camera.screenX(layout.centerXOffset(toCol + dCol, fromRow))
+            val fy = camera.screenY(layout.centerYOffset(fromRow))
+
+            val t = sortie.flight
+            val ease = t * t * (3f - 2f * t)
+            val gx = fx + (tx - fx) * ease
+            val gy = fy + (ty - fy) * ease
+            val lift = (Math.sin(Math.PI * t).toFloat() * 0.5f + 0.25f) * size
+            val heading = Math.toDegrees(Math.atan2((ty - fy).toDouble(), (tx - fx).toDouble())).toFloat()
+
+            paint.color = Colors.of("#59000000")
+            UnitGlyphs.drawAircraft(canvas, sortie.mission, gx, gy, unit * 0.85f, heading, paint)
+            paint.color = Palette.AIR_ACCENT
+            UnitGlyphs.drawAircraft(
+                canvas, sortie.mission, gx, gy - lift, unit, heading, paint,
+                outline = Colors.of("#CC1A232D")
+            )
+            return
+        }
+
+        val k = sortie.impact
+        if (sortie.mission == AirMission.AIRDROP) {
+            val fade = ((1f - k) / 0.3f).coerceIn(0f, 1f)
+            paint.color = Colors.alpha(Palette.AIR_ACCENT, (0xFF * fade).toInt())
+            UnitGlyphs.drawParachute(canvas, tx, ty - size * (0.35f + 1.1f * (1f - k)), unit, paint)
+            return
+        }
+
+        if (sortie.mission == AirMission.BOMBER) {
+            drawBurst(canvas, tx - size * 0.22f, ty + size * 0.1f, k / 0.7f, size * 0.8f)
+            drawBurst(canvas, tx + size * 0.2f, ty - size * 0.12f, (k - 0.15f) / 0.7f, size * 0.8f)
+            drawBurst(canvas, tx, ty + size * 0.05f, (k - 0.3f) / 0.7f, size)
+        } else {
+            drawBurst(canvas, tx, ty, k, size)
+        }
+
+        if (sortie.damage >= 0) {
+            val alpha = (0xFF * ((1f - k) / 0.4f).coerceIn(0f, 1f)).toInt()
+            val y = ty - size * (0.55f + 0.45f * k)
+            val text = "-" + sortie.damage
+            val textSize = Ui.dp(12f)
+            Widgets.centered(canvas, text, tx, y + Ui.dp(1f), textSize, bold = true, color = Colors.alpha(Colors.of("#000000"), alpha * 3 / 4))
+            Widgets.centered(canvas, text, tx, y, textSize, bold = true, color = Colors.alpha(Colors.of("#FFD98A"), alpha))
+        }
+    }
+
+    /** 一次爆炸：亮心、火球、往外噴的火星與擴散的衝擊波。[k] 是 0..1 的進度，超出範圍就不畫。 */
+    private fun drawBurst(canvas: Canvas, cx: Float, cy: Float, k: Float, size: Float) {
+        if (k <= 0f || k >= 1f) return
+        val fade = 1f - k
+        paint.style = Paint.Style.STROKE
+        paint.strokeWidth = Ui.dp(2.2f) * fade
+        paint.color = Colors.alpha(Colors.of("#FF8A4C"), (0xFF * fade).toInt())
+        canvas.drawCircle(cx, cy, size * (0.25f + 0.75f * k), paint)
+        // 火星：少了這幾道放射線，一個圓加一圈看起來像準星而不像爆炸。
+        paint.strokeWidth = Ui.dp(1.6f) * fade
+        paint.color = Colors.alpha(Colors.of("#FFD98A"), (0xFF * fade).toInt())
+        val inner = size * (0.3f + 0.5f * k)
+        val outer = size * (0.42f + 0.72f * k)
+        for (i in 0 until 8) {
+            val a = Math.toRadians(i * 45.0 + 20.0)
+            val c = Math.cos(a).toFloat()
+            val s = Math.sin(a).toFloat()
+            canvas.drawLine(cx + c * inner, cy + s * inner, cx + c * outer, cy + s * outer, paint)
+        }
+        paint.style = Paint.Style.FILL
+        paint.color = Colors.alpha(Colors.of("#FFB35C"), (0xE0 * fade).toInt())
+        canvas.drawCircle(cx, cy, size * (0.22f + 0.2f * k), paint)
+        paint.color = Colors.alpha(Colors.of("#FFF4D6"), (0xFF * fade * fade).toInt())
+        canvas.drawCircle(cx, cy, size * (0.12f + 0.06f * k), paint)
     }
 
     /** 行軍路線的虛線與終點箭頭。 */
