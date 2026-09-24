@@ -28,7 +28,7 @@ object Palette {
     val SELECTION: Int get() = Colors.of("#FFD98A")
     val MOVE_RANGE: Int get() = Colors.of("#4C6FC7E8")
     val ATTACK_RANGE: Int get() = Colors.of("#59E86A4C")
-    val SUPPLY_HINT: Int get() = Colors.of("#3358C08A")
+    val SUPPLY_SHADE: Int get() = Colors.of("#99080C12")
     val SUPPLY_BUBBLE: Int get() = Colors.of("#E67FE0A8")
 
     /**

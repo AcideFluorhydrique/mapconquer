@@ -120,8 +120,10 @@ class MapRenderer(private val session: Session) {
                 val mirror = ((tile * 40503) ushr 7) and 1 == 1
                 glyphs.draw(canvas, terrain, size, mirror, glyphFade)
             }
-            if (overlay.showSupply && session.isSupplied(tile)) {
-                paint.color = Palette.SUPPLY_HINT
+            // 補給圖層壓暗的是「補給不到」的陸地，而不是標亮補得到的：玩家要找的是
+            // 補給線的盡頭在哪。海面不壓：軍艦自帶物資，整片大洋變暗只會干擾判讀。
+            if (overlay.showSupply && terrain.isLand && !session.isSupplied(tile)) {
+                paint.color = Palette.SUPPLY_SHADE
                 canvas.drawPath(hexPath, paint)
             }
             canvas.restore()
