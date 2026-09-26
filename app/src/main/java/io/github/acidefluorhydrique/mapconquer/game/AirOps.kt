@@ -18,7 +18,8 @@ import io.github.acidefluorhydrique.mapconquer.units.UnitKind
  * 地移 —— 全是這個尺度用不著的細節。現在空軍是「花錢買一次出擊」：
  * 從機場或航艦起飛，打一下（或放一支傘兵下去），然後就回去了。
  *
- * [strike] 的三個值依序是對 SOFT / ARMOURED / SHIP 的火力：
+ * 攻擊擲骰取參考遊戲戰鬥機 24–32、轟炸機 26–40 的量級。
+ * [versus] 的三個值依序是對 SOFT / ARMOURED / SHIP 的效果百分比（本專案的規則）：
  * 戰鬥機掃射步兵、轟炸機專打戰車與軍艦，兩者互補，沒有哪個全能。
  */
 enum class AirMission(
@@ -28,13 +29,15 @@ enum class AirMission(
     val industry: Int,
     /** 離起飛點的最大距離（格）。 */
     val range: Int,
-    val strike: IntArray
+    val attackMin: Int,
+    val attackMax: Int,
+    val versus: IntArray
 ) {
-    FIGHTER("mission_fighter", 70, 2, 6, intArrayOf(46, 12, 10)),
-    BOMBER("mission_bomber", 110, 3, 8, intArrayOf(16, 48, 52)),
+    FIGHTER("mission_fighter", 70, 2, 6, 24, 32, intArrayOf(100, 30, 25)),
+    BOMBER("mission_bomber", 110, 3, 8, 26, 40, intArrayOf(40, 100, 100)),
 
     /** 空降：在目標格放下一支新的步兵。價錢另加一支步兵。 */
-    AIRDROP("mission_airdrop", 60, 2, 6, intArrayOf(0, 0, 0));
+    AIRDROP("mission_airdrop", 60, 2, 6, 0, 0, intArrayOf(0, 0, 0));
 
     val descKey: String get() = key + "_desc"
 
@@ -43,8 +46,11 @@ enum class AirMission(
     /** 這個任務實際要付的錢。 */
     val totalCost: Int get() = if (this == AIRDROP) cost + AirOps.PARATROOPER.cost else cost
 
-    fun strikeAgainst(target: TargetClass): Int =
-        if (target.ordinal < strike.size) strike[target.ordinal] else 0
+    fun versus(target: TargetClass): Int =
+        if (attackMax > 0 && target.ordinal < versus.size) versus[target.ordinal] else 0
+
+    /** 打城牆：跟地面部隊一樣取對步兵、對裝甲兩欄的較高者。 */
+    val versusCity: Int get() = maxOf(versus(TargetClass.SOFT), versus(TargetClass.ARMOURED))
 
     companion object {
         val ALL: Array<AirMission> = values()
@@ -79,7 +85,7 @@ object AirOps {
     /** 附近有空戰專家指揮官時的加成，半徑與司令部光環相同。 */
     private const val AIR_EXPERT_RANGE = 3
 
-    /** 空降部隊落地時，每一點防空火力扣掉的血（百分比），上限見下。 */
+    /** 空降部隊落地時，每兩點防空火力扣掉 1% 的血，上限見下。 */
     private const val DROP_FLAK_LOSS_DIVISOR = 2
     private const val DROP_FLAK_MAX_LOSS = 60
 
@@ -131,7 +137,7 @@ object AirOps {
         if (!mission.isStrike) return null
         val unit = session.primaryUnitAt(tile) ?: return null
         if (!unit.isAlive || !session.isHostile(unit.nationId, nationId)) return null
-        if (mission.strikeAgainst(unit.kind.targetClass) <= 0) return null
+        if (mission.versus(unit.kind.targetClass) <= 0) return null
         // 看不見的潛艇炸不到 —— 跟地面部隊的規則一致。
         if (nationId == session.playerNationId && !session.isUnitVisibleToPlayer(unit)) return null
         return unit
@@ -219,8 +225,8 @@ object AirOps {
     /**
      * 目標四周敵方防空的總火力。
      *
-     * 用兵種表「對空」那一欄：防空炮最高，巡洋艦、驅逐艦其次。殘血的防空
-     * 打得比較少，所以先把防空炮打殘，再派飛機過去，是划算的順序。
+     * 用兵種表的平均攻擊 × 「對空」那一欄：防空炮最高，巡洋艦、驅逐艦其次。
+     * 殘血的防空打得比較少，所以先把防空炮打殘，再派飛機過去，是划算的順序。
      */
     fun flakAt(session: Session, nationId: Int, tile: Int): Int {
         var total = 0
@@ -230,17 +236,14 @@ object AirOps {
             val aa = unit.kind.attackAgainst(TargetClass.AIRCRAFT)
             if (aa <= 0) continue
             if (session.map.distance(unit.tile, tile) > FLAK_RANGE) continue
-            total += aa * ArmyUnit.attackPercent(unit.size) / 100 * unit.hp / ArmyUnit.MAX_HP
+            total += aa * ArmyUnit.attackPercent(unit.size) / 100 * unit.hp / unit.maxHp.coerceAtLeast(1)
         }
         return total
     }
 
-    /** 一次打擊的火力：基礎值、空軍科技、空戰專家，再被防空削減。 */
-    fun strikePower(session: Session, nationId: Int, mission: AirMission, target: TargetClass, tile: Int): Float {
-        val base = mission.strikeAgainst(target).toFloat()
-        if (base <= 0f) return 0f
-        var p = base
-        p *= 1f + session.nations[nationId].techBonus(TechBranch.AIR) / 100f
+    /** 一次打擊的攻擊%：空軍科技、空戰專家，再被防空削減。 */
+    fun strikePercent(session: Session, nationId: Int, tile: Int): Float {
+        var p = 100f + session.nations[nationId].techBonus(TechBranch.AIR)
         if (hasAirExpertNear(session, nationId, tile)) p *= 1.2f
         return Combat.flakFactor(flakAt(session, nationId, tile)) * p
     }
@@ -252,24 +255,20 @@ object AirOps {
                 session.map.distance(it.tile, tile) <= AIR_EXPERT_RANGE
         }
 
-    /** 不改變狀態的傷害預測（原始值，尚未依編制換算）。AI 拿它挑目標。 */
-    fun previewDamage(session: Session, nationId: Int, mission: AirMission, defender: ArmyUnit): Int {
-        val power = strikePower(session, nationId, mission, defender.kind.targetClass, defender.tile)
-        return Combat.previewAirStrike(power, defenceOf(session, defender))
-    }
+    /** 不改變狀態的傷害預測（平均擲骰）。AI 拿它挑目標。 */
+    fun previewDamage(session: Session, nationId: Int, mission: AirMission, defender: ArmyUnit): Int =
+        hitOn(session, nationId, mission, defender, (mission.attackMin + mission.attackMax) / 2).toUnit
 
-    private fun defenceOf(session: Session, defender: ArmyUnit): Float {
-        // 在天上往下打，地形只剩一半的遮蔽效果；城牆與築壕照算。
-        val terrain = session.map.terrainAt(defender.tile).defenceBonus / 2
-        val pid = session.cityProvinceAt(defender.tile)
-        val city = if (pid >= 0 && session.holdsCity(defender, pid)) session.map.provinces[pid].cityDefenceBonus else 0
-        return Combat.airDefence(
+    private fun hitOn(session: Session, nationId: Int, mission: AirMission, defender: ArmyUnit, roll: Int): Combat.Hit =
+        Combat.airHit(
+            roll,
+            strikePercent(session, nationId, defender.tile),
+            mission.versus(defender.kind.targetClass),
             defender,
             session.nations[defender.nationId].techBonus(defender.kind.branch),
-            terrain + city,
-            session.isEmbarked(defender)
+            session.isEmbarked(defender),
+            session.cityShields(defender)
         )
-    }
 
     /** 出擊。不合法就回 null，不會留下半套狀態。 */
     fun fly(session: Session, nationId: Int, mission: AirMission, tile: Int): AirResult? {
@@ -294,7 +293,7 @@ object AirOps {
             ?: return AirResult(0, 0, false, null)
         // 對著防空跳傘要付出代價，但不會整支掉光 —— 那是轟炸機的工作。
         val loss = (flakAt(session, nationId, tile) / DROP_FLAK_LOSS_DIVISOR).coerceAtMost(DROP_FLAK_MAX_LOSS)
-        unit.hp = (ArmyUnit.MAX_HP - loss).coerceAtLeast(1)
+        unit.hp = (unit.maxHp - unit.maxHp * loss / 100).coerceAtLeast(1)
         session.pushEvent(
             "event_airdrop",
             listOf(session.nations[nationId].nameKey),
@@ -310,8 +309,8 @@ object AirOps {
         if (defender == null) {
             val pid = cityTarget(session, nationId, mission, tile)
             if (pid < 0) return AirResult(0, 0, false, null)
-            val power = strikePower(session, nationId, mission, TargetClass.ARMOURED, tile)
-            val damage = Combat.airStrikeCity(power, session.map.provinces[pid].cityDefenceBonus, session.rng)
+            val roll = session.rng.range(mission.attackMin, mission.attackMax)
+            val damage = Combat.airStrikeCity(roll, strikePercent(session, nationId, tile), mission.versusCity)
             val dealt = session.damageCity(pid, damage)
             session.pushEvent(
                 "event_city_shelled",
@@ -322,16 +321,12 @@ object AirOps {
             return AirResult(0, dealt, false, null)
         }
 
-        val power = strikePower(session, nationId, mission, defender.kind.targetClass, tile)
-        val raw = Combat.airStrike(power, defenceOf(session, defender), session.rng)
         // 跟地面攻擊同一套城牆規則：駐軍吃一半，城防另外吃一份。
-        val inCity = session.cityShields(defender)
-        val toUnit = if (inCity) (raw * Combat.UNIT_DAMAGE_IN_CITY_PERCENT / 100).coerceAtLeast(1) else raw
-        val toCity = if (inCity) raw * Combat.CITY_DAMAGE_PERCENT / 100 else 0
+        val hit = hitOn(session, nationId, mission, defender, session.rng.range(mission.attackMin, mission.attackMax))
         val before = defender.hp
-        defender.damage(toUnit)
+        defender.damage(hit.toUnit)
         val lost = before - defender.hp
-        val dealtCity = session.damageCity(session.cityProvinceAt(defender.tile), toCity)
+        val dealtCity = session.damageCity(session.cityProvinceAt(defender.tile), hit.toCity)
 
         val defenderNation = session.nations[defender.nationId]
         session.pushEvent(

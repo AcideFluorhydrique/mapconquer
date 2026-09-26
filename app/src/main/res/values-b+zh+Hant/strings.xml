@@ -62,14 +62,14 @@
     <string name="toast_city_shelled">%1$s：城防 −%2$d</string>
     <string name="event_city_shelled">%1$s 的城防被打掉 %2$d</string>
     <string name="hud_city_defence">城防 %1$d/%2$d</string>
-    <string name="hud_terrain_line">%1$s · 防禦 +%2$d%%</string>
+    <string name="hud_terrain_line">%1$s · 裝甲 −%2$d%% · 火炮 −%3$d%%</string>
     <string name="hud_unit_level">等級 %1$d · 移動 %2$d/%3$d</string>
     <string name="hud_entrenched">築壕 %1$d 級</string>
     <string name="hud_ai_turn">%1$s 行動中…</string>
     <string name="panel_production">生產</string>
     <string name="panel_production_size">編制</string>
     <string name="panel_production_subtitle">%1$s · 工業 %2$d · 資金 %3$d</string>
-    <string name="panel_production_stats">攻 %1$d  防 %2$d  動 %3$d</string>
+    <string name="panel_production_stats">攻 %1$d–%2$d  防 %3$d  血 %4$d  動 %5$d</string>
     <string name="panel_tech">研發</string>
     <string name="panel_objectives">戰役目標</string>
     <string name="panel_standings">各國局勢</string>
@@ -97,7 +97,7 @@
     <string name="target_ship">對艦艇</string>
     <string name="target_aircraft">對空</string>
     <string name="unit_level_line">等級 %1$d · 經驗 %2$d</string>
-    <string name="unit_stat_line">防禦 %1$d · 移動 %2$d · 射程 %3$d-%4$d · 視野 %5$d</string>
+    <string name="unit_stat_line">血 %1$d/%2$d · 防禦 %3$d · 移動 %4$d · 射程 %5$d-%6$d · 視野 %7$d</string>
     <string name="unit_assign_commander">指派指揮官</string>
     <string name="commander_medals">勳章 %1$d</string>
     <string name="commander_recruit">招募 %1$d</string>
@@ -171,7 +171,7 @@
     <string name="help_combat">戰鬥</string>
     <string name="help_morale">士氣與包圍</string>
     <string name="help_morale_body">士氣不是會慢慢流失的一條槽，而是「這支部隊現在站在什麼處境」的讀數。對向兩格有敵人就是夾擊、士氣下降；四面以上有敵人就是包圍、士氣嚴重下降；再降一級就是混亂 —— 無法攻擊，也無法還手。帶謠言的指揮官每次命中都有機會再壓一級，所以包圍加一次謠言、夾擊加兩次、或是純粹三次謠言，結果都一樣。正因為它讀的是處境，包圍圈一鬆開，士氣就立刻回來。</string>
-    <string name="help_combat_body">每支部隊都有四個獨立的攻擊值：對步兵、對裝甲、對艦艇、對空（對空就是防空火力）。反坦克炮打戰車勢如破竹，打步兵卻軟弱無力。火炮從兩格以外開火且不會被反擊，可是一旦被貼身就幾乎沒有自衛能力 —— 前面一定要有步兵擋著。地形、城牆與築壕都會提高守方的防禦，所以「打山裡挖好壕溝的敵人」跟「在農地上逮到它」是兩回事。</string>
+    <string name="help_combat_body">每次攻擊在部隊的最小與最大攻擊之間擲一個數，目標的每一點防禦都會把傷害削掉一些 —— 但永遠削不完。部隊對步兵、裝甲、艦艇、飛機各有不同的效果：反坦克炮打戰車勢如破竹，打步兵卻軟弱無力。HP 不到一半的部隊攻擊減半；挨打後還活著的守方一定會全力反擊。火炮從兩格以外開火且不會被反擊，可是一旦被貼身就還不了手 —— 前面一定要有步兵擋著。地形不會替守方擋傷害，而是讓打進去的戰車與火炮打折（丘陵、山地、森林、叢林、沙漠），所以守高地的是步兵。築壕與城牆會減少守方挨的傷害。</string>
     <string name="morale_elevated">士氣高昂</string>
     <string name="morale_steady">正常</string>
     <string name="morale_shaken">士氣下降</string>

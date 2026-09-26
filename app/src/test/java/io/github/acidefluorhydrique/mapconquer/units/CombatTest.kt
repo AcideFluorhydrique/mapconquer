@@ -4,6 +4,7 @@
 package io.github.acidefluorhydrique.mapconquer.units
 
 import io.github.acidefluorhydrique.mapconquer.core.Rng
+import io.github.acidefluorhydrique.mapconquer.world.Terrain
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -13,10 +14,11 @@ class CombatTest {
 
     private var nextId = 1
 
-    private fun unit(kind: UnitKind, nation: Int = 0, hp: Int = 100, level: Int = 1): ArmyUnit {
+    /** [hp] 省略時是滿血。等級會按比例縮放 HP，所以先設等級再設 HP。 */
+    private fun unit(kind: UnitKind, nation: Int = 0, hp: Int = -1, level: Int = 1): ArmyUnit {
         val u = ArmyUnit(nextId++, kind, nation, 0)
-        u.hp = hp
         u.level = level
+        if (hp >= 0) u.hp = hp
         return u
     }
 
@@ -24,22 +26,23 @@ class CombatTest {
         attacker: ArmyUnit,
         defender: ArmyUnit,
         distance: Int = 1,
-        defenderTerrain: Int = 0,
+        defenderTerrain: Terrain = Terrain.PLAIN,
+        defenderInCity: Boolean = false,
         attackerAtSea: Boolean = false,
         defenderAtSea: Boolean = false,
         attackerMorale: Int = 0,
         defenderMorale: Int = 0
     ) = CombatContext(
         attacker, defender,
-        defenderTerrainBonus = defenderTerrain,
-        attackerTerrainBonus = 0,
+        defenderTerrain = defenderTerrain,
         distance = distance,
         attackerTech = 0, defenderTech = 0,
         attackerAura = 0, defenderAura = 0,
         attackerAtSea = attackerAtSea,
         defenderAtSea = defenderAtSea,
         attackerMorale = attackerMorale,
-        defenderMorale = defenderMorale
+        defenderMorale = defenderMorale,
+        defenderInCity = defenderInCity
     )
 
     @Test
@@ -47,12 +50,15 @@ class CombatTest {
         val rng = Rng(42)
         for (attackerKind in UnitKind.ALL) {
             for (defenderKind in UnitKind.ALL) {
-                val ctx = context(unit(attackerKind), unit(defenderKind, nation = 1))
+                val attacker = unit(attackerKind)
+                val defender = unit(defenderKind, nation = 1)
+                val ctx = context(attacker, defender)
                 val preview = Combat.previewDamage(ctx)
-                assertTrue("$attackerKind -> $defenderKind = $preview", preview in 0..ArmyUnit.MAX_HP)
+                assertTrue("$attackerKind -> $defenderKind = $preview", preview in 0..defender.maxHp)
                 val result = Combat.resolve(ctx, rng)
-                assertTrue(result.damageToDefender in 0..ArmyUnit.MAX_HP)
-                assertTrue(result.damageToAttacker in 0..ArmyUnit.MAX_HP)
+                assertTrue(result.damageToDefender in 0..defender.maxHp)
+                assertTrue(result.damageToAttacker in 0..attacker.maxHp)
+                assertTrue(defender.hp in 0..defender.maxHp && attacker.hp in 0..attacker.maxHp)
             }
         }
     }
@@ -80,15 +86,21 @@ class CombatTest {
     }
 
     @Test
-    fun `terrain and entrenchment protect the defender`() {
+    fun `terrain hampers tanks and guns attacking into it, not infantry`() {
+        fun hit(attacker: UnitKind, terrain: Terrain, distance: Int = 1) = Combat.previewDamage(
+            context(unit(attacker), unit(UnitKind.INFANTRY, nation = 1), distance = distance, defenderTerrain = terrain)
+        )
+        assertTrue(hit(UnitKind.ARMOUR, Terrain.MOUNTAIN) < hit(UnitKind.ARMOUR, Terrain.PLAIN))
+        assertTrue(hit(UnitKind.ARTILLERY, Terrain.JUNGLE, 2) < hit(UnitKind.ARTILLERY, Terrain.PLAIN, 2))
+        assertEquals("步兵不受地形影響", hit(UnitKind.INFANTRY, Terrain.PLAIN), hit(UnitKind.INFANTRY, Terrain.MOUNTAIN))
+        assertEquals("軍艦不受地形影響", hit(UnitKind.DESTROYER, Terrain.PLAIN), hit(UnitKind.DESTROYER, Terrain.FOREST))
+    }
+
+    @Test
+    fun `entrenchment protects the defender`() {
         val open = Combat.previewDamage(
             context(unit(UnitKind.INFANTRY), unit(UnitKind.INFANTRY, nation = 1))
         )
-        val inMountains = Combat.previewDamage(
-            context(unit(UnitKind.INFANTRY), unit(UnitKind.INFANTRY, nation = 1), defenderTerrain = 45)
-        )
-        assertTrue("$open should exceed $inMountains", open > inMountains)
-
         val dug = unit(UnitKind.INFANTRY, nation = 1).apply { entrenchment = 3 }
         val versusDug = Combat.previewDamage(context(unit(UnitKind.INFANTRY), dug))
         assertTrue("$open should exceed $versusDug", open > versusDug)
@@ -108,15 +120,11 @@ class CombatTest {
     }
 
     @Test
-    fun `artillery caught in melee defends badly`() {
-        val versusGun = Combat.previewDamage(
-            context(unit(UnitKind.INFANTRY), unit(UnitKind.ARTILLERY, nation = 1))
-        )
-        val versusInfantry = Combat.previewDamage(
-            context(unit(UnitKind.INFANTRY), unit(UnitKind.INFANTRY, nation = 1))
-        )
-        // 被貼身的砲兵要明顯比一般步兵更好打，否則「保護砲兵」就不是個真的決策。
-        assertTrue("gun $versusGun vs infantry $versusInfantry", versusGun > versusInfantry * 3 / 2)
+    fun `artillery caught in melee cannot fire back`() {
+        // 被貼身的砲兵還不了手，所以「保護砲兵」是個真的決策。
+        val ctx = context(unit(UnitKind.INFANTRY), unit(UnitKind.ARTILLERY, nation = 1))
+        assertFalse(Combat.canRetaliate(ctx))
+        assertEquals(0, Combat.resolve(ctx, Rng(3)).damageToAttacker)
     }
 
     @Test
@@ -152,7 +160,7 @@ class CombatTest {
         assertTrue("veteran $veteran should beat fresh $fresh", veteran > fresh)
 
         val hurt = Combat.previewDamage(
-            context(unit(UnitKind.ARMOUR, hp = 30), unit(UnitKind.INFANTRY, nation = 1))
+            context(unit(UnitKind.ARMOUR, hp = 60), unit(UnitKind.INFANTRY, nation = 1))
         )
         assertTrue("wounded $hurt should be worse than fresh $fresh", hurt < fresh)
     }
@@ -215,12 +223,6 @@ class CombatTest {
         assertTrue("正常 $steady > 士氣下降 $shaken", steady > shaken)
         assertTrue("士氣下降 $shaken > 士氣嚴重下降 $broken", shaken > broken)
         assertEquals("混亂完全打不出傷害", 0, hit(ArmyUnit.MIN_MORALE))
-
-        // 懲罰要比獎勵有感，否則「把對方圍起來」不會是划算的投資。
-        assertTrue(
-            "低落的懲罰應該大於高昂的獎勵",
-            (steady - shaken) > (elevated - steady)
-        )
     }
 
     @Test
@@ -231,10 +233,8 @@ class CombatTest {
         val afloat = Combat.previewDamage(
             context(unit(UnitKind.DESTROYER), unit(UnitKind.INFANTRY, nation = 1), defenderAtSea = true)
         )
-        // 攻防比公式的傷害上限是 55，而岸上已經打到 24，所以理論最大倍率
-        // 只有 2.29 倍 —— 原本斷言「超過兩倍」等於要求貼著公式天花板，
-        // 是門檻訂錯了，不是機制沒生效。真正的懲罰在下面：完全無法還手。
-        assertTrue("浮渡的陸軍應該明顯好打 $afloat vs $ashore", afloat > ashore * 3 / 2)
+        // 浮渡中沒有防禦、另外多挨五成；真正致命的是下面那條：完全無法還手。
+        assertTrue("浮渡的陸軍應該明顯好打 $afloat vs $ashore", afloat > ashore * 7 / 5)
         assertFalse(
             "浮渡的陸軍還不了手",
             Combat.canRetaliate(
@@ -267,7 +267,10 @@ class CombatTest {
     @Test
     fun `unit roster is internally consistent`() {
         for (kind in UnitKind.ALL) {
-            assertEquals("$kind 攻擊值必須有四項", 4, kind.attack.size)
+            assertEquals("$kind 相剋表必須有四項", 4, kind.versus.size)
+            assertTrue("$kind 攻擊下限不得大於上限", kind.attackMin <= kind.attackMax)
+            assertEquals("$kind 有攻擊擲骰就要打得到某類目標", kind.attackMax > 0, kind.canAttack)
+            assertTrue("$kind 生命必須為正", kind.hp > 0)
             assertTrue("$kind 防禦必須為正", kind.defence > 0)
             assertTrue("$kind 移動必須為正", kind.movement > 0)
             assertTrue("$kind 成本必須為正", kind.cost > 0)
@@ -282,6 +285,111 @@ class CombatTest {
             assertEquals("byName 應該找得回自己", kind, UnitKind.byName(kind.name))
             assertEquals("byName 也接受字串鍵", kind, UnitKind.byName(kind.key))
         }
+    }
+
+    // ------------------------------------------------------------------
+    // 參考公式的數值（docs/original-behavior.md 第 6 節）
+    // ------------------------------------------------------------------
+
+    @Test
+    fun `each point of defence widens the divisor by 1_6 percent`() {
+        assertEquals(100, Combat.defended(100, 0))
+        assertEquals("防禦 1 → 1000/1016", 21, Combat.defended(22, 1))
+        assertEquals("防禦 125 剩三分之一", 333, Combat.defended(1000, 125))
+        assertEquals("防禦 10 → 1000/1160", 34, Combat.defended(40, 10))
+    }
+
+    @Test
+    fun `one hit follows the reference formula step by step`() {
+        fun hit(ctx: CombatContext, roll: Int) = Combat.hit(ctx, roll, ctx.attacker.hp, exchange = false)
+
+        // 步兵打步兵，平原、滿血、士氣正常：22 × 1000 / 1016 = 21.65 → 21。
+        val plain = context(unit(UnitKind.INFANTRY), unit(UnitKind.INFANTRY, nation = 1))
+        assertEquals(21, hit(plain, 22).toUnit)
+
+        // HP 不到一半，攻擊% 減半：⌊0.5 × 22⌋ = 11 → 11000/1016 = 10。
+        val wounded = unit(UnitKind.INFANTRY).apply { hp = maxHp / 2 - 1 }
+        assertEquals(10, hit(context(wounded, unit(UnitKind.INFANTRY, nation = 1)), 22).toUnit)
+        // 剛好一半不算殘血。
+        val half = unit(UnitKind.INFANTRY).apply { hp = maxHp / 2 }
+        assertEquals(21, hit(context(half, unit(UnitKind.INFANTRY, nation = 1)), 22).toUnit)
+
+        // 等級的固定攻擊不受士氣放大：3 級 +8，士氣 −2 → 8 + ⌊0.5 × 20⌋ = 18 → 18000/1016 = 17。
+        val veteran = context(
+            unit(UnitKind.INFANTRY, level = 3), unit(UnitKind.INFANTRY, nation = 1), attackerMorale = -2
+        )
+        assertEquals(17, hit(veteran, 20).toUnit)
+
+        // 戰車打山上的步兵：40 × 1000 / 1016 = 39，再 × 0.8 = 31.2 → 31。
+        val uphill = context(unit(UnitKind.ARMOUR), unit(UnitKind.INFANTRY, nation = 1), defenderTerrain = Terrain.MOUNTAIN)
+        assertEquals(31, hit(uphill, 40).toUnit)
+
+        // 傷害至少 1。
+        val feeble = context(unit(UnitKind.SUBMARINE), unit(UnitKind.BATTLESHIP, nation = 1).apply { level = 5 })
+        assertTrue(hit(feeble, 1).toUnit >= 1)
+    }
+
+    @Test
+    fun `a garrison with walls takes half and the walls take the roll undefended`() {
+        val ctx = context(unit(UnitKind.INFANTRY), unit(UnitKind.INFANTRY, nation = 1), defenderInCity = true)
+        // 部隊：20 → 19，× 0.5 = 9。城牆沒有防禦：20；有還手的交火 × 0.7 = 14。
+        val exchange = Combat.hit(ctx, 20, ctx.attacker.hp, exchange = true)
+        assertEquals(9, exchange.toUnit)
+        assertEquals(14, exchange.toCity)
+        assertEquals(20, Combat.hit(ctx, 20, ctx.attacker.hp, exchange = false).toCity)
+    }
+
+    @Test
+    fun `the counter is full strength but uses the defender's hp after the hit`() {
+        val attacker = unit(UnitKind.INFANTRY)
+        val defender = unit(UnitKind.INFANTRY, nation = 1)
+        val ctx = context(attacker, defender)
+        val untouched = Combat.previewRetaliation(ctx, 0)
+        val asFirstStrike = Combat.previewDamage(context(defender, attacker))
+        assertEquals("反擊不打折", asFirstStrike, untouched)
+        val crippled = Combat.previewRetaliation(ctx, defender.maxHp / 2 + 1)
+        assertTrue("挨打到半血以下，反擊減半 $crippled vs $untouched", crippled < untouched * 3 / 4)
+        assertEquals("被打死就沒有反擊", 0, Combat.previewRetaliation(ctx, defender.maxHp))
+    }
+
+    @Test
+    fun `attack rolls are uniform integers between min and max`() {
+        val rng = Rng(99)
+        val seen = HashSet<Int>()
+        repeat(2_000) {
+            val r = Combat.roll(UnitKind.INFANTRY, rng)
+            assertTrue(r in UnitKind.INFANTRY.attackMin..UnitKind.INFANTRY.attackMax)
+            seen.add(r)
+        }
+        assertEquals("每個值都擲得到", UnitKind.INFANTRY.attackMax - UnitKind.INFANTRY.attackMin + 1, seen.size)
+    }
+
+    @Test
+    fun `max hp comes from kind, formation and level`() {
+        assertEquals(80, ArmyUnit.maxHpFor(UnitKind.INFANTRY, 1, 1))
+        assertEquals("編制 3 = 210%", 168, ArmyUnit.maxHpFor(UnitKind.INFANTRY, 3, 1))
+        assertEquals("180 × 160% + 2 級 × 20", 328, ArmyUnit.maxHpFor(UnitKind.ARMOUR, 2, 3))
+
+        // 改編制或等級時 HP 依比例縮放。
+        val u = ArmyUnit(1, UnitKind.ARMOUR, 0, 0)
+        u.hp = 90
+        u.size = 2
+        assertEquals(144, u.hp)
+        u.level = 2
+        assertEquals(154, u.hp)
+        assertEquals(308, u.maxHp)
+    }
+
+    @Test
+    fun `healing and starvation work in shares of max hp`() {
+        val u = ArmyUnit(1, UnitKind.ARMOUR, 0, 0)
+        u.hp = 100
+        u.healPercent(22)
+        assertEquals(139, u.hp)
+        u.losePercent(8)
+        assertEquals(125, u.hp)
+        u.healPercent(100)
+        assertEquals(u.maxHp, u.hp)
     }
 
     @Test

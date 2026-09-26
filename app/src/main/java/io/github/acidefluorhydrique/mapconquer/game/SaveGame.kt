@@ -27,9 +27,10 @@ object SaveGame {
     private const val FILE_NAME = "session.save"
     /**
      * 存檔格式版本。規則改變了索引的意義時要加一，舊版存檔會被當成過時拒絕：
-     * 2 = 國家順序改成玩家第一（國家 id 全部位移）。
+     * 2 = 國家順序改成玩家第一（國家 id 全部位移）；
+     * 3 = 部隊與城防的 HP 改成絕對值（舊存檔裡是 0..100 的百分比）。
      */
-    private const val VERSION = 2
+    private const val VERSION = 3
 
     /** 讀檔的結果。存檔舊了跟存檔壞了是兩回事，玩家該看到不同的說明。 */
     sealed class Restore {
@@ -259,8 +260,10 @@ object SaveGame {
             val tile = p[3].toIntOrNull() ?: continue
             if (tile !in 0 until map.tileCount) continue
             val unit = ArmyUnit(id, kind, nationId, tile)
-            unit.hp = p[4].toIntOrNull() ?: ArmyUnit.MAX_HP
-            unit.level = (p[5].toIntOrNull() ?: 1).coerceIn(1, ArmyUnit.MAX_LEVEL)
+            // 等級與編制會按比例縮放 HP，所以先設它們，最後才寫入存下來的 HP。
+            unit.level = p[5].toIntOrNull() ?: 1
+            unit.size = if (p.size >= 15) (p[14].toIntOrNull() ?: 1) else 1
+            unit.hp = (p[4].toIntOrNull() ?: unit.maxHp).coerceIn(1, unit.maxHp)
             unit.exp = p[6].toIntOrNull() ?: 0
             unit.supply = p[7].toIntOrNull() ?: ArmyUnit.MAX_SUPPLY
             unit.movesLeft = p[8].toIntOrNull() ?: 0
@@ -269,8 +272,6 @@ object SaveGame {
             unit.rumour = (p[11].toIntOrNull() ?: 0).coerceIn(0, ArmyUnit.MAX_RUMOUR)
             unit.transportId = p[12].toIntOrNull() ?: -1
             unit.commanderId = if (p[13] == "-") "" else p[13]
-            // 舊存檔沒有編制這一欄，那就是一個編制。
-            unit.size = if (p.size >= 15) (p[14].toIntOrNull() ?: 1).coerceIn(1, ArmyUnit.MAX_SIZE) else 1
             session.restoreUnit(unit)
         }
         session.rebuildCargoLinks()

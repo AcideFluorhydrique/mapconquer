@@ -62,14 +62,14 @@
     <string name="toast_city_shelled">%1$s：城防 −%2$d</string>
     <string name="event_city_shelled">%1$s 的城防被打掉 %2$d</string>
     <string name="hud_city_defence">城防 %1$d/%2$d</string>
-    <string name="hud_terrain_line">%1$s · 防御 +%2$d%%</string>
+    <string name="hud_terrain_line">%1$s · 装甲 −%2$d%% · 火炮 −%3$d%%</string>
     <string name="hud_unit_level">等级 %1$d · 移动 %2$d/%3$d</string>
     <string name="hud_entrenched">筑壕 %1$d 级</string>
     <string name="hud_ai_turn">%1$s 行动中…</string>
     <string name="panel_production">生产</string>
     <string name="panel_production_size">编制</string>
     <string name="panel_production_subtitle">%1$s · 工业 %2$d · 资金 %3$d</string>
-    <string name="panel_production_stats">攻 %1$d  防 %2$d  动 %3$d</string>
+    <string name="panel_production_stats">攻 %1$d–%2$d  防 %3$d  血 %4$d  动 %5$d</string>
     <string name="panel_tech">研发</string>
     <string name="panel_objectives">战役目标</string>
     <string name="panel_standings">各国局势</string>
@@ -97,7 +97,7 @@
     <string name="target_ship">对舰艇</string>
     <string name="target_aircraft">对空</string>
     <string name="unit_level_line">等级 %1$d · 经验 %2$d</string>
-    <string name="unit_stat_line">防御 %1$d · 移动 %2$d · 射程 %3$d-%4$d · 视野 %5$d</string>
+    <string name="unit_stat_line">血 %1$d/%2$d · 防御 %3$d · 移动 %4$d · 射程 %5$d-%6$d · 视野 %7$d</string>
     <string name="unit_assign_commander">指派指挥官</string>
     <string name="commander_medals">勋章 %1$d</string>
     <string name="commander_recruit">招募 %1$d</string>
@@ -171,7 +171,7 @@
     <string name="help_combat">战斗</string>
     <string name="help_morale">士气与包围</string>
     <string name="help_morale_body">士气不是会慢慢流失的一条槽，而是「这支部队现在站在什么处境」的读数。对向两格有敌人就是夹击、士气下降；四面以上有敌人就是包围、士气严重下降；再降一级就是混乱 —— 无法攻击，也无法还手。带谣言的指挥官每次命中都有机会再压一级，所以包围加一次谣言、夹击加两次、或是纯粹三次谣言，结果都一样。正因为它读的是处境，包围圈一松开，士气就立刻回来。</string>
-    <string name="help_combat_body">每支部队都有四个独立的攻击值：对步兵、对装甲、对舰艇、对空（对空就是防空火力）。反坦克炮打战车势如破竹，打步兵却软弱无力。火炮从两格以外开火且不会被反击，可是一旦被贴身就几乎没有自卫能力 —— 前面一定要有步兵挡着。地形、城墙与筑壕都会提高守方的防御，所以「打山里挖好壕沟的敌人」跟「在农地上逮到它」是两回事。</string>
+    <string name="help_combat_body">每次攻击在部队的最小与最大攻击之间掷一个数，目标的每一点防御都会把伤害削掉一些 —— 但永远削不完。部队对步兵、装甲、舰艇、飞机各有不同的效果：反坦克炮打战车势如破竹，打步兵却软弱无力。HP 不到一半的部队攻击减半；挨打后还活着的守方一定会全力反击。火炮从两格以外开火且不会被反击，可是一旦被贴身就还不了手 —— 前面一定要有步兵挡着。地形不会替守方挡伤害，而是让打进去的战车与火炮打折（丘陵、山地、森林、丛林、沙漠），所以守高地的是步兵。筑壕与城墙会减少守方挨的伤害。</string>
     <string name="morale_elevated">士气高昂</string>
     <string name="morale_steady">正常</string>
     <string name="morale_shaken">士气下降</string>

@@ -28,7 +28,7 @@ class ConquestSmokeTest {
         for (unit in session.units) {
             assertTrue("$where: 死掉的部隊還留在場上", unit.isAlive)
             assertTrue("$where: 座標越界 ${unit.tile}", unit.tile in 0 until map.tileCount)
-            assertTrue("$where: hp 越界 ${unit.hp}", unit.hp in 1..ArmyUnit.MAX_HP)
+            assertTrue("$where: hp 越界 ${unit.hp}", unit.hp in 1..unit.maxHp)
             assertTrue("$where: 補給越界 ${unit.supply}", unit.supply in 0..ArmyUnit.MAX_SUPPLY)
             assertTrue("$where: 等級越界 ${unit.level}", unit.level in 1..ArmyUnit.MAX_LEVEL)
             assertTrue("$where: 國家越界", unit.nationId in session.nations.indices)

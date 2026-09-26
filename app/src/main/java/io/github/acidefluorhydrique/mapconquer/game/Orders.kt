@@ -253,7 +253,6 @@ object Orders {
         if (pid < 0) return null
         val damage = Combat.cityStrike(
             attacker,
-            session.map.provinces[pid].cityDefenceBonus,
             session.nations[attacker.nationId].techBonus(attacker.kind.branch),
             session.commandAura(attacker),
             session.moraleOf(attacker),
@@ -298,7 +297,7 @@ object Orders {
         for (domain in Domain.values()) {
             val target = session.unitAt(targetTile, domain) ?: continue
             if (!session.isHostile(target.nationId, attacker.nationId)) continue
-            if (attacker.kind.attackAgainst(target.kind.targetClass) <= 0) continue
+            if (attacker.kind.versus(target.kind.targetClass) <= 0) continue
             if (attacker.nationId == session.playerNationId && !session.isUnitVisibleToPlayer(target)) continue
             return target
         }
@@ -346,7 +345,7 @@ object Orders {
         if (attacker.hasAttacked || !attacker.isAlive || attacker.isLoaded) return -1
         if (!attacker.kind.canAttack) return -1
         if (session.isDisrupted(attacker)) return -1
-        if (attacker.kind.attackAgainst(TargetClass.ARMOURED) <= 0) return -1
+        if (Combat.versusCity(attacker.kind) <= 0) return -1
         if (!Combat.canReach(attacker, session.map.distance(attacker.tile, tile))) return -1
         if (session.anyUnitAt(tile)) return -1
         val pid = session.cityProvinceAt(tile)
@@ -376,26 +375,15 @@ object Orders {
 
     fun buildContext(session: Session, attacker: ArmyUnit, defender: ArmyUnit): CombatContext {
         val map = session.map
-        val defenderProvince = map.provinceAt(defender.tile)
-        val defenderCityBonus = if (
-            defenderProvince != null &&
-            defenderProvince.capitalTile == defender.tile &&
-            defender.kind.domain == Domain.LAND &&
-            session.holdsCity(defender, defenderProvince.id)
-        ) defenderProvince.cityDefenceBonus else 0
-
         // 城防已經被打光的城市不再替駐軍擋傷害 —— 那才是「城破了」的意思。
         val defenderInCity = session.cityShields(defender)
         val attackerInCity = session.cityShields(attacker)
 
-        val defenderTerrain = map.terrainAt(defender.tile).defenceBonus
-        val attackerTerrain = map.terrainAt(attacker.tile).defenceBonus
-
         return CombatContext(
             attacker = attacker,
             defender = defender,
-            defenderTerrainBonus = defenderTerrain + defenderCityBonus,
-            attackerTerrainBonus = attackerTerrain,
+            defenderTerrain = map.terrainAt(defender.tile),
+            attackerTerrain = map.terrainAt(attacker.tile),
             distance = map.distance(attacker.tile, defender.tile),
             attackerTech = session.nations[attacker.nationId].techBonus(attacker.kind.branch),
             defenderTech = session.nations[defender.nationId].techBonus(defender.kind.branch),
@@ -587,7 +575,8 @@ object Orders {
         if (tile < 0) return null
         val nation = session.nations[nationId]
         val unit = session.spawnUnit(kind, nationId, tile) ?: return null
-        unit.size = size.coerceIn(1, ArmyUnit.MAX_SIZE)
+        unit.size = size
+        unit.restoreFullHp()
         nation.funds -= buildCost(kind, unit.size)
         session.pushEvent("event_unit_built", listOf(kind.key, province.nameKey), tile, nationId)
         return unit
@@ -607,14 +596,15 @@ object Orders {
         return true
     }
 
-    /** 花錢就地補血。前線修不滿，只能靠城市。 */
+    /** 花錢就地補血：補滿的價錢是造價的 100/180，依缺多少比例算。前線修不滿，只能靠城市。 */
     fun repairCost(unit: ArmyUnit): Int {
-        val missing = ArmyUnit.MAX_HP - unit.hp
-        return (buildCost(unit.kind, unit.size) * missing) / 180
+        val missing = (unit.maxHp - unit.hp).coerceAtLeast(0)
+        if (unit.maxHp <= 0) return 0
+        return (buildCost(unit.kind, unit.size).toLong() * missing * 100 / unit.maxHp / 180).toInt()
     }
 
     fun canRepair(session: Session, unit: ArmyUnit): Boolean {
-        if (unit.hp >= ArmyUnit.MAX_HP) return false
+        if (unit.hp >= unit.maxHp) return false
         if (!session.isSupplySource(unit.tile, unit.nationId)) return false
         return session.nations[unit.nationId].funds >= repairCost(unit)
     }
@@ -622,7 +612,7 @@ object Orders {
     fun repair(session: Session, unit: ArmyUnit): Boolean {
         if (!canRepair(session, unit)) return false
         session.nations[unit.nationId].funds -= repairCost(unit)
-        unit.hp = ArmyUnit.MAX_HP
+        unit.restoreFullHp()
         unit.resupply(ArmyUnit.MAX_SUPPLY)
         unit.movesLeft = 0
         unit.hasAttacked = true

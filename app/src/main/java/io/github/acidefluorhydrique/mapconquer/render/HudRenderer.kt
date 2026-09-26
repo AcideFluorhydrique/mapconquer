@@ -216,11 +216,17 @@ class HudRenderer(private val session: Session) {
         val title = province?.let { Strings.byName(it.nameKey) } ?: Strings.byName(terrain.key)
         Widgets.leftFit(canvas, title, x, top + Ui.dp(16f), Ui.dp(12.5f), Ui.dp(130f), ink, bold = true)
 
-        val terrainLine = Strings.format(
-            R.string.hud_terrain_line,
-            Strings.byName(terrain.key),
-            terrain.defenceBonus
-        )
+        // 地形只懲罰攻方的裝甲與火炮；沒有懲罰的地形只顯示名稱。
+        val terrainLine = if (terrain.hasAttackPenalty) {
+            Strings.format(
+                R.string.hud_terrain_line,
+                Strings.byName(terrain.key),
+                terrain.armourPenalty,
+                terrain.artilleryPenalty
+            )
+        } else {
+            Strings.byName(terrain.key)
+        }
         Widgets.leftFit(canvas, terrainLine, x, top + Ui.dp(31f), Ui.dp(10.5f), Ui.dp(130f), dim)
 
         if (province != null) {
@@ -286,7 +292,7 @@ class HudRenderer(private val session: Session) {
         val barX = nameX + Ui.dp(126f)
         val barWidth = Ui.dp(84f)
         rect.set(barX, top + Ui.dp(12f), barX + barWidth, top + Ui.dp(19f))
-        val hpRatio = unit.hp / ArmyUnit.MAX_HP.toFloat()
+        val hpRatio = unit.hpRatio
         Widgets.bar(canvas, rect, hpRatio, Palette.healthColour(hpRatio))
         Widgets.left(canvas, "${unit.hp}", barX + barWidth + Ui.dp(5f), top + Ui.dp(19f), Ui.dp(10f), dim)
 

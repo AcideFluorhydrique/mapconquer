@@ -487,8 +487,8 @@ class MapRenderer(private val session: Session) {
         }
 
         // 血條。滿血就不畫 —— 地圖上該只有「出事了」的部隊會吸引注意力。
-        if (unit.hp < ArmyUnit.MAX_HP && size >= Ui.dp(9f)) {
-            val ratio = unit.hp / ArmyUnit.MAX_HP.toFloat()
+        if (unit.hp < unit.maxHp && size >= Ui.dp(9f)) {
+            val ratio = unit.hpRatio
             rect.set(cx - w / 2f, top + h + size * 0.04f, cx + w / 2f, top + h + size * 0.16f)
             Widgets.bar(canvas, rect, ratio, Palette.healthColour(ratio))
         }

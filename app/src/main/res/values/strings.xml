@@ -62,14 +62,14 @@
     <string name="toast_city_shelled">%1$s: city defence −%2$d</string>
     <string name="event_city_shelled">%1$s took %2$d damage to its defences</string>
     <string name="hud_city_defence">City defence %1$d/%2$d</string>
-    <string name="hud_terrain_line">%1$s · defence +%2$d%%</string>
+    <string name="hud_terrain_line">%1$s · armour −%2$d%% · artillery −%3$d%%</string>
     <string name="hud_unit_level">Level %1$d · moves %2$d/%3$d</string>
     <string name="hud_entrenched">Entrenched %1$d</string>
     <string name="hud_ai_turn">%1$s is moving…</string>
     <string name="panel_production">Production</string>
     <string name="panel_production_size">Formation</string>
     <string name="panel_production_subtitle">%1$s · industry %2$d · funds %3$d</string>
-    <string name="panel_production_stats">ATK %1$d  DEF %2$d  MOV %3$d</string>
+    <string name="panel_production_stats">ATK %1$d–%2$d  DEF %3$d  HP %4$d  MOV %5$d</string>
     <string name="panel_tech">Research</string>
     <string name="panel_objectives">Objectives</string>
     <string name="panel_standings">Standings</string>
@@ -97,7 +97,7 @@
     <string name="target_ship">vs Ships</string>
     <string name="target_aircraft">vs Aircraft</string>
     <string name="unit_level_line">Level %1$d · %2$d XP</string>
-    <string name="unit_stat_line">DEF %1$d · MOV %2$d · range %3$d-%4$d · vision %5$d</string>
+    <string name="unit_stat_line">HP %1$d/%2$d · DEF %3$d · MOV %4$d · range %5$d-%6$d · vision %7$d</string>
     <string name="unit_assign_commander">Assign commander</string>
     <string name="commander_medals">Medals %1$d</string>
     <string name="commander_recruit">Recruit %1$d</string>
@@ -171,7 +171,7 @@
     <string name="help_combat">Combat</string>
     <string name="help_morale">Morale and encirclement</string>
     <string name="help_morale_body">Morale is not a bar that drains -- it is a read of the position a unit is in right now. Enemies on two opposite sides leave it shaken; four or more around it leave it broken; one step further and it is disrupted, unable to attack or even return fire. A commander with Rumour pushes the target one step lower on a hit, so encircle plus one rumour, or a flank plus two, or three rumours alone all reach the same place. Because morale reads the position, it comes straight back the moment the ring opens up.</string>
-    <string name="help_combat_body">Every unit has four separate attack values: against infantry, armour, ships, and anti-air fire. Anti-tank guns shred armour and bounce off infantry. Artillery strikes from two or more hexes away and takes no return fire, but is nearly helpless once something reaches it — keep infantry in front of it. Terrain, city walls and entrenchment all raise the defender\'s strength, so attacking a dug-in unit in the mountains is a very different proposition from catching it on open farmland.</string>
+    <string name="help_combat_body">Every attack rolls a number between the unit\'s minimum and maximum attack, and each point of the target\'s defence trims a little off the hit — never all of it. Units have separate strengths against infantry, armour, ships and aircraft: anti-tank guns shred armour and bounce off infantry. A unit below half its HP hits at half strength, and a defender that survives always fires back at full strength. Artillery strikes from two or more hexes away and takes no return fire, but cannot fire back once something reaches it — keep infantry in front of it. Terrain does not shield the defender; it hampers tanks and guns attacking into it (hills, mountains, forest, jungle, desert), which is why infantry holds the high ground. Entrenchment and city walls cut the damage a defender takes.</string>
     <string name="morale_elevated">Elevated</string>
     <string name="morale_steady">Steady</string>
     <string name="morale_shaken">Shaken</string>
