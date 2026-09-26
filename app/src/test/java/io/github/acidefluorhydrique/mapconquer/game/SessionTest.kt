@@ -359,7 +359,7 @@ class SessionTest {
         val result = AirOps.fly(s, 0, AirMission.FIGHTER, target.tile)
         assertNotNull(result)
         assertTrue("要打出傷害", result!!.damageToUnit > 0)
-        assertTrue(target.hp < ArmyUnit.MAX_HP)
+        assertTrue(target.hp < target.maxHp)
         assertEquals(1_000 - AirMission.FIGHTER.totalCost, nation.funds)
         assertEquals("飛機不會留在地圖上", 1, s.units.size)
 
@@ -441,15 +441,16 @@ class SessionTest {
     fun `a formation is stronger than one unit but weaker than the units it absorbed`() {
         for (n in 2..ArmyUnit.MAX_SIZE) {
             assertTrue(ArmyUnit.attackPercent(n) > ArmyUnit.attackPercent(n - 1))
-            assertTrue(ArmyUnit.hpPercent(n) > ArmyUnit.hpPercent(n - 1))
+            assertTrue(ArmyUnit.sizeHpPercent(n) > ArmyUnit.sizeHpPercent(n - 1))
             assertTrue("攻擊不該追上 $n 支分開的部隊", ArmyUnit.attackPercent(n) < 100 * n)
-            assertTrue("耐打不該追上 $n 支分開的部隊", ArmyUnit.hpPercent(n) < 100 * n)
+            assertTrue("生命不該追上 $n 支分開的部隊", ArmyUnit.sizeHpPercent(n) < 100 * n)
         }
         val small = ArmyUnit(1, UnitKind.INFANTRY, 0, 0)
         val big = ArmyUnit(2, UnitKind.INFANTRY, 0, 0).apply { size = 3 }
+        assertEquals("三編制的生命是 210%", small.maxHp * 210 / 100, big.maxHp)
         small.damage(30)
         big.damage(30)
-        assertTrue("同一發傷害，大編制掉的比例要比較少", big.hp > small.hp)
+        assertTrue("同一發傷害，大編制掉的比例要比較少", big.hpRatio > small.hpRatio)
     }
 
     @Test
@@ -566,7 +567,7 @@ class SessionTest {
 
         val result = Orders.attack(s, attacker, defender.tile)
         assertNotNull(result)
-        assertTrue("守方應該受傷", defender.hp < ArmyUnit.MAX_HP)
+        assertTrue("守方應該受傷", defender.hp < defender.maxHp)
         assertTrue("步兵對步兵應該有反擊", result!!.damageToAttacker > 0)
         assertTrue(attacker.hasAttacked)
         assertEquals("開火之後不能再動", 0, attacker.movesLeft)
@@ -928,7 +929,7 @@ class SessionTest {
 
         repeat(20) { repeat(s.nations.size) { s.advanceToNextNation() } }
         assertEquals("補給滑到八成戰力的門檻就停住", ArmyUnit.SUPPLY_CRITICAL, ship.supply)
-        assertEquals("海上不會餓死", ArmyUnit.MAX_HP, ship.hp)
+        assertEquals("海上不會餓死", ship.maxHp, ship.hp)
         assertTrue(ship.isAlive)
     }
 
@@ -940,7 +941,7 @@ class SessionTest {
 
         repeat(6) { repeat(s.nations.size) { s.advanceToNextNation() } }
         assertEquals("陸軍的補給會見底", 0, soldier.supply)
-        assertTrue("見底之後開始失血", soldier.hp < ArmyUnit.MAX_HP)
+        assertTrue("見底之後開始失血", soldier.hp < soldier.maxHp)
     }
 
     @Test

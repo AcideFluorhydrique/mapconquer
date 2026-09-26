@@ -11,8 +11,8 @@ package io.github.acidefluorhydrique.mapconquer.units
  * 這裡只放屬於這支部隊自己的狀態。這條界線讓存檔變得單純 ——
  * 存下這個物件的欄位就夠還原，不必連帶存一堆推導值。
  *
- * HP 一律 0..100。不同兵種的耐打程度靠 [UnitKind.defence] 表達，
- * 而不是靠不同的血量上限 —— 統一血量讓「還剩幾成」在 UI 上一眼可比。
+ * HP 是絕對值，跟參考遊戲一樣：最大生命由兵種、編制與等級決定（見 [maxHpFor]），
+ * 所以一輛戰車天生就比一班步兵耐打，血條上的數字也能直接跟傷害比。
  */
 class ArmyUnit(
     val id: Int,
@@ -20,19 +20,37 @@ class ArmyUnit(
     var nationId: Int,
     var tile: Int
 ) {
-    var hp: Int = MAX_HP
-
     /**
      * 編制數 1..[MAX_SIZE]。
      *
-     * HP 仍然是 0..100，但它是「這個編制還剩幾成」，不是絕對血量。大編制的
-     * 耐打靠 [scaledDamage] 表達：同一發傷害，三個編制掉的比例比一個編制少。
-     * 這樣補給、整補、血條這些以百分比運作的東西全部不必改。
+     * 改動編制或等級時，目前 HP 依比例跟著最大 HP 縮放 —— 參考遊戲在載入關卡、
+     * 重算最大 HP 時也是這樣做的。所以存檔與劇本要先設編制與等級，再設 HP。
      */
     var size: Int = 1
+        set(value) {
+            val before = maxHp
+            field = value.coerceIn(1, MAX_SIZE)
+            rescaleHp(before)
+        }
 
     var level: Int = 1
+        set(value) {
+            val before = maxHp
+            field = value.coerceIn(1, MAX_LEVEL)
+            rescaleHp(before)
+        }
+
     var exp: Int = 0
+
+    val maxHp: Int get() = maxHpFor(kind, size, level)
+
+    var hp: Int = maxHpFor(kind, 1, 1)
+
+    /** 目前 HP 佔最大 HP 的比例，血條與防空估算用。 */
+    val hpRatio: Float get() = if (maxHp <= 0) 0f else hp / maxHp.toFloat()
+
+    /** 目前 HP 的百分比（整數，無條件捨去）。 */
+    val hpPercent: Int get() = if (maxHp <= 0) 0 else hp * 100 / maxHp
 
     /** 0..100。低於 [SUPPLY_STRAINED] 開始掉戰力，歸零會逐回合失血。 */
     var supply: Int = MAX_SUPPLY
@@ -119,18 +137,28 @@ class ArmyUnit(
     }
 
     fun damage(amount: Int) {
-        hp = (hp - scaledDamage(amount)).coerceAtLeast(0)
+        if (amount > 0) hp = (hp - amount).coerceAtLeast(0)
     }
 
-    /** 一發原始傷害落在這個編制上，實際會掉幾成。 */
-    fun scaledDamage(raw: Int): Int {
-        if (raw <= 0) return 0
-        val percent = hpPercent(size)
-        return ((raw * 100 + percent - 1) / percent).coerceAtLeast(1)
+    /** 回復最大 HP 的 [percent]%（至少 1 點），不超過上限。 */
+    fun healPercent(percent: Int) {
+        if (percent <= 0 || hp >= maxHp) return
+        hp = (hp + (maxHp * percent / 100).coerceAtLeast(1)).coerceAtMost(maxHp)
     }
 
-    fun heal(amount: Int) {
-        hp = (hp + amount).coerceAtMost(MAX_HP)
+    /** 扣掉最大 HP 的 [percent]%（至少 1 點）。 */
+    fun losePercent(percent: Int) {
+        if (percent > 0) damage((maxHp * percent / 100).coerceAtLeast(1))
+    }
+
+    fun restoreFullHp() {
+        hp = maxHp
+    }
+
+    private fun rescaleHp(beforeMax: Int) {
+        val after = maxHp
+        if (beforeMax <= 0 || after == beforeMax || hp <= 0) return
+        hp = (hp.toLong() * after / beforeMax).toInt().coerceIn(1, after)
     }
 
     fun resupply(amount: Int) {
@@ -138,32 +166,40 @@ class ArmyUnit(
     }
 
     companion object {
-        const val MAX_HP = 100
         const val MAX_SUPPLY = 100
         const val MAX_LEVEL = 5
         const val MAX_SIZE = 4
 
         /**
-         * 編制的攻擊與耐打倍率（百分比）。
+         * 編制的攻擊與生命倍率（百分比），取參考遊戲的數值。
          *
          * 兩條曲線都遞增、但每一格都追不上「拆開的同樣幾支」：兩個一編制的部隊
-         * 合計 200% 攻擊、200% 耐打，併成一個兩編制只剩 130% 與 160%。所以併編
+         * 合計 200% 攻擊、200% 生命，併成一個兩編制只剩 125% 與 160%。所以併編
          * 永遠有代價 —— 它換到的是「一格裡的集中」，而在一格一支部隊的規則下，
          * 那是守窄正面、或打動單支部隊打不動的目標唯一的方法。
          */
         fun attackPercent(size: Int): Int = when (size.coerceIn(1, MAX_SIZE)) {
             1 -> 100
-            2 -> 130
-            3 -> 155
+            2 -> 125
+            3 -> 150
             else -> 175
         }
 
-        fun hpPercent(size: Int): Int = when (size.coerceIn(1, MAX_SIZE)) {
+        fun sizeHpPercent(size: Int): Int = when (size.coerceIn(1, MAX_SIZE)) {
             1 -> 100
             2 -> 160
-            3 -> 215
-            else -> 265
+            3 -> 210
+            else -> 250
         }
+
+        /** 每升一級加的生命、攻擊（加在擲骰之外）與防禦，取參考遊戲的級距。 */
+        const val LEVEL_HP = 20
+        const val LEVEL_ATTACK = 4
+        const val LEVEL_DEFENCE = 2
+
+        /** 最大 HP = 兵種基礎 × 編制倍率（無條件捨去），再加等級加成。 */
+        fun maxHpFor(kind: UnitKind, size: Int, level: Int): Int =
+            kind.hp * sizeHpPercent(size) / 100 + LEVEL_HP * (level.coerceIn(1, MAX_LEVEL) - 1)
 
         /** 低於這個補給開始掉戰力。 */
         const val SUPPLY_STRAINED = 40

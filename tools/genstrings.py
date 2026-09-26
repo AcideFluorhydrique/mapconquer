@@ -99,7 +99,9 @@ UI = {
     "event_city_shelled": ("%1$s took %2$d damage to its defences",
                            "%1$s 的城防被打掉 %2$d", "%1$s 的城防被打掉 %2$d"),
     "hud_city_defence": ("City defence %1$d/%2$d", "城防 %1$d/%2$d", "城防 %1$d/%2$d"),
-    "hud_terrain_line": ("%1$s · defence +%2$d%%", "%1$s · 防禦 +%2$d%%", "%1$s · 防御 +%2$d%%"),
+    "hud_terrain_line": ("%1$s · armour −%2$d%% · artillery −%3$d%%",
+                         "%1$s · 裝甲 −%2$d%% · 火炮 −%3$d%%",
+                         "%1$s · 装甲 −%2$d%% · 火炮 −%3$d%%"),
     "hud_unit_level": ("Level %1$d · moves %2$d/%3$d", "等級 %1$d · 移動 %2$d/%3$d", "等级 %1$d · 移动 %2$d/%3$d"),
     "hud_entrenched": ("Entrenched %1$d", "築壕 %1$d 級", "筑壕 %1$d 级"),
     "hud_ai_turn": ("%1$s is moving…", "%1$s 行動中…", "%1$s 行动中…"),
@@ -110,7 +112,9 @@ UI = {
     "panel_production_subtitle": ("%1$s · industry %2$d · funds %3$d",
                                   "%1$s · 工業 %2$d · 資金 %3$d",
                                   "%1$s · 工业 %2$d · 资金 %3$d"),
-    "panel_production_stats": ("ATK %1$d  DEF %2$d  MOV %3$d", "攻 %1$d  防 %2$d  動 %3$d", "攻 %1$d  防 %2$d  动 %3$d"),
+    "panel_production_stats": ("ATK %1$d–%2$d  DEF %3$d  HP %4$d  MOV %5$d",
+                               "攻 %1$d–%2$d  防 %3$d  血 %4$d  動 %5$d",
+                               "攻 %1$d–%2$d  防 %3$d  血 %4$d  动 %5$d"),
     "panel_tech": ("Research", "研發", "研发"),
     "panel_objectives": ("Objectives", "戰役目標", "战役目标"),
     "panel_standings": ("Standings", "各國局勢", "各国局势"),
@@ -144,9 +148,9 @@ UI = {
     "target_ship": ("vs Ships", "對艦艇", "对舰艇"),
     "target_aircraft": ("vs Aircraft", "對空", "对空"),
     "unit_level_line": ("Level %1$d · %2$d XP", "等級 %1$d · 經驗 %2$d", "等级 %1$d · 经验 %2$d"),
-    "unit_stat_line": ("DEF %1$d · MOV %2$d · range %3$d-%4$d · vision %5$d",
-                       "防禦 %1$d · 移動 %2$d · 射程 %3$d-%4$d · 視野 %5$d",
-                       "防御 %1$d · 移动 %2$d · 射程 %3$d-%4$d · 视野 %5$d"),
+    "unit_stat_line": ("HP %1$d/%2$d · DEF %3$d · MOV %4$d · range %5$d-%6$d · vision %7$d",
+                       "血 %1$d/%2$d · 防禦 %3$d · 移動 %4$d · 射程 %5$d-%6$d · 視野 %7$d",
+                       "血 %1$d/%2$d · 防御 %3$d · 移动 %4$d · 射程 %5$d-%6$d · 视野 %7$d"),
     "unit_assign_commander": ("Assign commander", "指派指揮官", "指派指挥官"),
 
     # 指揮官
@@ -273,19 +277,26 @@ UI = {
         "或是纯粹三次谣言，结果都一样。"
         "正因为它读的是处境，包围圈一松开，士气就立刻回来。"),
     "help_combat_body": (
-        "Every unit has four separate attack values: against infantry, armour, ships, and anti-air fire. "
-        "Anti-tank guns shred armour and bounce off infantry. "
-        "Artillery strikes from two or more hexes away and takes no return fire, but is nearly helpless once something reaches it — "
-        "keep infantry in front of it. Terrain, city walls and entrenchment all raise the defender's strength, "
-        "so attacking a dug-in unit in the mountains is a very different proposition from catching it on open farmland.",
-        "每支部隊都有四個獨立的攻擊值：對步兵、對裝甲、對艦艇、對空（對空就是防空火力）。"
-        "反坦克炮打戰車勢如破竹，打步兵卻軟弱無力。"
-        "火炮從兩格以外開火且不會被反擊，可是一旦被貼身就幾乎沒有自衛能力 —— 前面一定要有步兵擋著。"
-        "地形、城牆與築壕都會提高守方的防禦，所以「打山裡挖好壕溝的敵人」跟「在農地上逮到它」是兩回事。",
-        "每支部队都有四个独立的攻击值：对步兵、对装甲、对舰艇、对空（对空就是防空火力）。"
-        "反坦克炮打战车势如破竹，打步兵却软弱无力。"
-        "火炮从两格以外开火且不会被反击，可是一旦被贴身就几乎没有自卫能力 —— 前面一定要有步兵挡着。"
-        "地形、城墙与筑壕都会提高守方的防御，所以「打山里挖好壕沟的敌人」跟「在农地上逮到它」是两回事。"),
+        "Every attack rolls a number between the unit's minimum and maximum attack, and each point of the target's "
+        "defence trims a little off the hit — never all of it. Units have separate strengths against infantry, armour, "
+        "ships and aircraft: anti-tank guns shred armour and bounce off infantry. A unit below half its HP hits at half "
+        "strength, and a defender that survives always fires back at full strength. "
+        "Artillery strikes from two or more hexes away and takes no return fire, but cannot fire back once something "
+        "reaches it — keep infantry in front of it. Terrain does not shield the defender; it hampers tanks and guns "
+        "attacking into it (hills, mountains, forest, jungle, desert), which is why infantry holds the high ground. "
+        "Entrenchment and city walls cut the damage a defender takes.",
+        "每次攻擊在部隊的最小與最大攻擊之間擲一個數，目標的每一點防禦都會把傷害削掉一些 —— 但永遠削不完。"
+        "部隊對步兵、裝甲、艦艇、飛機各有不同的效果：反坦克炮打戰車勢如破竹，打步兵卻軟弱無力。"
+        "HP 不到一半的部隊攻擊減半；挨打後還活著的守方一定會全力反擊。"
+        "火炮從兩格以外開火且不會被反擊，可是一旦被貼身就還不了手 —— 前面一定要有步兵擋著。"
+        "地形不會替守方擋傷害，而是讓打進去的戰車與火炮打折（丘陵、山地、森林、叢林、沙漠），"
+        "所以守高地的是步兵。築壕與城牆會減少守方挨的傷害。",
+        "每次攻击在部队的最小与最大攻击之间掷一个数，目标的每一点防御都会把伤害削掉一些 —— 但永远削不完。"
+        "部队对步兵、装甲、舰艇、飞机各有不同的效果：反坦克炮打战车势如破竹，打步兵却软弱无力。"
+        "HP 不到一半的部队攻击减半；挨打后还活着的守方一定会全力反击。"
+        "火炮从两格以外开火且不会被反击，可是一旦被贴身就还不了手 —— 前面一定要有步兵挡着。"
+        "地形不会替守方挡伤害，而是让打进去的战车与火炮打折（丘陵、山地、森林、丛林、沙漠），"
+        "所以守高地的是步兵。筑壕与城墙会减少守方挨的伤害。"),
     "morale_elevated": ("Elevated", "士氣高昂", "士气高昂"),
     "morale_steady": ("Steady", "正常", "正常"),
     "morale_shaken": ("Shaken", "士氣下降", "士气下降"),

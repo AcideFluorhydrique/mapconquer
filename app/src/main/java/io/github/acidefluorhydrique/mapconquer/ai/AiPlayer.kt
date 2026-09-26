@@ -146,9 +146,9 @@ class AiPlayer(private val session: Session, private val nationId: Int) {
             AirOps.collectTargets(session, nationId, mission, airTargets)
             for (tile in airTargets) {
                 val defender = AirOps.strikeTarget(session, nationId, mission, tile) ?: continue
-                val share = defender.scaledDamage(AirOps.previewDamage(session, nationId, mission, defender))
-                var value = share * defender.kind.cost * defender.size / 100f
-                if (share >= defender.hp) value += defender.kind.cost * defender.size * 0.5f
+                val dealt = AirOps.previewDamage(session, nationId, mission, defender)
+                var value = worth(defender, dealt)
+                if (dealt >= defender.hp) value += defender.kind.cost * defender.size * 0.5f
                 val ratio = value / mission.totalCost
                 if (ratio > bestRatio) {
                     bestRatio = ratio
@@ -290,7 +290,13 @@ class AiPlayer(private val session: Session, private val nationId: Int) {
                 // 因為拆城防不會直接減少對方的戰力，只是為佔領開路。
                 val pid = Orders.cityTargetAt(session, unit, tile)
                 if (pid < 0) continue
-                val score = session.cityHp[pid].coerceAtMost(30) * 0.4f
+                val wall = Combat.previewCityStrike(
+                    unit,
+                    nation.techBonus(unit.kind.branch),
+                    session.commandAura(unit),
+                    session.moraleOf(unit)
+                )
+                val score = wall.coerceAtMost(session.cityHp[pid]).coerceAtMost(CITY_STRIKE_SCORE_CAP) * 0.4f
                 if (score > bestScore) {
                     bestScore = score
                     bestTile = tile
@@ -299,20 +305,15 @@ class AiPlayer(private val session: Session, private val nationId: Int) {
             }
             val ctx = Orders.buildContext(session, unit, defender)
             val dealt = Combat.previewDamage(ctx)
-            val taken = if (Combat.canRetaliate(ctx)) {
-                Orders.previewDamage(session, defender, unit) * 6 / 10
-            } else 0
+            // 反擊跟主動攻擊同一條公式，而且看的是挨打之後的殘血。
+            val taken = Combat.previewRetaliation(ctx, dealt)
 
             // 價值換算成錢：打掉一支貴的部隊比打掉一支便宜的值錢，
             // 而自己的損失也用同一把尺量，AI 才不會拿戰列艦去換運輸船。
-            // 預測傷害是原始值，要先換算成對方實際會掉的成數再比。一個四編制的
-            // 部隊值四支的錢，也要四支的傷害才打得死。
-            val dealtShare = defender.scaledDamage(dealt)
-            val takenShare = unit.scaledDamage(taken)
-            var score = dealtShare * defender.kind.cost * defender.size / 100f -
-                takenShare * unit.kind.cost * unit.size / 100f
-            if (dealtShare >= defender.hp) score += defender.kind.cost * defender.size * 0.5f
-            if (takenShare >= unit.hp) score -= unit.kind.cost * unit.size * 0.8f
+            // 一個四編制的部隊值四支的錢，也要夠多的傷害才打得死。
+            var score = worth(defender, dealt) - worth(unit, taken)
+            if (dealt >= defender.hp) score += defender.kind.cost * defender.size * 0.5f
+            if (taken >= unit.hp) score -= unit.kind.cost * unit.size * 0.8f
             // 守著城市的敵人優先清掉，那是勝利條件所在。
             if (session.map.provinceAt(defender.tile)?.capitalTile == defender.tile) score *= 1.3f
 
@@ -331,6 +332,13 @@ class AiPlayer(private val session: Session, private val nationId: Int) {
      * 目標選擇。順序就是優先級：
      * 先救自己快掉的城，再打對面最近的城，都沒有的話往最近的敵人靠。
      */
+    /** 打掉 [damage] 點 HP 值多少錢：依打掉的比例換算成這支部隊的造價。 */
+    private fun worth(unit: ArmyUnit, damage: Int): Float {
+        if (unit.maxHp <= 0) return 0f
+        val share = damage.coerceAtMost(unit.hp).toFloat() / unit.maxHp
+        return share * unit.kind.cost * unit.size
+    }
+
     private fun chooseGoal(unit: ArmyUnit): Int {
         if (profile == AiProfile.TURTLE) {
             threatenedOwnCity(unit)?.let { return it }
@@ -411,8 +419,9 @@ class AiPlayer(private val session: Session, private val nationId: Int) {
 
         for (tile in reachable) {
             var score = (currentDistance - map.distance(tile, goal)) * 10f
-            // 同樣的推進距離下，挑防禦地形好的那一格。
-            score += map.terrainAt(tile).defenceBonus * 0.25f
+            // 同樣的推進距離下，挑戰車與火炮難打的地形。
+            val terrain = map.terrainAt(tile)
+            score += (terrain.armourPenalty + terrain.artilleryPenalty) * 0.25f
             // 別走出補給範圍。軍艦自帶物資，離港只是慢慢變弱，罰得輕得多。
             if (!session.isSupplied(tile)) {
                 score -= if (unit.kind.domain == Domain.SEA) 3f else 12f
@@ -446,6 +455,9 @@ class AiPlayer(private val session: Session, private val nationId: Int) {
         /** 空襲之後至少留這麼多錢給生產。 */
         const val AIR_RESERVE = 250
         const val MAX_SORTIES_PER_TURN = 3
+
+        /** 拆城防的分數上限（以一擊打掉的城防點數計），別讓 AI 光顧著拆牆。 */
+        const val CITY_STRIKE_SCORE_CAP = 30
 
         /** 預期戰果至少要值任務價錢的這個比例才飛。 */
         const val MIN_SORTIE_VALUE_RATIO = 0.75f

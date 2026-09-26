@@ -20,6 +20,7 @@ import io.github.acidefluorhydrique.mapconquer.game.Orders
 import io.github.acidefluorhydrique.mapconquer.game.Session
 import io.github.acidefluorhydrique.mapconquer.game.SessionStatus
 import io.github.acidefluorhydrique.mapconquer.units.ArmyUnit
+import io.github.acidefluorhydrique.mapconquer.units.Combat
 import io.github.acidefluorhydrique.mapconquer.units.TargetClass
 import io.github.acidefluorhydrique.mapconquer.units.TechBranch
 import io.github.acidefluorhydrique.mapconquer.units.UnitKind
@@ -217,8 +218,10 @@ class PanelRenderer(private val session: Session) {
         val detail = if (enabled) {
             Strings.format(
                 R.string.panel_production_stats,
-                kind.attackAgainst(TargetClass.SOFT),
+                kind.attackMin,
+                kind.attackMax,
                 kind.defence,
+                ArmyUnit.maxHpFor(kind, productionSize, 1),
                 kind.movement
             )
         } else {
@@ -562,10 +565,10 @@ class PanelRenderer(private val session: Session) {
                 canvas, Strings.get(labels[i]), panel.left + Ui.dp(24f), y,
                 Ui.dp(10.5f), Ui.dp(90f), dim
             )
-            val value = unit.kind.attack[i]
+            val value = unit.kind.attackAgainst(TargetClass.values()[i])
             inner.set(panel.left + Ui.dp(110f), y - Ui.dp(8f), panel.left + Ui.dp(230f), y - Ui.dp(1f))
             Widgets.bar(
-                canvas, inner, value / 64f,
+                canvas, inner, value / 70f,
                 if (value > 0) Colors.of("#C4553C") else Colors.of("#3A4450")
             )
             Widgets.left(canvas, value.toString(), panel.left + Ui.dp(236f), y, Ui.dp(10.5f), ink)
@@ -574,7 +577,11 @@ class PanelRenderer(private val session: Session) {
 
         val stats = Strings.format(
             R.string.unit_stat_line,
-            unit.kind.defence, session.movementFor(unit),
+            unit.hp, unit.maxHp,
+            Combat.effectiveDefence(
+                unit, session.nations[unit.nationId].techBonus(unit.kind.branch), session.isEmbarked(unit)
+            ),
+            session.movementFor(unit),
             unit.kind.minRange.coerceAtLeast(1), unit.kind.maxRange, unit.kind.vision
         )
         Widgets.leftFit(

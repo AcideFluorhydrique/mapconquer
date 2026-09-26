@@ -527,7 +527,7 @@ class Session(
             if (supplied) {
                 unit.resupply(RESUPPLY_RATE + logistics / 4)
                 val repair = repairRate(unit)
-                if (repair > 0 && unit.hp < ArmyUnit.MAX_HP) unit.heal(repair)
+                unit.healPercent(repair)
             } else {
                 // 軍艦出港時就帶著幾週的油料與糧食，補給斷了會變弱，不會沉。
                 // 陸軍不一樣：彈藥與糧食是每天要送上去的，斷了就會餓死。
@@ -537,7 +537,7 @@ class Session(
                 val floor = if (ship) ArmyUnit.SUPPLY_CRITICAL else 0
                 unit.supply = (unit.supply - drain).coerceAtLeast(floor)
                 // 完全斷補給就開始失血 —— 深入敵境的孤軍必須有代價。
-                if (unit.supply <= 0) unit.damage(STARVATION_DAMAGE)
+                if (unit.supply <= 0) unit.losePercent(STARVATION_PERCENT)
             }
             unit.decayRumour()
             if (!unit.isAlive) starved.add(unit)
@@ -866,7 +866,7 @@ class Session(
                 }
             }
             if (threatened) continue
-            cityHp[province.id] = (cityHp[province.id] + CITY_DEFENCE_REPAIR).coerceAtMost(max)
+            cityHp[province.id] = (cityHp[province.id] + max * CITY_DEFENCE_REPAIR_PERCENT / 100).coerceAtMost(max)
         }
     }
 
@@ -1003,7 +1003,7 @@ class Session(
             val kind = UnitKind.byName(su.kindName) ?: continue
             if (!map.inBounds(su.col, su.row)) continue
             spawnUnit(kind, nationId, map.index(su.col, su.row), su.level, su.commanderId)
-                ?.let { it.size = su.size.coerceIn(1, ArmyUnit.MAX_SIZE) }
+                ?.let { it.size = su.size }
         }
         // 開局的部隊立刻可以行動。
         for (unit in units) {
@@ -1040,20 +1040,23 @@ class Session(
          * 十幾回合後會自己沉光 —— 橫渡大洋因此是不可能的。
          */
         const val NAVAL_ATTRITION_RATE = 7
-        const val STARVATION_DAMAGE = 8
+        /** 完全斷補給時每回合掉的 HP，最大 HP 的百分比。 */
+        const val STARVATION_PERCENT = 8
+
+        /** 有補給時每回合回復的 HP，最大 HP 的百分比：城裡快、野外慢。 */
         const val CITY_REPAIR = 22
         const val FIELD_REPAIR = 6
 
         /**
-         * 有守軍時城防每回合的修復量。
+         * 有守軍時城防每回合的修復量，最大城防的百分比。
          *
-         * 比舊值高，因為現在要留一支部隊才修得動 —— 條件變嚴了，速度就該
-         * 補回來一點。仍然低於一次砲擊的傷害，所以圍攻不會被修復追平。
+         * 要留一支部隊、而且四周沒有敵人才修得動，所以圍攻中的城不會自己長回來；
+         * 這個速度只決定「打下來之後多久才重新變成堡壘」。
          *
          * 注意跟 [CITY_REPAIR] 不是同一件事：那個是「城市替駐軍回血」，
          * 這個是「駐軍替城市補城防」。兩個方向都有，互為代價。
          */
-        const val CITY_DEFENCE_REPAIR = 12
+        const val CITY_DEFENCE_REPAIR_PERCENT = 5
 
         /** 易主之後城防剩下的比例：新主人接手的是一座殘城。 */
         const val CITY_HP_AFTER_CAPTURE_PERCENT = 35
