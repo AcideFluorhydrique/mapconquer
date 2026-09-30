@@ -579,9 +579,12 @@ COLD_WAR_1950_MERGE = {
 }
 
 # 德國分成兩個國家。柏林在東德境內，整個省算東德的。
+# 拉薩：1950 年 1 月解放軍還沒進藏（昌都戰役在 10 月），這裡把它交給中華民國，
+# 而不是讓共軍開局就握有它。
 COLD_WAR_1950_PROVINCE_OWNERS = {
     "prov_berlin": "DDR",
     "prov_hong_kong": "GBR",
+    "prov_lhasa": "TWN",
 }
 
 # 1956：北非的摩洛哥、突尼西亞、利比亞、蘇丹都已經獨立了。
@@ -681,7 +684,7 @@ CONQUEST_EXTRA_UNITS = {
         ("TWN", 103.5, 24.2, "INFANTRY", 1),    # 昆明東南
         ("TWN", 86.0, 44.0, "INFANTRY", 1),     # 新疆
         ("TWN", 81.5, 43.5, "INFANTRY", 1),
-        ("TWN", 90.0, 30.5, "INFANTRY", 1),     # 西藏
+        ("TWN", 91.1, 29.7, "INFANTRY", 1),     # 拉薩城內的守軍
         ("TWN", 122.8, 30.8, "CRUISER", 1),     # 上海外海（舟山）
         ("TWN", 120.5, 25.8, "CRUISER", 1),     # 福建外海
         ("TWN", 119.8, 24.8, "CRUISER", 1),

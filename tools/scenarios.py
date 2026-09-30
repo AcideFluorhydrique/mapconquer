@@ -62,11 +62,17 @@ CAMPAIGN = [
             "SWE": ["prov_stockholm", "prov_gothenburg"],
         },
         "blocs": {"AXIS": ["DEU"], "ALLIES": ["POL"]},
-        "funds": {"POL": 700, "DEU": 1500, "RUS": 600, "SWE": 400},
+        # 波蘭的兵力照史實是寡不敵眾，但換成絕對 HP 的戰鬥之後，原本那幾支
+        # 單編制的步兵擋不住德軍裝甲，連最簡單的難度都守不住。所以波蘭軍
+        # 多半以兩編制出場、多一個司令部與幾支反坦克，資金也多一些 ——
+        # 仍然是以寡擊眾，只是撐得住二十回合。軸心路線沿用舊的兵力（見下面的 flipped）。
+        "funds": {"POL": 1200, "DEU": 1500, "RUS": 600, "SWE": 400},
         "ai": {"DEU": "AGGRESSIVE", "RUS": "TURTLE", "SWE": "TURTLE"},
         "tech": {"DEU": [3, 3, 2, 1, 0, 2], "POL": [1, 1, 1, 0, 0, 1]},
         "roster": {
-            "POL": [("INFANTRY", 2, 5), ("ANTI_TANK", 2, 2), ("ARTILLERY", 1, 2),
+            "POL": [("HEADQUARTERS", 1, 1),
+                    ("INFANTRY", 2, 6, 2), ("INFANTRY", 1, 3),
+                    ("ANTI_TANK", 2, 4, 2), ("ARTILLERY", 2, 3, 2),
                     ("RECON", 1, 1), ("ANTI_AIR", 1, 1)],
             "DEU": [("ARMOUR", 2, 4), ("INFANTRY", 2, 5), ("ARTILLERY", 1, 2), ("RECON", 1, 2)],
             "RUS": [("INFANTRY", 1, 3)],
@@ -416,9 +422,14 @@ def flipped(base_id, **changes):
 
 
 CAMPAIGN += [
+    # 軸心路線的玩家是德國：波蘭維持原本較弱的兵力與資金，只有盟國路線加強。
     flipped("campaign_ww2_01_poland", id="campaign_ww2_01_poland_axis",
             route="AXIS", order=101, player="DEU", turn_limit=20, stars=(12, 16),
             objectives=[("CAPTURE_PROVINCES", ["prov_warsaw", "prov_krakow"])],
+            funds={"POL": 700, "DEU": 1500, "RUS": 600, "SWE": 400},
+            roster=dict(BY_ID["campaign_ww2_01_poland"]["roster"],
+                        POL=[("INFANTRY", 2, 5), ("ANTI_TANK", 2, 2), ("ARTILLERY", 1, 2),
+                             ("RECON", 1, 1), ("ANTI_AIR", 1, 1)]),
             ai={"POL": "TURTLE"}),
     flipped("campaign_ww2_02_france", id="campaign_ww2_02_france_allies",
             route="ALLIES", order=112, player="FRA", turn_limit=26, stars=(20, 23),

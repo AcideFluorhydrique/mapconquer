@@ -4,6 +4,7 @@
 package io.github.acidefluorhydrique.mapconquer.game
 
 import io.github.acidefluorhydrique.mapconquer.TestAssets
+import io.github.acidefluorhydrique.mapconquer.units.ArmyUnit
 import io.github.acidefluorhydrique.mapconquer.units.UnitKind
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -209,6 +210,39 @@ class ScenarioAssetTest {
             assertEquals(2, scenario.starsFor(scenario.starTurns[1]))
             assertEquals(1, scenario.starsFor(scenario.turnLimit))
         }
+    }
+
+    /** 劇本裡某國開局部隊的總生命（依編制與等級算）。 */
+    private fun startingHp(scenario: Scenario, code: String): Int =
+        scenario.startingUnits.filter { it.nationCode == code }.sumOf {
+            ArmyUnit.maxHpFor(UnitKind.byName(it.kindName)!!, it.size, it.level)
+        }
+
+    @Test
+    fun `allied poland fields more than the poland the axis player faces`() {
+        val allied = TestAssets.scenario("campaign_ww2_01_poland")
+        val axis = TestAssets.scenario("campaign_ww2_01_poland_axis")
+        assertTrue(
+            "盟國路線的波蘭要比軸心路線的厚",
+            startingHp(allied, "POL") > startingHp(axis, "POL") * 3 / 2
+        )
+        assertTrue("盟國路線的波蘭要有兩編制的部隊", allied.startingUnits.any { it.nationCode == "POL" && it.size == 2 })
+        assertTrue("軸心路線維持單編制", axis.startingUnits.filter { it.nationCode == "POL" }.all { it.size == 1 })
+        assertTrue("劇本裡沒有指揮官的部隊不該帶著 \"-\"", allied.startingUnits.none { it.commanderId == "-" })
+    }
+
+    @Test
+    fun `lhasa opens the 1950 conquest in nationalist hands, with a garrison`() {
+        val scenario = TestAssets.scenario("conquest_1950")
+        val map = TestAssets.cachedMap(scenario.mapId)
+        val lhasa = map.provinces.first { it.nameKey == "prov_lhasa" }
+        assertTrue("拉薩開局屬於中華民國", scenario.ownership["TWN"]!!.contains(lhasa.id))
+        assertFalse("不屬於中華人民共和國", scenario.ownership["CHN"]!!.contains(lhasa.id))
+        val tile = lhasa.capitalTile
+        assertTrue(
+            "拉薩城裡要有國軍守軍",
+            scenario.startingUnits.any { it.nationCode == "TWN" && map.index(it.col, it.row) == tile }
+        )
     }
 
     @Test

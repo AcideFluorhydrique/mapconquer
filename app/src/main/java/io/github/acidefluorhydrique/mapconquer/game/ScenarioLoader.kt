@@ -152,7 +152,7 @@ object ScenarioLoader {
         into[code] = if (existing == null) ids else existing + ids
     }
 
-    /** `GER|40,14|ARMOUR|2|cmd_ashby` —— 等級與指揮官可省略。 */
+    /** `GER|40,14|ARMOUR|2|cmd_ashby|2` —— 等級、指揮官（`-` 代表沒有）與編制可省略。 */
     private fun parseUnit(line: String): ScenarioUnit? {
         val p = line.split('|')
         if (p.size < 3) return null
@@ -166,7 +166,8 @@ object ScenarioLoader {
             row = row,
             kindName = p[2].trim(),
             level = if (p.size >= 4) (p[3].trim().toIntOrNull() ?: 1) else 1,
-            commanderId = if (p.size >= 5) p[4].trim() else "",
+            // 產生器用 "-" 佔住指揮官這一欄，好讓後面還能接編制。
+            commanderId = if (p.size >= 5) p[4].trim().takeUnless { it == "-" } ?: "" else "",
             size = if (p.size >= 6) (p[5].trim().toIntOrNull() ?: 1) else 1
         )
     }

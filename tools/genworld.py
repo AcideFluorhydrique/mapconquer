@@ -424,14 +424,19 @@ def garrison_lines(built, owners, nation_funds):
 SEA_KINDS = {"DESTROYER", "CRUISER", "BATTLESHIP", "CARRIER", "SUBMARINE", "TRANSPORT_SHIP"}
 
 
-def placed_units(built, units, taken_lines):
+def placed_units(built, units, taken_lines, owners):
     """
     把指定經緯度的部隊放到最近的空格：軍艦找海，陸軍找陸地。
 
-    用來擺開局不在自己領土上的部隊（1950 年滇緬邊境的國軍、外海的艦隊）。
+    用來擺開局不在自己領土上的部隊（1950 年滇緬邊境的國軍、外海的艦隊），
+    也用來替自己的小城補守軍（1950 年拉薩的國軍）。
     已經被守軍佔用的格子從 [taken_lines] 讀出來。
     """
     grid = built.grid
+    city_owner = {}
+    for code, ids in owners.items():
+        for pid in ids:
+            city_owner[built.provinces[pid][3]] = code
     taken = set()
     for line in taken_lines:
         col, row = map(int, line.split("|")[1].split(","))
@@ -443,8 +448,8 @@ def placed_units(built, units, taken_lines):
         for tile in range(grid.cols * grid.rows):
             if tile in taken or (built.terrain[tile] in "~-") != want_water:
                 continue
-            if not want_water and tile in (p[3] for p in built.provinces):
-                continue    # 不站在別人的城市格上
+            if not want_water and city_owner.get(tile, code) != code:
+                continue    # 不站在別人的城市格上；自己的城可以
             glon, glat = grid.lonlat(tile % grid.cols, tile // grid.cols)
             d = (glon - lon) ** 2 + (glat - lat) ** 2
             if best_d is None or d < best_d:
@@ -530,7 +535,7 @@ def write_conquest(built, scenario_id, name_key, desc_key, order, merge,
     lines.append("[units]")
     garrison = garrison_lines(built, owners, nation_funds)
     lines.extend(garrison)
-    lines.extend(placed_units(built, extra_units, garrison))
+    lines.extend(placed_units(built, extra_units, garrison, owners))
     lines.append("")
     lines.append("[playable]")
     # 可選國家：有陣營的才能選。中立國不參戰、也沒有敵對陣營可打垮，
@@ -821,7 +826,10 @@ def campaign_units(built, owners, mission, taken):
         water_at = 0
         # 司令部先放，才會落在省會上 —— 它的加成是以自己為圓心算的。
         ordered = sorted(roster, key=lambda entry: entry[0] != "HEADQUARTERS")
-        for kind, level, count in ordered:
+        for entry in ordered:
+            # (兵種, 等級, 支數) 或 (兵種, 等級, 支數, 編制)；編制省略就是一個編制。
+            kind, level, count = entry[:3]
+            size = entry[3] if len(entry) > 3 else 1
             for _ in range(count):
                 if kind in NAVAL_KINDS:
                     while water_at < len(water) and water[water_at] in taken:
@@ -841,7 +849,10 @@ def campaign_units(built, owners, mission, taken):
                     land_at += 1
                 taken.add(tile)
                 col, row = tile % built.grid.cols, tile // built.grid.cols
-                lines.append("%s|%d,%d|%s|%d|-" % (code, col, row, kind, level))
+                if size > 1:
+                    lines.append("%s|%d,%d|%s|%d|-|%d" % (code, col, row, kind, level, size))
+                else:
+                    lines.append("%s|%d,%d|%s|%d|-" % (code, col, row, kind, level))
     if missing:
         raise SystemExit(
             "%s：以下部隊放不下，請縮小編制或多給幾座城 ——\n  %s"
