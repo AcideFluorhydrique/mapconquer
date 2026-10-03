@@ -74,11 +74,17 @@ UI = {
                             "%1$s：點選目標，點別處取消",
                             "%1$s：点选目标，点别处取消"),
     "panel_air": ("Air missions", "空中任務", "空中任务"),
-    "panel_air_subtitle": ("Funds %1$d · each airfield and carrier flies once a turn",
-                           "資金 %1$d · 每座機場與航艦每回合出擊一次",
-                           "资金 %1$d · 每座机场与航舰每回合出击一次"),
-    "air_blocked_base": ("Already flown this turn, or the airfield is too small",
-                         "這回合已經飛過，或機場等級不夠", "这回合已经飞过，或机场等级不够"),
+    "panel_air_subtitle": ("Funds %1$d · sorties left here this turn %2$d/%3$d",
+                           "資金 %1$d · 這裡本回合還能出擊 %2$d/%3$d 次",
+                           "资金 %1$d · 这里本回合还能出击 %2$d/%3$d 次"),
+    "air_drop_detail": ("Drops infantry: level %1$d, formation ×%2$d",
+                        "空降步兵：等級 %1$d、編制 ×%2$d",
+                        "空降步兵：等级 %1$d、编制 ×%2$d"),
+    "air_drop_detail_ready": ("Drops infantry: level %1$d, formation ×%2$d, can attack on landing",
+                              "空降步兵：等級 %1$d、編制 ×%2$d，落地當回合可攻擊",
+                              "空降步兵：等级 %1$d、编制 ×%2$d，落地当回合可攻击"),
+    "air_blocked_base": ("No sorties left this turn, or the airfield is too small",
+                         "這回合的架次用完了，或機場等級不夠", "这回合的架次用完了，或机场等级不够"),
     "toast_air_no_targets": ("No target within range", "航程內沒有目標", "航程内没有目标"),
     "toast_airdrop": ("Paratroopers have landed", "傘兵已著陸", "伞兵已着陆"),
     "toast_air_strike": ("Air strike: %1$s lost %2$d", "空襲：%1$s 損失 %2$d", "空袭：%1$s 损失 %2$d"),
@@ -387,22 +393,26 @@ UI = {
         "The planes take off from that base, do their job and go home. "
         "A fighter strike tears into infantry, a bomber strike smashes tanks and ships and can bomb an empty "
         "city's walls, and an airdrop puts a fresh infantry unit on any open land hex in range. "
-        "Every airfield and carrier flies once a turn, so more big cities mean more sorties. "
+        "A bigger airfield flies more often: two sorties a turn from a mid-sized city, three from a large one, "
+        "four from a metropolis — and one from a carrier. Researching Air also improves what an airdrop "
+        "delivers: a higher level, then a formation of two, and at the top troops that can attack as they land. "
         "Enemy anti-air, cruisers and destroyers within two hexes of the target blunt every strike — "
         "clear the flak first, or send the planes somewhere else.",
         "飛機不是地圖上的部隊。點你的一座大城或一艘航艦，「生產」旁邊就會出現「空軍」按鈕："
         "選一種任務、付錢、點目標。那個起飛點搆得到的目標會標出來 —— 打擊是閃爍的準星，"
         "空降則在每一格能落的地方閃一頂降落傘。飛機從那個起飛點起飛，"
         "打完就回去。戰鬥機出擊專打步兵，轟炸機出擊專打戰車與軍艦、也能炸空城的城牆，"
-        "空降則在航程內任一空著的陸地格放下一支新的步兵。每座機場與航艦每回合出擊一次，"
-        "所以大城越多，架次越多。目標兩格內的敵方防空炮、巡洋艦與驅逐艦會削弱每一次空襲 —— "
+        "空降則在航程內任一空著的陸地格放下一支新的步兵。機場越大，一回合飛得越多次："
+        "中型城市兩次、大城三次、都會四次，航艦只有一次。研發空軍還會讓空降兵變強："
+        "先是等級，再來是兩個編制，滿級時落地當回合就能攻擊。目標兩格內的敵方防空炮、巡洋艦與驅逐艦會削弱每一次空襲 —— "
         "先拔掉防空，或者換個地方炸。",
         "飞机不是地图上的部队。点你的一座大城或一艘航舰，「生产」旁边就会出现「空军」按钮："
         "选一种任务、付钱、点目标。那个起飞点够得到的目标会标出来 —— 打击是闪烁的准星，"
         "空降则在每一格能落的地方闪一顶降落伞。飞机从那个起飞点起飞，"
         "打完就回去。战斗机出击专打步兵，轰炸机出击专打战车与军舰、也能炸空城的城墙，"
-        "空降则在航程内任一空着的陆地格放下一支新的步兵。每座机场与航舰每回合出击一次，"
-        "所以大城越多，架次越多。目标两格内的敌方防空炮、巡洋舰与驱逐舰会削弱每一次空袭 —— "
+        "空降则在航程内任一空着的陆地格放下一支新的步兵。机场越大，一回合飞得越多次："
+        "中型城市两次、大城三次、都会四次，航舰只有一次。研发空军还会让空降兵变强："
+        "先是等级，再来是两个编制，满级时落地当回合就能攻击。目标两格内的敌方防空炮、巡洋舰与驱逐舰会削弱每一次空袭 —— "
         "先拔掉防空，或者换个地方炸。"),
     "help_sea": ("Crossing the sea", "渡海", "渡海"),
     "help_sea_body": (

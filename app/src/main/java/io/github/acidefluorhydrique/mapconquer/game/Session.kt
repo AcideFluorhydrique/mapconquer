@@ -73,7 +73,11 @@ class Session(
      * 這回合已經起飛過的空中任務起飛點（鍵的定義見 [AirOps]）。
      * 每個起飛點每回合只飛一次，回合開始時清空。
      */
-    val sortieBases = HashSet<Int>()
+    /**
+     * 這回合飛過的起飛點，飛一次記一筆（同一個起飛點可以出現好幾次）。
+     * 每個起飛點一回合能飛幾次見 AirOps.sortieCapacity。
+     */
+    val sortieBases = ArrayList<Int>()
 
     /** 目前行動國的補給覆蓋，回合開始時重算。 */
     private val suppliedTiles = BooleanArray(map.tileCount)

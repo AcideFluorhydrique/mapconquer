@@ -93,6 +93,45 @@ object AirOps {
      * 起飛點的鍵：城市用省份 id，航艦用「省份數 + 部隊 id」。
      * 兩者放在同一個集合裡記錄這回合飛過了沒有。
      */
+    /** 航艦的甲板一回合只夠放一批飛機出去。 */
+    const val CARRIER_SORTIES = 1
+
+    /**
+     * 起飛點 [key] 一回合能飛幾次。
+     *
+     * 城市看機場的大小，也就是工業等級：中型城市兩次、大城三次、都會四次。
+     * 航艦只有一次。原本不分大小一律一次，結果一座都會的機場跟一艘航艦一樣忙不過來，
+     * 而真正受甲板限制的是航艦。
+     */
+    fun sortieCapacity(session: Session, key: Int): Int {
+        val provinces = session.map.provinces
+        return if (key in provinces.indices) provinces[key].industry else CARRIER_SORTIES
+    }
+
+    /** 起飛點 [key] 這回合還能飛幾次。 */
+    fun sortiesLeft(session: Session, key: Int): Int =
+        (sortieCapacity(session, key) - session.sortieBases.count { it == key }).coerceAtLeast(0)
+
+    /** 空降下來的那支步兵的等級、編制，以及能不能落地當回合就打。跟著空軍科技走。 */
+    class DropQuality(val level: Int, val size: Int, val readyOnLanding: Boolean)
+
+    /**
+     * 空軍科技 0–1：一級、單編制；2：二級；3：兩編制；4：三級；5：落地當回合就能攻擊。
+     * 價錢不變 —— 科技本身就是花出去的錢。
+     */
+    fun dropQuality(session: Session, nationId: Int): DropQuality {
+        val tech = session.nations[nationId].techLevel(TechBranch.AIR)
+        return DropQuality(
+            level = when {
+                tech >= 4 -> 3
+                tech >= 2 -> 2
+                else -> 1
+            },
+            size = if (tech >= 3) 2 else 1,
+            readyOnLanding = tech >= 5
+        )
+    }
+
     private fun cityBaseKey(provinceId: Int) = provinceId
     private fun carrierBaseKey(session: Session, unit: ArmyUnit) = session.map.provinces.size + unit.id
 
@@ -134,7 +173,7 @@ object AirOps {
             if (session.provinceOwner[province.id] != nationId) continue
             val key = cityBaseKey(province.id)
             if (only != ANY_BASE && key != only) continue
-            if (session.sortieBases.contains(key)) continue
+            if (sortiesLeft(session, key) <= 0) continue
             val d = if (target < 0) 0 else map.distance(province.capitalTile, target)
             if (d > mission.range || d >= bestDistance) continue
             best = key
@@ -144,7 +183,7 @@ object AirOps {
             if (unit.nationId != nationId || !unit.isAlive || !unit.kind.isAirbase) continue
             val key = carrierBaseKey(session, unit)
             if (only != ANY_BASE && key != only) continue
-            if (session.sortieBases.contains(key)) continue
+            if (sortiesLeft(session, key) <= 0) continue
             val d = if (target < 0) 0 else map.distance(unit.tile, target)
             if (d > mission.range || d >= bestDistance) continue
             best = key
@@ -238,13 +277,13 @@ object AirOps {
             if (!province.hasCity || province.industry < mission.industry) continue
             if (session.provinceOwner[province.id] != nationId) continue
             if (only != ANY_BASE && cityBaseKey(province.id) != only) continue
-            if (session.sortieBases.contains(cityBaseKey(province.id))) continue
+            if (sortiesLeft(session, cityBaseKey(province.id)) <= 0) continue
             origins.add(province.capitalTile)
         }
         for (unit in session.units) {
             if (unit.nationId != nationId || !unit.isAlive || !unit.kind.isAirbase) continue
             if (only != ANY_BASE && carrierBaseKey(session, unit) != only) continue
-            if (session.sortieBases.contains(carrierBaseKey(session, unit))) continue
+            if (sortiesLeft(session, carrierBaseKey(session, unit)) <= 0) continue
             origins.add(unit.tile)
         }
         for (origin in origins) {
@@ -324,8 +363,12 @@ object AirOps {
     }
 
     private fun drop(session: Session, nationId: Int, tile: Int): AirResult {
-        val unit = session.spawnUnit(PARATROOPER, nationId, tile)
+        val quality = dropQuality(session, nationId)
+        val unit = session.spawnUnit(PARATROOPER, nationId, tile, quality.level)
             ?: return AirResult(0, 0, false, null)
+        unit.size = quality.size
+        // 精銳傘兵落地就能打，但不能再走 —— 跟海軍陸戰隊下船是同一條規則。
+        if (quality.readyOnLanding) unit.hasAttacked = false
         // 對著防空跳傘要付出代價，但不會整支掉光 —— 那是轟炸機的工作。
         val loss = (flakAt(session, nationId, tile) / DROP_FLAK_LOSS_DIVISOR).coerceAtMost(DROP_FLAK_MAX_LOSS)
         unit.hp = (unit.maxHp - unit.maxHp * loss / 100).coerceAtLeast(1)

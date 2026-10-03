@@ -250,7 +250,12 @@ class PanelRenderer(private val session: Session) {
         val panel = frame(canvas, buttons, R.string.panel_air, 440f, 230f)
         val nation = session.playerNation
         Widgets.centeredFit(
-            canvas, Strings.format(R.string.panel_air_subtitle, nation.funds),
+            canvas,
+            Strings.format(
+                R.string.panel_air_subtitle, nation.funds,
+                if (airBase == AirOps.ANY_BASE) 0 else AirOps.sortiesLeft(session, airBase),
+                if (airBase == AirOps.ANY_BASE) 0 else AirOps.sortieCapacity(session, airBase)
+            ),
             panel.centerX(), panel.top + Ui.dp(40f), Ui.dp(11f), panel.width() - Ui.dp(40f),
             color = Colors.of(Widgets.INK_DIM)
         )
@@ -286,7 +291,16 @@ class PanelRenderer(private val session: Session) {
         val detail = when (blocker) {
             AirOps.Blocker.NO_FUNDS -> Strings.get(R.string.build_blocked_funds)
             AirOps.Blocker.NO_BASE -> Strings.get(R.string.air_blocked_base)
-            AirOps.Blocker.NONE -> Strings.byName(mission.descKey)
+            AirOps.Blocker.NONE -> if (mission == AirMission.AIRDROP) {
+                // 空降下來的是什麼，跟著空軍科技變，所以寫出來。
+                val quality = AirOps.dropQuality(session, session.playerNationId)
+                Strings.format(
+                    if (quality.readyOnLanding) R.string.air_drop_detail_ready else R.string.air_drop_detail,
+                    quality.level, quality.size
+                )
+            } else {
+                Strings.byName(mission.descKey)
+            }
         }
         Widgets.leftFit(
             canvas, detail, textX, row.centerY() + Ui.dp(12f),

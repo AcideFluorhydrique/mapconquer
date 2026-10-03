@@ -426,8 +426,17 @@ class SessionTest {
         assertTrue(target.hp < target.maxHp)
         assertEquals(1_000 - AirMission.FIGHTER.totalCost, nation.funds)
         assertEquals("飛機不會留在地圖上", 1, s.units.size)
+        // 後面還要再飛兩次，目標得撐得住。
+        target.restoreFullHp()
+        target.size = 4
 
-        // A 國只有一座機場，這回合已經飛過了。
+        // A 國只有一座機場，是大城：一回合三個架次。再飛兩次就用完了。
+        val home = AirOps.baseAt(s, 0, s.map.provinces[0].capitalTile)
+        assertEquals(3, AirOps.sortieCapacity(s, home))
+        assertEquals(2, AirOps.sortiesLeft(s, home))
+        assertNotNull(AirOps.fly(s, 0, AirMission.FIGHTER, target.tile))
+        assertNotNull(AirOps.fly(s, 0, AirMission.FIGHTER, target.tile))
+        assertEquals(0, AirOps.sortiesLeft(s, home))
         assertFalse(AirOps.canFly(s, 0, AirMission.FIGHTER, target.tile))
         assertEquals(AirOps.Blocker.NO_BASE, AirOps.blocker(s, 0, AirMission.FIGHTER))
         repeat(s.nations.size) { s.advanceToNextNation() }
@@ -453,8 +462,11 @@ class SessionTest {
         AirOps.collectTargets(s, 0, AirMission.FIGHTER, reachable, home + 1_000)
         assertTrue(reachable.isEmpty())
 
-        assertNotNull(AirOps.fly(s, 0, AirMission.FIGHTER, target, home))
-        assertEquals("飛過的起飛點這回合不能再飛", AirOps.Blocker.NO_BASE, AirOps.blocker(s, 0, AirMission.FIGHTER, home))
+        repeat(AirOps.sortieCapacity(s, home)) {
+            s.unitById(s.primaryUnitAt(target)!!.id)!!.restoreFullHp()
+            assertNotNull(AirOps.fly(s, 0, AirMission.FIGHTER, target, home))
+        }
+        assertEquals("架次用完的起飛點這回合不能再飛", AirOps.Blocker.NO_BASE, AirOps.blocker(s, 0, AirMission.FIGHTER, home))
     }
 
     @Test
@@ -491,6 +503,54 @@ class SessionTest {
         assertEquals(AirOps.PARATROOPER, trooper.kind)
         assertEquals(0, trooper.nationId)
         assertEquals(1_000 - AirMission.AIRDROP.totalCost, nation.funds)
+    }
+
+    @Test
+    fun `a carrier flies once a turn, however big the cities are`() {
+        val s = session(
+            listOf(
+                ScenarioUnit("AAA", 2, 5, "CARRIER", 1, ""),
+                ScenarioUnit("BBB", 4, 4, "INFANTRY", 1, "", size = 4)
+            )
+        )
+        s.nations[0].funds = 1_000
+        val carrier = s.units.first { it.kind == UnitKind.CARRIER }
+        val target = s.units.first { it.kind == UnitKind.INFANTRY }.tile
+        val deck = AirOps.baseAt(s, 0, carrier.tile)
+        assertTrue(deck != AirOps.ANY_BASE)
+        assertEquals(AirOps.CARRIER_SORTIES, AirOps.sortieCapacity(s, deck))
+        assertNotNull(AirOps.fly(s, 0, AirMission.FIGHTER, target, deck))
+        assertFalse("甲板這回合放過飛機了", AirOps.canFly(s, 0, AirMission.FIGHTER, target, deck))
+        assertTrue("城裡的機場還能飛", AirOps.canFly(s, 0, AirMission.FIGHTER, target))
+    }
+
+    @Test
+    fun `air research makes paratroopers better, at the same price`() {
+        fun dropWith(tech: Int): ArmyUnit {
+            val s = session()
+            s.nations[0].funds = 1_000
+            s.nations[0].tech[io.github.acidefluorhydrique.mapconquer.units.TechBranch.AIR.ordinal] = tech
+            val unit = AirOps.fly(s, 0, AirMission.AIRDROP, s.map.index(3, 2))!!.dropped!!
+            assertEquals("價錢不隨科技變", 1_000 - AirMission.AIRDROP.totalCost, s.nations[0].funds)
+            assertEquals("落地是滿血", unit.maxHp, unit.hp)
+            return unit
+        }
+        val green = dropWith(0)
+        assertEquals(1, green.level)
+        assertEquals(1, green.size)
+        assertTrue("新兵落地當回合不能打", green.hasAttacked)
+
+        assertEquals(2, dropWith(2).level)
+        val trained = dropWith(3)
+        assertEquals(2, trained.level)
+        assertEquals(2, trained.size)
+        assertEquals(3, dropWith(4).level)
+
+        val elite = dropWith(5)
+        assertEquals(3, elite.level)
+        assertEquals(2, elite.size)
+        assertFalse("精銳傘兵落地就能打", elite.hasAttacked)
+        assertEquals("但不能再走", 0, elite.movesLeft)
     }
 
     @Test
