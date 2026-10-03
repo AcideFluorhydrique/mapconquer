@@ -103,6 +103,7 @@ class GameView(context: Context) : SurfaceView(context), SurfaceHolder.Callback 
 
     private val reachable = ArrayList<Int>(160)
     private val attackTargets = ArrayList<Int>(32)
+    private val ferryTiles = ArrayList<Int>(6)
 
     /** 這次空中任務的起飛點（AirOps 的起飛點鍵）。開空軍面板時定下來。 */
     private var airBase = AirOps.ANY_BASE
@@ -586,6 +587,10 @@ class GameView(context: Context) : SurfaceView(context), SurfaceHolder.Callback 
 
         val selected = over.selectedUnit
         if (selected != null && selected.nationId == active.playerNationId) {
+            if (over.ferry[tile]) {
+                performFerry(active, selected, tile)
+                return
+            }
             if (over.attackable[tile]) {
                 performAttack(active, selected, tile)
                 return
@@ -621,10 +626,38 @@ class GameView(context: Context) : SurfaceView(context), SurfaceHolder.Callback 
         over.setMovable(reachable)
         Orders.collectTargets(active, unit, attackTargets)
         over.setAttackable(attackTargets)
+        // 上下船：陸軍旁邊的運輸艦，或運輸艦旁邊船上的人下得去的岸。
+        if (unit.kind.isTransport) Orders.collectLandings(active, unit, ferryTiles)
+        else Orders.collectBoardable(active, unit, ferryTiles)
+        over.setFerry(ferryTiles)
         if (unit.kind.isSupplier) {
             active.supplyBubble(unit, over.supplyBubble)
             over.hasSupplyBubble = true
         }
+    }
+
+    /**
+     * 點了琥珀色的格子：選的是陸軍就上那一格的船，選的是運輸艦就讓船上的人下到那一格。
+     * 上下船都不能撤回 —— 下船可能當場佔領一座城。
+     */
+    private fun performFerry(active: Session, selected: ArmyUnit, tile: Int) {
+        val over = overlay ?: return
+        undoRecord = null
+        val done = if (selected.kind.isTransport) {
+            val passenger = Orders.passengerFor(active, selected, tile)
+            passenger != null && Orders.unload(active, passenger, tile)
+        } else {
+            val transport = active.primaryUnitAt(tile)
+            transport != null && Orders.load(active, selected, transport).also {
+                // 人上了船，選取就跟著換到船上：下一步通常是開船。
+                if (it) {
+                    over.selectedUnit = transport
+                    over.selectedTile = transport.tile
+                }
+            }
+        }
+        Audio.play(if (done) Sfx.MOVE else Sfx.DENIED)
+        refreshHighlights(active, over)
     }
 
     private fun performMove(active: Session, unit: ArmyUnit, target: Int) {

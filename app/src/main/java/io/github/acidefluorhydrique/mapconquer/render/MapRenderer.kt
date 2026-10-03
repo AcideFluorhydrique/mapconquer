@@ -293,13 +293,15 @@ class MapRenderer(private val session: Session) {
                 val tile = map.indexWrapped(col, row)
                 val movable = overlay.movable[tile]
                 val attackable = overlay.attackable[tile]
-                if (!movable && !attackable) continue
+                val ferry = overlay.ferry[tile]
+                if (!movable && !attackable && !ferry) continue
                 canvas.save()
                 canvas.translate(
                     camera.screenX(layout.centerXOffset(col, row)),
                     camera.screenY(layout.centerYOffset(row))
                 )
                 paint.color = when {
+                    ferry -> Palette.FERRY
                     attackable && dropping -> Palette.DROP_ZONE
                     attackable -> Palette.ATTACK_RANGE
                     else -> Palette.MOVE_RANGE
@@ -526,6 +528,17 @@ class MapRenderer(private val session: Session) {
                 canvas.drawLine(x, top - size * 0.11f, x, top + size * 0.01f, paint)
             }
             paint.style = Paint.Style.FILL
+        }
+
+        // 船上載著幾支部隊：左下角的小方塊，一塊一支。
+        if (unit.cargo.isNotEmpty() && size >= Ui.dp(11f)) {
+            paint.color = Colors.of("#F2F6FA")
+            val side = size * 0.10f
+            for (i in unit.cargo.indices) {
+                val x = cx - w / 2f + size * 0.07f + i * side * 1.5f
+                val y = top + h - size * 0.07f - side - h * 0.2f
+                canvas.drawRect(x, y, x + side, y + side, paint)
+            }
         }
 
         // 等級：右上角的小星點。

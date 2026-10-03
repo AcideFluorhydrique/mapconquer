@@ -1072,8 +1072,11 @@ class SessionTest {
         assertTrue(infantry.isLoaded)
         assertEquals(1, ship.cargo.size)
         assertNull("上船之後不該再佔著陸地", s.unitAt(s.map.index(1, 4), Domain.LAND))
+        assertFalse("上船那一回合下不了船", Orders.canUnload(s, infantry, s.map.index(2, 4)))
 
-        // 把運輸艦開到另一段海岸再放下來。
+        // 下一回合把運輸艦開到另一段海岸再放下來。
+        repeat(s.nations.size) { s.advanceToNextNation() }
+        assertEquals("船上的部隊算有補給", ArmyUnit.MAX_SUPPLY, infantry.supply)
         val reachable = ArrayList<Int>()
         Orders.computeReachable(s, ship, reachable)
         val destination = s.map.index(5, 5)
@@ -1090,6 +1093,106 @@ class SessionTest {
     }
 
     @Test
+    fun `the tiles to board from and land on are offered to the player`() {
+        val s = session(
+            listOf(
+                ScenarioUnit("AAA", 1, 4, "INFANTRY", 1, ""),
+                ScenarioUnit("AAA", 1, 5, "TRANSPORT_SHIP", 1, "")
+            )
+        )
+        val infantry = s.units.first { it.kind == UnitKind.INFANTRY }
+        val ship = s.units.first { it.kind == UnitKind.TRANSPORT_SHIP }
+        val tiles = ArrayList<Int>()
+
+        Orders.collectBoardable(s, infantry, tiles)
+        assertEquals("旁邊那艘運輸艦可以上", listOf(ship.tile), tiles)
+        Orders.collectLandings(s, ship, tiles)
+        assertTrue("空船沒有人可以下", tiles.isEmpty())
+
+        Orders.load(s, infantry, ship)
+        Orders.collectLandings(s, ship, tiles)
+        assertTrue("剛上船，這回合還不能下", tiles.isEmpty())
+
+        repeat(s.nations.size) { s.advanceToNextNation() }
+        Orders.collectLandings(s, ship, tiles)
+        assertTrue("下一回合可以下到旁邊的岸上", tiles.isNotEmpty())
+        assertTrue("只能下到陸地", tiles.all { s.map.isLand(it) })
+        assertEquals(infantry, Orders.passengerFor(s, ship, tiles.first()))
+    }
+
+    /** 兩塊陸地隔著十格海：A 在西、B 在東。遠到不適合浮渡。 */
+    private fun twoShores(): WorldMap {
+        val text = """
+            format 1
+            id shores
+            cols 14
+            rows 3
+
+            [terrain]
+            ..~~~~~~~~~~..
+            ..~~~~~~~~~~..
+            ..~~~~~~~~~~..
+
+            [provinces]
+            2:0 10:-1 2:1
+            2:0 10:-1 2:1
+            2:0 10:-1 2:1
+
+            [meta]
+            0|prov_a|3|0,1
+            1|prov_b|3|13,1
+        """.trimIndent()
+        return MapLoader.parse(text.reader().buffered(), "shores")
+    }
+
+    @Test
+    fun `the ai ferries its troops across a sea too wide to float`() {
+        val map = twoShores()
+        val s = Session(
+            map,
+            scenario(
+                listOf(
+                    ScenarioUnit("AAA", 1, 1, "INFANTRY", 1, ""),
+                    ScenarioUnit("AAA", 2, 1, "TRANSPORT_SHIP", 1, "")
+                )
+            ),
+            Difficulty.OFFICER, "BBB", 42L
+        )
+        val attacker = s.nationByCode("AAA")!!.id
+        val infantry = s.units.first { it.kind == UnitKind.INFANTRY }
+        val farShore = io.github.acidefluorhydrique.mapconquer.ai.AiPlayer.landmassesOf(map)[map.index(13, 1)]
+        assertTrue(farShore != io.github.acidefluorhydrique.mapconquer.ai.AiPlayer.landmassesOf(map)[infantry.tile])
+
+        fun playRound() {
+            repeat(s.nations.size) {
+                if (s.activeNationId == attacker) {
+                    val ai = io.github.acidefluorhydrique.mapconquer.ai.AiPlayer(s, attacker)
+                    var steps = 0
+                    while (ai.step() && steps < 2000) steps++
+                }
+                s.advanceToNextNation()
+            }
+        }
+
+        playRound()
+        assertTrue("旁邊有船、對岸又遠，第一回合就該上船而不是下水", infantry.isLoaded)
+
+        var rounds = 0
+        while (infantry.isAlive && (infantry.isLoaded || map.isWater(infantry.tile)) && rounds < 6) {
+            playRound()
+            rounds++
+        }
+        assertTrue("部隊要活著到對岸", infantry.isAlive)
+        assertFalse(infantry.isLoaded)
+        assertEquals(
+            "下船的地方是對岸",
+            farShore,
+            io.github.acidefluorhydrique.mapconquer.ai.AiPlayer.landmassesOf(map)[infantry.tile]
+        )
+        assertEquals("一路都在船上，補給沒有掉", ArmyUnit.MAX_SUPPLY, infantry.supply)
+    }
+
+    @Test
     fun `marines can fight the turn they land`() {
         val s = session(
             listOf(
@@ -1100,6 +1203,7 @@ class SessionTest {
         val marine = s.units.first { it.kind == UnitKind.MARINE }
         val ship = s.units.first { it.kind == UnitKind.TRANSPORT_SHIP }
         Orders.load(s, marine, ship)
+        repeat(s.nations.size) { s.advanceToNextNation() }
         assertTrue(Orders.unload(s, marine, s.map.index(2, 4)))
         assertFalse("陸戰隊下船就能打", marine.hasAttacked)
     }

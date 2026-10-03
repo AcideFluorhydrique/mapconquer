@@ -467,6 +467,42 @@ object Orders {
     // ------------------------------------------------------------------
     // 運輸
     // ------------------------------------------------------------------
+    //
+    // 陸軍有兩種渡海的方法。自己下水浮渡不花錢，但慢（一格兩點移動力）、沒有補給、
+    // 沒有防禦，只適合過窄海峽。運輸艦一回合七格、船上的部隊算有補給、挨打的是船，
+    // 適合跨海遠征 —— 代價是船錢，以及船沉了整船的人一起沒。
+
+    /** [unit] 旁邊那些現在可以讓它上去的運輸艦所在的格子。 */
+    fun collectBoardable(session: Session, unit: ArmyUnit, into: MutableList<Int>) {
+        into.clear()
+        if (!unit.isAlive || unit.isLoaded || unit.movesLeft <= 0) return
+        val buf = IntArray(6)
+        val n = session.map.neighbours(unit.tile, buf)
+        for (i in 0 until n) {
+            val transport = session.primaryUnitAt(buf[i]) ?: continue
+            if (canLoad(session, unit, transport)) into.add(buf[i])
+        }
+    }
+
+    /** [transport] 船上有人現在可以下去的格子。 */
+    fun collectLandings(session: Session, transport: ArmyUnit, into: MutableList<Int>) {
+        into.clear()
+        if (!transport.isAlive || transport.cargo.isEmpty()) return
+        val buf = IntArray(6)
+        val n = session.map.neighbours(transport.tile, buf)
+        for (i in 0 until n) {
+            if (passengerFor(session, transport, buf[i]) != null) into.add(buf[i])
+        }
+    }
+
+    /** 船上第一支下得了 [target] 這一格的部隊；沒有就回 null。 */
+    fun passengerFor(session: Session, transport: ArmyUnit, target: Int): ArmyUnit? {
+        for (id in transport.cargo) {
+            val passenger = session.unitById(id) ?: continue
+            if (canUnload(session, passenger, target)) return passenger
+        }
+        return null
+    }
 
     fun canLoad(session: Session, passenger: ArmyUnit, transport: ArmyUnit): Boolean {
         if (passenger.isLoaded || transport.isLoaded) return false
@@ -490,6 +526,9 @@ object Orders {
 
     fun canUnload(session: Session, passenger: ArmyUnit, target: Int): Boolean {
         if (!passenger.isLoaded) return false
+        // 上船用掉這一回合；要到下一回合才下得了船。沒有這一條，上船再從另一側
+        // 下船等於一回合白白多走兩格。
+        if (passenger.movesLeft <= 0) return false
         val transport = session.unitById(passenger.transportId) ?: return false
         if (session.map.distance(transport.tile, target) > 1) return false
         if (!session.isTileFreeFor(passenger, target)) return false

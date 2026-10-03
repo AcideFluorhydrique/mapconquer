@@ -211,6 +211,9 @@ enum class UnitKind(
     /** 對這類目標的平均攻擊值，給玩家看的那個數字。 */
     fun attackAgainst(target: TargetClass): Int = averageAttack * versus(target) / 100
 
+    /** 載得了陸軍的船。（補給車與司令部的 [capacity] 是別的意思，不算。） */
+    val isTransport: Boolean get() = this == TRANSPORT_SHIP
+
     /** 這個兵種載得動什麼。只剩運輸艦載陸軍；航艦現在是空中任務的起飛點。 */
     fun canCarry(other: UnitKind): Boolean = when {
         capacity <= 0 -> false

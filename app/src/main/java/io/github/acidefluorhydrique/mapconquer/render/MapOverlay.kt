@@ -36,6 +36,12 @@ class MapOverlay(tileCount: Int) {
     val movable = BooleanArray(tileCount)
     val attackable = BooleanArray(tileCount)
 
+    /**
+     * 上下船的格子：選陸軍時是旁邊可以上的運輸艦，選運輸艦時是船上的人可以下的岸。
+     * 點它就是上船或下船。
+     */
+    val ferry = BooleanArray(tileCount)
+
     /** 選到補給車或司令部時，它撐起的補給圈（見 Session.supplyBubble）。 */
     val supplyBubble = BooleanArray(tileCount)
     var hasSupplyBubble: Boolean = false
@@ -96,6 +102,7 @@ class MapOverlay(tileCount: Int) {
     fun clearHighlights() {
         java.util.Arrays.fill(movable, false)
         java.util.Arrays.fill(attackable, false)
+        java.util.Arrays.fill(ferry, false)
         if (hasSupplyBubble) java.util.Arrays.fill(supplyBubble, false)
         hasSupplyBubble = false
         path.clear()
@@ -110,6 +117,11 @@ class MapOverlay(tileCount: Int) {
     fun setMovable(tiles: List<Int>) {
         java.util.Arrays.fill(movable, false)
         for (t in tiles) if (t in movable.indices) movable[t] = true
+    }
+
+    fun setFerry(tiles: List<Int>) {
+        java.util.Arrays.fill(ferry, false)
+        for (t in tiles) if (t in ferry.indices) ferry[t] = true
     }
 
     fun setAttackable(tiles: List<Int>) {

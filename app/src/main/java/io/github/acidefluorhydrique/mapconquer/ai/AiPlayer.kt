@@ -195,7 +195,8 @@ class AiPlayer(private val session: Session, private val nationId: Int) {
      * 別的城市與兵種；錢少的時候退回一個編制。
      */
     private fun chooseFormationSize(kind: UnitKind): Int =
-        (nation.funds / 2 / kind.cost).coerceIn(1, ArmyUnit.MAX_SIZE)
+        // 運輸艦一艘就是一艘：編制大不會讓它多載人。
+        if (kind.isTransport) 1 else (nation.funds / 2 / kind.cost).coerceIn(1, ArmyUnit.MAX_SIZE)
 
     /**
      * 兵種選擇：先補齊「缺什麼」再談「想要什麼」。
@@ -214,6 +215,8 @@ class AiPlayer(private val session: Session, private val nationId: Int) {
         val logistics = owned.filter { it.kind.isSupplier }.sumOf { it.size }
 
         val wants = ArrayList<UnitKind>(6)
+        // 有人在岸上等船、船又不夠：先造船。沒有船，隔著海的敵人永遠打不到。
+        if (needsAnotherTransport()) wants.add(UnitKind.TRANSPORT_SHIP)
         if (infantry * 100 / total < 40) wants.add(UnitKind.INFANTRY)
         if (logistics == 0 || logistics * 100 / total < 8) wants.add(UnitKind.SUPPLY_TRUCK)
         if (artillery * 100 / total < 20) wants.add(UnitKind.ARTILLERY)
@@ -263,6 +266,10 @@ class AiPlayer(private val session: Session, private val nationId: Int) {
     }
 
     private fun actOn(unit: ArmyUnit) {
+        if (unit.kind.isTransport) {
+            actAsTransport(unit)
+            return
+        }
         if (unit.kind.isSupplier) {
             moveTowardsFriendlyFront(unit)
             return
@@ -271,7 +278,20 @@ class AiPlayer(private val session: Session, private val nationId: Int) {
         if (tryAttackFrom(unit)) return
 
         val goal = chooseGoal(unit)
-        if (goal >= 0) moveTowards(unit, goal)
+        if (goal >= 0) {
+            // 遠渡重洋搭船去：旁邊有船就上，附近有船就走過去等，都沒有才自己下水。
+            val ferry = if (wantsFerry(unit, goal)) nearestFerry(unit) else null
+            if (ferry != null) {
+                if (Orders.canLoad(session, unit, ferry)) {
+                    Orders.load(session, unit, ferry)
+                    return
+                }
+                moveTowards(unit, ferry.tile, stayAshore = true)
+                if (Orders.canLoad(session, unit, ferry)) Orders.load(session, unit, ferry)
+                return
+            }
+            moveTowards(unit, goal)
+        }
         // 走完之後再試一次：移動常常會把目標帶進射程。
         tryAttackFrom(unit)
     }
@@ -410,7 +430,7 @@ class AiPlayer(private val session: Session, private val nationId: Int) {
      * 而貪心地縮短直線距離，配合 ZOC 造成的自然阻塞，
      * 產生的行軍路線在觀感上跟真的規劃過差不多。
      */
-    private fun moveTowards(unit: ArmyUnit, goal: Int) {
+    private fun moveTowards(unit: ArmyUnit, goal: Int, stayAshore: Boolean = false) {
         if (unit.movesLeft <= 0) return
         Orders.computeReachable(session, unit, reachable)
         if (reachable.isEmpty()) return
@@ -426,6 +446,8 @@ class AiPlayer(private val session: Session, private val nationId: Int) {
             var score = (currentDistance - map.distance(tile, goal)) * 10f
             // 同樣的推進距離下，挑戰車與火炮難打的地形。
             val terrain = map.terrainAt(tile)
+            // 要去搭船的部隊留在岸上等，不自己下水。
+            if (stayAshore && terrain.isWater) continue
             score += (terrain.armourPenalty + terrain.artilleryPenalty) * 0.25f
             val afloat = unit.kind.domain == Domain.LAND && terrain.isWater
             // 別走出補給範圍。軍艦自帶物資，離港只是慢慢變弱，罰得輕得多。
@@ -450,6 +472,113 @@ class AiPlayer(private val session: Session, private val nationId: Int) {
         }
         if (bestTile < 0 || bestScore <= 0f) return
         Orders.move(session, unit, bestTile, path)
+    }
+
+    // ------------------------------------------------------------------
+    // 運輸艦
+    // ------------------------------------------------------------------
+
+    /**
+     * 這支陸軍該不該搭船去 [goal]：它在岸上、目標在海的另一邊，而且遠到不適合浮渡。
+     * 浮渡沒有補給也沒有防禦，過窄海峽可以，跨海不行。
+     */
+    private fun wantsFerry(unit: ArmyUnit, goal: Int): Boolean {
+        if (unit.kind.domain != Domain.LAND || unit.isLoaded) return false
+        if (landmassOf(unit.tile) < 0 || !needsCrossing(unit, goal)) return false
+        return session.map.distance(unit.tile, goal) > FLOAT_RANGE
+    }
+
+    /** 離 [unit] 最近、還有空位、而且近到值得走過去的己方運輸艦。 */
+    private fun nearestFerry(unit: ArmyUnit): ArmyUnit? {
+        var best: ArmyUnit? = null
+        var bestDistance = FERRY_CALL_RANGE + 1
+        for (other in session.units) {
+            if (other.nationId != nationId || !other.isAlive || !other.kind.isTransport) continue
+            if (other.cargo.size >= other.kind.capacity) continue
+            val d = session.map.distance(unit.tile, other.tile)
+            if (d < bestDistance) {
+                bestDistance = d
+                best = other
+            }
+        }
+        return best
+    }
+
+    /**
+     * 運輸艦的一回合。
+     *
+     * 載著人：開向船上那支部隊想去的地方，一靠上對岸就讓人下船。
+     * 空船：去接最近一支在岸上等船的部隊。兩件事都沒有就待著。
+     */
+    private fun actAsTransport(ship: ArmyUnit) {
+        val first = ship.cargo.firstNotNullOfOrNull { session.unitById(it) }
+        if (first != null) {
+            val goal = chooseGoal(first)
+            if (goal < 0) return
+            if (landCargo(ship, goal)) return
+            moveTowards(ship, goal)
+            landCargo(ship, goal)
+            return
+        }
+        var pickup = -1
+        var bestDistance = Int.MAX_VALUE
+        for (unit in session.units) {
+            if (unit.nationId != nationId || !unit.isAlive || unit.isLoaded) continue
+            if (unit.kind.domain != Domain.LAND || unit.kind.isSupplier) continue
+            val goal = chooseGoal(unit)
+            if (goal < 0 || !wantsFerry(unit, goal)) continue
+            val d = session.map.distance(ship.tile, unit.tile)
+            if (d < bestDistance) {
+                bestDistance = d
+                pickup = unit.tile
+            }
+        }
+        if (pickup >= 0 && bestDistance > 1) moveTowards(ship, pickup)
+    }
+
+    /**
+     * 讓船上的人下到 [goal] 那一塊陸地上，挑離目標最近的岸。回傳船是不是空了。
+     * 只在目標那塊陸地下船 —— 不然船一離港就會把人放回出發的岸上。
+     */
+    private fun landCargo(ship: ArmyUnit, goal: Int): Boolean {
+        val shore = IntArray(6)
+        for (id in ship.cargo.toList()) {
+            val passenger = session.unitById(id) ?: continue
+            val n = session.map.neighbours(ship.tile, shore)
+            var best = -1
+            var bestDistance = Int.MAX_VALUE
+            for (i in 0 until n) {
+                val tile = shore[i]
+                if (landmassOf(tile) < 0 || landmassOf(tile) != landmassOf(goal)) continue
+                if (!Orders.canUnload(session, passenger, tile)) continue
+                val d = session.map.distance(tile, goal)
+                if (d < bestDistance) {
+                    bestDistance = d
+                    best = tile
+                }
+            }
+            if (best >= 0) Orders.unload(session, passenger, best)
+        }
+        return ship.cargo.isEmpty()
+    }
+
+    /** 這一國有多少陸軍在等船，以及手上有幾艘運輸艦。決定要不要造船。 */
+    private fun needsAnotherTransport(): Boolean {
+        var waiting = 0
+        var ships = 0
+        for (unit in session.units) {
+            if (unit.nationId != nationId || !unit.isAlive) continue
+            if (unit.kind.isTransport) {
+                ships++
+                continue
+            }
+            if (unit.isLoaded || unit.kind.domain != Domain.LAND || unit.kind.isSupplier) continue
+            val goal = chooseGoal(unit)
+            if (goal >= 0 && wantsFerry(unit, goal)) waiting++
+        }
+        if (waiting == 0 || ships >= MAX_TRANSPORTS) return false
+        // 一艘船載三支：等船的人多到現有的船兩趟也載不完，才再造一艘。
+        return waiting > ships * UnitKind.TRANSPORT_SHIP.capacity * 2
     }
 
     /** 陸軍要到 [goal] 是不是得渡海：它已經在海上，或目標在另一塊陸地上。 */
@@ -488,6 +617,15 @@ class AiPlayer(private val session: Session, private val nationId: Int) {
         /** 預期戰果至少要值任務價錢的這個比例才飛。 */
         const val MIN_SORTIE_VALUE_RATIO = 0.75f
         const val MAX_GOAL_DISTANCE = 28
+
+        /** 目標在這個距離以內就自己浮渡過去，不等船。大約是一道海峽的寬度。 */
+        const val FLOAT_RANGE = 6
+
+        /** 運輸艦在這個距離以內，陸軍才會走過去搭。 */
+        const val FERRY_CALL_RANGE = 10
+
+        /** AI 最多養幾艘運輸艦。 */
+        const val MAX_TRANSPORTS = 3
 
         /** 隔海目標的扣分：大約等於十格的距離，本地的目標優先。 */
         const val OVERSEAS_GOAL_PENALTY = 25f

@@ -29,6 +29,9 @@ object Palette {
     val MOVE_RANGE: Int get() = Colors.of("#4C6FC7E8")
     val ATTACK_RANGE: Int get() = Colors.of("#59E86A4C")
 
+    /** 上下船的格子：跟移動的藍、攻擊的紅都分得開的琥珀色。 */
+    val FERRY: Int get() = Colors.of("#73F2B544")
+
     /** 空降能落的格子：用空軍的暖黃，不用攻擊的紅 —— 那裡不是要打的地方。 */
     val DROP_ZONE: Int get() = Colors.of("#40F6D9A0")
 

@@ -271,7 +271,11 @@ class HudRenderer(private val session: Session) {
 
         val nameX = x + Ui.dp(30f)
         Widgets.leftFit(
-            canvas, Strings.byName(unit.kind.key) + if (unit.size > 1) " ×${unit.size}" else "",
+            canvas,
+            Strings.byName(unit.kind.key) +
+                (if (unit.size > 1) " ×${unit.size}" else "") +
+                // 運輸艦：船上幾支／載得下幾支。
+                (if (unit.kind.isTransport) "  ${unit.cargo.size}/${unit.kind.capacity}" else ""),
             nameX, top + Ui.dp(16f),
             Ui.dp(12.5f), Ui.dp(120f), ink, bold = true
         )

@@ -404,6 +404,25 @@ UI = {
         "空降则在航程内任一空着的陆地格放下一支新的步兵。每座机场与航舰每回合出击一次，"
         "所以大城越多，架次越多。目标两格内的敌方防空炮、巡洋舰与驱逐舰会削弱每一次空袭 —— "
         "先拔掉防空，或者换个地方炸。"),
+    "help_sea": ("Crossing the sea", "渡海", "渡海"),
+    "help_sea_body": (
+        "A land unit can cross water two ways. It can simply walk in and float across: free, but slow, "
+        "with no supply and no defence — it cannot even fire back. That is for a strait, not an ocean. "
+        "Or it can ride a transport ship. Select the unit next to one of your transports and tap the "
+        "amber hex to board; next turn, sail, then select the ship and tap an amber hex on the shore to "
+        "land. A transport carries three units, moves seven hexes a turn and keeps its passengers in "
+        "supply. If it is sunk, everyone aboard goes down with it, so escort it. Only marines can "
+        "attack on the turn they land.",
+        "陸軍有兩種渡海的方法。一種是直接走進水裡浮渡：不花錢，但很慢、沒有補給、也沒有防禦，"
+        "連還手都不行。那是用來過海峽的，不是用來跨海的。另一種是搭運輸艦：選取站在運輸艦旁邊的部隊，"
+        "點琥珀色的那一格就上船；下一回合開船，再選取那艘船、點岸上琥珀色的格子就下船。"
+        "一艘運輸艦載三支部隊，一回合走七格，船上的人算有補給。船被擊沉，船上的人一起沉，"
+        "所以要護航。只有海軍陸戰隊能在下船的那一回合攻擊。",
+        "陆军有两种渡海的方法。一种是直接走进水里浮渡：不花钱，但很慢、没有补给、也没有防御，"
+        "连还手都不行。那是用来过海峡的，不是用来跨海的。另一种是搭运输舰：选取站在运输舰旁边的部队，"
+        "点琥珀色的那一格就上船；下一回合开船，再选取那艘船、点岸上琥珀色的格子就下船。"
+        "一艘运输舰载三支部队，一回合走七格，船上的人算有补给。船被击沉，船上的人一起沉，"
+        "所以要护航。只有海军陆战队能在下船的那一回合攻击。"),
     "help_victory": ("Winning", "勝利條件", "胜利条件"),
     "help_victory_body": (
         "Campaign missions state their objective up front — check the Goals panel any time. Finishing early earns more stars, "
@@ -479,9 +498,9 @@ UNITS = {
         "在航程內空著的陸地格放下一支新的步兵。",
         "在航程内空着的陆地格放下一支新的步兵。"),
     "unit_transport_ship": ("Transport Ship", "運輸艦", "运输舰",
-        "Carries three land units. Defenceless — never sail one without an escort.",
-        "可載三支陸軍。毫無自衛能力 —— 絕對不要讓它單獨出海。",
-        "可载三支陆军。毫无自卫能力 —— 绝对不要让它单独出海。"),
+        "Carries three land units and keeps them in supply. Board from the hex beside it. Defenceless — never sail one without an escort.",
+        "可載三支陸軍，船上的人算有補給。從它旁邊的格子上船。毫無自衛能力 —— 絕對不要讓它單獨出海。",
+        "可载三支陆军，船上的人算有补给。从它旁边的格子上船。毫无自卫能力 —— 绝对不要让它单独出海。"),
     "unit_destroyer": ("Destroyer", "驅逐艦", "驱逐舰",
         "Hunts submarines and screens the fleet. The cheapest ship worth building.",
         "獵殺潛艇並為艦隊擔任屏衛。最便宜而值得造的軍艦。",
