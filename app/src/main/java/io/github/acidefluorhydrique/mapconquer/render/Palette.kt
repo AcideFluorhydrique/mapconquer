@@ -51,6 +51,8 @@ object Palette {
         "ALLIES" -> Colors.of("#5A93C4")
         "NATO" -> Colors.of("#5A93C4")
         "PACT" -> Colors.of("#C4565A")
+        "UN" -> Colors.of("#5A93C4")
+        "LEGION" -> Colors.of("#8A4A6E")
         else -> Colors.of("#7F93A6")
     }
 

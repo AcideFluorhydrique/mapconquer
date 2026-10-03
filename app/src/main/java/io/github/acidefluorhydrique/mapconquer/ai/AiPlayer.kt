@@ -45,6 +45,7 @@ class AiPlayer(private val session: Session, private val nationId: Int) {
     private val path = ArrayList<Int>(32)
     private val airTargets = ArrayList<Int>(64)
     private var sortiesFlown = 0
+    private var builtThisTurn = 0
 
     private val nation get() = session.nations[nationId]
     private val profile get() = nation.aiProfile
@@ -171,6 +172,9 @@ class AiPlayer(private val session: Session, private val nationId: Int) {
     /** 一次只造一支，讓 [step] 保持細粒度。回傳 false 代表這回合造完了。 */
     private fun buildOneUnit(): Boolean {
         if (nation.funds < MIN_BUILD_FUNDS) return false
+        // 固守的國家一回合只補幾支兵。這條是為了地盤很大的守方（1980 年的灰燼軍團）：
+        // 沒有上限的話，兩百座城的收入每回合都會整筆變成部隊，開局幾回合就把所有人淹死。
+        if (profile == AiProfile.TURTLE && builtThisTurn >= TURTLE_BUILDS_PER_TURN) return false
         val kind = chooseUnitKind() ?: return false
         val size = chooseFormationSize(kind)
 
@@ -187,7 +191,9 @@ class AiPlayer(private val session: Session, private val nationId: Int) {
             }
         }
         if (bestProvince < 0) return false
-        return Orders.build(session, nationId, bestProvince, kind, size) != null
+        if (Orders.build(session, nationId, bestProvince, kind, size) == null) return false
+        builtThisTurn++
+        return true
     }
 
     /**
@@ -617,6 +623,9 @@ class AiPlayer(private val session: Session, private val nationId: Int) {
         /** 預期戰果至少要值任務價錢的這個比例才飛。 */
         const val MIN_SORTIE_VALUE_RATIO = 0.75f
         const val MAX_GOAL_DISTANCE = 28
+
+        /** 固守性格的國家一回合最多造幾支兵。 */
+        const val TURTLE_BUILDS_PER_TURN = 2
 
         /** 目標在這個距離以內就自己浮渡過去，不等船。大約是一道海峽的寬度。 */
         const val FLOAT_RANGE = 6

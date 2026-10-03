@@ -504,7 +504,7 @@ def placed_units(built, units, taken_lines, owners):
 def write_conquest(built, scenario_id, name_key, desc_key, order, merge,
                    start_year, turtle=None, blocs=None, overrides=None,
                    renames=None, war_turns=None, start_month=None, turn_limit=0,
-                   extra_units=()):
+                   extra_units=(), tech=None, playable=None):
     """把 places 的國家分佈展開成一份征服劇本。"""
     owners = {}
     for pid, (key, _tier, nation, _tile) in enumerate(built.provinces):
@@ -557,7 +557,7 @@ def write_conquest(built, scenario_id, name_key, desc_key, order, merge,
         lines.append("%s|%s|%s|%d|%s|%d|%s|%s|%s|%d" % (
             code, (renames or {}).get(code, "nation_" + code.lower()),
             colour, capital, profile, funds,
-            ",".join(str(v) for v in tech_for(funds)),
+            ",".join(str(v) for v in (tech or {}).get(code, tech_for(funds))),
             places.flag_for(code, start_year),
             bloc_of(code, blocs),
             (war_turns or {}).get(code, 1),
@@ -580,7 +580,10 @@ def write_conquest(built, scenario_id, name_key, desc_key, order, merge,
     lines.append("[playable]")
     # 可選國家：有陣營的才能選。中立國不參戰、也沒有敵對陣營可打垮，
     # 選了它就是對著一張和平的地圖發呆。劇本沒分陣營的話才全部開放。
+    # [playable] 明確指定時以它為準：有些陣營是只給電腦打的。
     belligerents = [code for code in ordered if bloc_of(code, blocs)]
+    if playable is not None:
+        belligerents = [code for code in ordered if code in playable]
     lines.append(",".join(belligerents or ordered))
     lines.append("")
     lines.append("[objectives]")
@@ -964,12 +967,14 @@ def main():
                          turn_limit=places.CONQUEST_TURN_LIMIT,
                          extra_units=places.CONQUEST_EXTRA_UNITS.get(1950, ())))
     print(write_conquest(world, "conquest_1980", "scn_conquest_1980",
-                         "scn_conquest_1980_desc", 40, places.COLD_WAR_1980_MERGE, 1980,
-                         turtle=unaligned(places.COLD_WAR_1980_BLOCS),
-                         blocs=places.COLD_WAR_1980_BLOCS,
-                         overrides=places.COLD_WAR_1980_PROVINCE_OWNERS,
+                         "scn_conquest_1980_desc", 40, None, 1980,
+                         blocs=places.CONQUEST_1980_BLOCS,
+                         overrides=places.CONQUEST_1980_PROVINCE_OWNERS,
                          renames=places.COLD_WAR_RENAMES, start_month=1,
-                         turn_limit=places.CONQUEST_TURN_LIMIT))
+                         turn_limit=places.CONQUEST_TURN_LIMIT,
+                         extra_units=places.CONQUEST_EXTRA_UNITS.get(1980, ()),
+                         tech=places.CONQUEST_1980_TECH,
+                         playable=set(places.CONQUEST_1980_REMNANTS)))
 
     for mission in scn.CAMPAIGN:
         built = built_maps[mission["map"]]

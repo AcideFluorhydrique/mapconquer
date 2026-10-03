@@ -95,6 +95,27 @@ class ConquestSmokeTest {
     }
 
     @Test
+    fun `the 1980 world runs, and the legion does not flood the map with new units`() {
+        val scenario = TestAssets.scenario("conquest_1980")
+        val map = TestAssets.map(scenario.mapId)
+        val session = Session(map, scenario, Difficulty.OFFICER, "FRA", 19800101L)
+        val legion = session.nationByCode("LGN")!!
+        val before = session.unitsOf(legion.id).size
+        assertInvariants(session, "turn 0")
+
+        repeat(3) {
+            playOneTurn(session)
+            assertInvariants(session, "turn ${session.turn}")
+        }
+        assertEquals("玩家什麼都沒做，三回合內不該分出勝負", SessionStatus.PLAYING, session.status)
+        // 固守的國家一回合最多造兩支：三回合最多多六支（被打掉的只會讓它更少）。
+        assertTrue(
+            "灰燼軍團三回合從 $before 支變成 ${session.unitsOf(legion.id).size} 支",
+            session.unitsOf(legion.id).size <= before + 3 * AiPlayer.TURTLE_BUILDS_PER_TURN
+        )
+    }
+
+    @Test
     fun `the 1939 world runs for several full turns`() {
         val scenario = TestAssets.scenario("conquest_1939")
         val map = TestAssets.map(scenario.mapId)

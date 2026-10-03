@@ -290,6 +290,40 @@ class ScenarioAssetTest {
         }
     }
 
+    /**
+     * 1980 年的征服：殘存各國聯手對抗一個佔了大半個世界、玩家不能選的勢力。
+     * 不是北約對華約 —— 那樣地圖上大半是不參戰的中立國。
+     */
+    @Test
+    fun `1980 is the survivors against the legion, and the legion is not playable`() {
+        val scenario = TestAssets.scenario("conquest_1980")
+        val map = TestAssets.cachedMap(scenario.mapId)
+        val codes = scenario.nations.map { it.code }.toSet()
+        assertTrue("LGN" in codes)
+        assertFalse("玩家不能選灰燼軍團", scenario.playable.contains("LGN"))
+        assertEquals("其餘每一國都能選", codes - "LGN", scenario.playable.toSet())
+
+        val legionLand = scenario.ownership["LGN"]!!.size
+        assertEquals("每個省都有主人", map.provinces.size, scenario.ownership.values.sumOf { it.size })
+        assertTrue("灰燼軍團佔了世界的大半：$legionLand / ${map.provinces.size}", legionLand * 3 > map.provinces.size * 2)
+        for (code in scenario.playable) {
+            val held = scenario.ownership[code]!!.size
+            assertTrue("$code 只剩幾座城（$held）", held in 1..5)
+            assertTrue("$code 開局要有部隊", scenario.startingUnits.any { it.nationCode == code })
+        }
+
+        val s = Session(map, scenario, Difficulty.OFFICER, "FRA", 1L)
+        val legion = s.nationByCode("LGN")!!.id
+        val france = s.nationByCode("FRA")!!.id
+        assertFalse("地圖上沒有中立國", s.nations.any { s.isBystander(it.id) })
+        for (nation in s.nations) {
+            if (nation.id == legion || nation.id == france) continue
+            assertTrue("${nation.code} 是盟友", s.diplomacy.isAllied(france, nation.id))
+            assertTrue("${nation.code} 跟灰燼軍團在打仗", s.isHostile(nation.id, legion))
+        }
+        assertEquals("要打垮的只有灰燼軍團", listOf("LGN"), s.conquestEnemiesOf(france).map { it.code })
+    }
+
     @Test
     fun `range syntax expands the way the files assume`() {
         assertTrue(ScenarioLoader.expandRanges("").isEmpty())

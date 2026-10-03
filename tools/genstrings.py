@@ -226,6 +226,8 @@ UI = {
     "bloc_east":    ("Eastern bloc", "東方陣營", "东方阵营"),
     "bloc_nato":    ("NATO",         "北約",     "北约"),
     "bloc_pact":    ("Warsaw Pact",  "華約",     "华约"),
+    "bloc_un":      ("United Nations forces", "聯合國軍", "联合国军"),
+    "bloc_legion":  ("The Ashen Legion", "灰燼軍團", "灰烬军团"),
     "bloc_neutral": ("Neutral",      "中立",     "中立"),
 
     # 研發分支
@@ -584,11 +586,11 @@ SCENARIO_TEXT = {
         "January 1950. Germany and Korea are divided, the People's Republic of China is three months old, and the empires still hold most of Africa. West and East face each other across a line drawn through Berlin, and everyone else would rather not choose.",
         "1950 年 1 月。德國與朝鮮一分為二，中華人民共和國成立才三個月，非洲大半仍是殖民地。西方與東方隔著一條穿過柏林的線對峙，其他國家寧可不選邊。",
         "1950 年 1 月。德国与朝鲜一分为二，中华人民共和国成立才三个月，非洲大半仍是殖民地。西方与东方隔着一条穿过柏林的线对峙，其他国家宁可不选边。"),
-    "scn_conquest_1980": ("1980 · NATO and the Pact", "1980 · 北約與華約", "1980 · 北约与华约"),
+    "scn_conquest_1980": ("1980 · The Ashen Legion", "1980 · 灰燼軍團", "1980 · 灰烬军团"),
     "scn_conquest_1980_desc": (
-        "January 1980. The empires are gone and most of the world belongs to itself. NATO and the Warsaw Pact face each other across Europe, while China, India and the non-aligned world stand outside both.",
-        "1980 年 1 月。帝國都已經散了，世界大半屬於自己。北約與華約在歐洲對峙，中國、印度與不結盟國家站在兩者之外。",
-        "1980 年 1 月。帝国都已经散了，世界大半属于自己。北约与华约在欧洲对峙，中国、印度与不结盟国家站在两者之外。"),
+        "An alternate 1980. An army that answers to no nation holds most of the world; the great powers are down to a handful of cities each and fight on together as the United Nations forces. Pick one of the survivors and take the world back.",
+        "架空的 1980 年。一支不屬於任何國家的軍隊拿下了世界的大半，各大國只剩幾座城，以聯合國軍的名義聯手作戰。選一個倖存的國家，把世界奪回來。",
+        "架空的 1980 年。一支不属于任何国家的军队拿下了世界的大半，各大国只剩几座城，以联合国军的名义联手作战。选一个幸存的国家，把世界夺回来。"),
     "scn_conquest_1939": ("1939 · The World", "1939 · 全球", "1939 · 全球"),
     "scn_conquest_1939_desc": (
         "The world as the empires held it: Africa and southern Asia belong to London, Paris and Rome rather than to themselves. Axis and Allies are already at war, though the Soviet Union and the United States will not join for some turns yet. Pick anyone.",

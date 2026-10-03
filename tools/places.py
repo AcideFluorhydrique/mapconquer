@@ -625,6 +625,57 @@ COLD_WAR_1980_BLOCS = {
     "PACT": ["RUS", "POL", "CZE", "HUN", "ROU", "BGR", "DDR"],
 }
 
+# ----------------------------------------------------------------------
+# 1980 年征服：殘存各國對灰燼軍團
+# ----------------------------------------------------------------------
+# 這一年的征服不是史實，是同類遊戲慣用的架空設定：一個不屬於任何國家的武裝勢力
+# 已經拿下世界的大半，各大國只剩幾座城，以聯合國軍的名義聯手反攻。北約對華約
+# 那種兩大陣營的局面在 1950 年的征服裡已經有了；1980 年再來一次，地圖上三分之二
+# 是不參戰的中立國，玩起來是一張空的地圖。
+#
+# 這個勢力叫「灰燼軍團」，是本專案自己取的名字與設定。玩家不能選它。
+LEGION = "LGN"
+
+# 殘存的國家與它們手上還剩的城市。沒列在這裡的省份全部屬於灰燼軍團。
+CONQUEST_1980_REMNANTS = {
+    "USA": ["prov_new_york", "prov_washington", "prov_los_angeles", "prov_san_francisco",
+            "prov_anchorage"],
+    "RUS": ["prov_moscow", "prov_petersburg", "prov_kyiv", "prov_volgograd",
+            "prov_yekaterinburg"],
+    "CHN": ["prov_beijing", "prov_shanghai", "prov_chongqing", "prov_shenyang"],
+    "GBR": ["prov_london", "prov_manchester", "prov_edinburgh"],
+    "FRA": ["prov_paris", "prov_lyon", "prov_bordeaux"],
+    "DEU": ["prov_berlin", "prov_hamburg", "prov_cologne"],
+    "ITA": ["prov_rome", "prov_milan", "prov_naples"],
+    "AUS": ["prov_sydney", "prov_brisbane", "prov_darwin"],
+    "JPN": ["prov_tokyo", "prov_osaka"],
+    "ESP": ["prov_madrid", "prov_seville"],
+    "TUR": ["prov_istanbul", "prov_ankara"],
+    "IND": ["prov_delhi", "prov_mumbai"],
+    "EGY": ["prov_cairo", "prov_alexandria"],
+    "IRQ": ["prov_baghdad"],
+    "THA": ["prov_bangkok"],
+    "CUB": ["prov_havana"],
+}
+
+CONQUEST_1980_BLOCS = {
+    "UN": sorted(CONQUEST_1980_REMNANTS),
+    "LEGION": [LEGION],
+}
+
+# 每一個省的歸屬都寫出來：殘存國家的城歸它自己，其餘一律歸灰燼軍團。
+CONQUEST_1980_PROVINCE_OWNERS = {row[0]: LEGION for row in PROVINCES}
+for _code, _keys in CONQUEST_1980_REMNANTS.items():
+    for _key in _keys:
+        if _key not in CONQUEST_1980_PROVINCE_OWNERS:
+            raise ValueError("1980 征服：地圖上沒有 %s" % _key)
+        CONQUEST_1980_PROVINCE_OWNERS[_key] = _code
+
+# 開局科技：灰燼軍團的裝備比誰都好，殘存各國也都是打過仗的軍隊。
+CONQUEST_1980_TECH = {code: [3, 3, 3, 3, 3, 2] for code in CONQUEST_1980_REMNANTS}
+CONQUEST_1980_TECH[LEGION] = [4, 4, 4, 4, 4, 3]
+
+
 # 冷戰年代的名字：蘇聯、西德、中華人民共和國、在臺灣的中華民國。
 COLD_WAR_RENAMES = {
     "RUS": "nation_sun",
@@ -676,6 +727,34 @@ CONQUEST_EXTRA_UNITS = {
         ("USA", 166.0, -12.0, "CARRIER", 1),
         ("USA", 160.5, -10.0, "CRUISER", 1),
     ],
+    1980: [
+        # 殘存各國手上最後的主力，都集結在自己剩下的城市附近。
+        ("USA", -74.0, 41.0, "ARMOUR", 2), ("USA", -77.0, 39.2, "INFANTRY", 2),
+        ("USA", -118.0, 34.3, "ARMOUR", 1), ("USA", -122.0, 37.5, "INFANTRY", 1),
+        ("USA", -72.0, 39.5, "CARRIER", 2), ("USA", -123.5, 36.5, "DESTROYER", 1),
+        ("RUS", 37.9, 56.0, "ARMOUR", 2), ("RUS", 38.2, 55.3, "ARMOUR", 2),
+        ("RUS", 36.8, 55.4, "ARTILLERY", 2), ("RUS", 30.6, 59.7, "INFANTRY", 2),
+        ("RUS", 44.3, 48.9, "INFANTRY", 1), ("RUS", 30.8, 50.6, "ARMOUR", 1),
+        ("CHN", 116.8, 40.2, "INFANTRY", 2), ("CHN", 117.0, 39.5, "INFANTRY", 2),
+        ("CHN", 116.0, 39.5, "ARMOUR", 1), ("CHN", 121.2, 31.5, "INFANTRY", 1),
+        ("CHN", 121.0, 30.9, "ARTILLERY", 1), ("CHN", 106.7, 29.7, "INFANTRY", 1),
+        ("GBR", -0.6, 51.7, "ARMOUR", 1), ("GBR", 1.6, 51.6, "DESTROYER", 1),
+        ("GBR", -3.0, 50.0, "CRUISER", 1),
+        ("FRA", 2.6, 48.6, "ARMOUR", 1), ("FRA", 4.9, 45.6, "INFANTRY", 1),
+        ("DEU", 13.2, 52.3, "ARMOUR", 2), ("DEU", 10.1, 53.4, "ARMOUR", 1),
+        ("DEU", 7.1, 51.0, "INFANTRY", 1),
+        ("ITA", 12.6, 41.7, "ARMOUR", 1), ("ITA", 9.3, 45.3, "INFANTRY", 1),
+        ("JPN", 139.6, 35.8, "INFANTRY", 1), ("JPN", 141.0, 35.0, "DESTROYER", 1),
+        ("JPN", 135.2, 33.8, "CRUISER", 1),
+        ("AUS", 151.0, -33.7, "INFANTRY", 1), ("AUS", 152.2, -34.5, "DESTROYER", 1),
+        ("ESP", -3.6, 40.5, "INFANTRY", 1),
+        ("TUR", 29.2, 41.1, "INFANTRY", 1), ("TUR", 32.7, 39.8, "ARMOUR", 1),
+        ("IND", 77.3, 28.7, "INFANTRY", 1), ("IND", 77.0, 28.4, "ARMOUR", 1),
+        ("EGY", 31.3, 30.1, "ARMOUR", 1), ("EGY", 30.0, 31.1, "INFANTRY", 1),
+        ("IRQ", 44.5, 33.4, "ARMOUR", 1),
+        ("THA", 100.6, 13.8, "INFANTRY", 1),
+        ("CUB", -82.3, 23.0, "INFANTRY", 1),
+    ],
     1950: [
         # 中華民國在大陸以外的殘部：滇緬邊境的孤軍、昆明附近的部隊、
         # 新疆與西藏的反共武裝，以及上海與福建外海的艦隊。
@@ -697,6 +776,18 @@ CONQUEST_EXTRA_UNITS = {
 }
 
 
+# 灰燼軍團的守軍：它手上每一座中型以上的城都有人守，大城另有裝甲，都會再加火炮。
+# 產生器平常只替大城放一支步兵，那樣兩百多個省只有三十幾支部隊，是一張等著被收割的空地圖。
+for _row in PROVINCES:
+    _key, _lon, _lat, _tier = _row[0], _row[1], _row[2], _row[3]
+    if CONQUEST_1980_PROVINCE_OWNERS[_key] != LEGION or _tier < 2:
+        continue
+    CONQUEST_EXTRA_UNITS[1980].append((LEGION, _lon, _lat, "INFANTRY", 2))
+    if _tier >= 3:
+        CONQUEST_EXTRA_UNITS[1980].append((LEGION, _lon, _lat, "ARMOUR", 2))
+    if _tier >= 4:
+        CONQUEST_EXTRA_UNITS[1980].append((LEGION, _lon, _lat, "ARTILLERY", 2))
+
 # 合併後才出現的新勢力，需要自己的名字。
 EXTRA_NATIONS = {
     # 基準壓到 1100：省份多會被資金公式放大（十五個省乘 1.75），照 2400 算
@@ -705,6 +796,9 @@ EXTRA_NATIONS = {
     # 東德的國旗由 flag_for 依年份決定。
     "DDR":       ("East Germany", "東德", "东德", "#8C5A5A", "BALANCED", 700),
     # 只出現在戰區地圖上的小國（世界地圖上沒有它們的城市）。
+    # 1980 年征服裡的敵人（見 CONQUEST_1980_REMNANTS 上面的說明）。性格是固守：
+    # 它的城被威脅時才增兵，不然以它的收入，開局幾回合就能把所有人淹死。
+    "LGN":       ("The Ashen Legion", "灰燼軍團", "灰烬军团", "#4A4458", "TURTLE", 3000),
     "LTU":       ("Lithuania", "立陶宛", "立陶宛", "#8FA85C", "TURTLE", 300),
     "SVK":       ("Slovakia", "斯洛伐克", "斯洛伐克", "#5C6FA8", "TURTLE", 300),
     "LUX":       ("Luxembourg", "盧森堡", "卢森堡", "#5CA8A0", "TURTLE", 250),
@@ -715,6 +809,7 @@ EXTRA_NATIONS = {
 # 而且在沒有 emoji 字型的裝置上會自然退化成兩個字母（🇩🇪 → DE），仍然讀得出來。
 # 併出來的歷史勢力沿用最接近的現代國旗。
 FLAGS = {
+    "LGN": "🏴",
     "LTU": "🇱🇹",
     "SVK": "🇸🇰",
     "LUX": "🇱🇺",
