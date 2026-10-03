@@ -1,0 +1,169 @@
+<!--
+SPDX-FileCopyrightText: 2026 AcideFluorhydrique
+SPDX-License-Identifier: GPL-3.0-or-later
+-->
+
+# Developing MapConquer
+
+Everything a contributor needs and a player does not: what the simulation models
+in detail, how to build and release, the tests, the generators, and the design
+decisions behind the code. For what the game is and how to play it, see the
+[README](../README.md).
+
+## What the game models
+
+| System | Summary |
+| --- | --- |
+| Map | Pointy-top hexes, axial maths, odd-r storage. The world map is 120×76 and wraps east–west. It is deliberately stretched — Europe and East Asia wide, the oceans narrow — but the geography stays true: which countries share a border and which are separated by sea is checked every time the map is generated. Campaign missions are moving to their own theatre maps instead: one battlefield at true proportions, with real coastlines and rivers and many more cities (Poland 1939 and France 1940 so far). |
+| Terrain | 13 types, each with a movement cost, an income, and a penalty on tanks and guns attacking into it. Vehicles cannot enter mountains, jungle or swamp. |
+| Territory | Ownership is per **province**, not per hex; each province is one city and its land. A city falls when its defence is worn down and a land unit stands in it, and the whole province changes hands with it. Hong Kong, Gibraltar and Belfast are single-hex strongholds. |
+| Units | 17 kinds: 11 land, 6 sea. Each rolls its attack between a minimum and a maximum and has four effectiveness values — against infantry, armour, ships and aircraft — so the counter matters more than the raw number. Units are built as formations of one to four. |
+| Air power | Not units on the board but missions you pay for: fighter strikes, bomber strikes (which can also hit an empty city's walls) and airdrops, flown from the city or carrier you select (bombers need a large city). An airfield flies as many sorties a turn as its city's industry level, two to four; a carrier flies one. Anti-air, cruisers and destroyers blunt strikes near them. Air research improves what an airdrop delivers. |
+| Crossing the sea | A land unit can float across on its own — slow, unsupplied and defenceless — or ride a transport ship, which carries three, moves seven hexes a turn and keeps its passengers in supply. |
+| Combat | Each attack rolls between the unit's minimum and maximum attack; each point of defence adds 1.6% to the divisor (`dmg = atk·1000/(def·16+1000)`). HP is absolute and grows with formation and level; below half HP a unit hits at half strength. Survivors always return fire at full strength. Artillery fires from range and takes no return fire, and cannot fire back in melee. A unit inside a city with walls takes half the damage, and the walls take their own share. Rules follow [original-behavior.md](original-behavior.md). |
+| Zones of control | Moving next to an enemy ends your move. Armour ignores this once per move, which is what makes it the tool for opening a breach. |
+| Supply | Spreads from your own and your allies' cities along friendly territory, priced in movement cost — so mountains break a supply line faster than plains do. Out of supply means losing strength, then dying. Supply trucks and headquarters carry a small supply bubble with them, even into enemy land. Ships carry their own stores: away from port they weaken to four fifths of their strength but never starve. |
+| Experience | Units level 1→5 from damage dealt and kills. |
+| Commanders | 16 fictional commanders with stacking skills, unlocked with medals earned from campaign stars, usable in every later game. |
+| Research | Six branches, five levels each, +8% per level. |
+| Upkeep | Every unit costs money each turn. Big formations are cheaper than the same units apart, and a unit in supply costs a third of what a cut-off one does. |
+| Diplomacy | Members of a bloc are allies. Blocs go to war on their historical turn; you can declare war on a neutral, which makes it an enemy you must also defeat. Truce cooldowns stop the AI from flip-flopping. |
+| AI | Resource-based difficulty only — the AI plays by exactly the same rules you do. It runs as a resumable state machine so a hundred nations can move without freezing a frame. |
+
+## Building
+
+There is nothing to install beyond JDK 17 — Gradle fetches the rest.
+
+```bash
+./gradlew assembleRelease
+```
+
+The result is an unsigned APK in `app/build/outputs/apk/release/`. Run the test
+suite (this is worth doing; see below):
+
+```bash
+./gradlew test
+```
+
+## Releases and signing
+
+Release APKs are signed with the project's own key, and the build is meant to be
+**reproducible**: building the same commit from source must give a byte-identical
+unsigned APK, so F-Droid can verify its own build against ours and ship the APK
+we signed. Everyone then has the same signature and can move between F-Droid,
+GitHub Releases and other stores without reinstalling.
+
+CI (`.github/workflows/build.yml`) does this on every push:
+
+1. builds the release APK with no signing configuration — the same artifact
+   F-Droid builds;
+2. signs it with `apksigner`, using the keystore in the `RELEASE_KEYSTORE`
+   repository secret (base64) and the `RELEASE_KEYSTORE_PASSWORD`,
+   `RELEASE_KEY_ALIAS` and `RELEASE_KEY_PASSWORD` secrets, and prints the
+   certificate fingerprint;
+3. in a separate job, builds the release twice from two different directories
+   and fails unless the two APKs are identical.
+
+Signing certificate SHA-256:
+
+```
+CE:85:A4:91:84:50:57:7B:3B:59:42:3E:A7:62:CC:86:76:E2:25:2C:6F:28:02:6A:C0:BB:B9:13:FC:4F:06:A0
+```
+
+To publish a release:
+
+1. raise `versionCode` and `versionName` in `app/build.gradle.kts`;
+2. write the changelog for the new `versionCode` in
+   `fastlane/metadata/android/*/changelogs/<versionCode>.txt`;
+3. commit, then tag the commit `v<versionName>` and push the tag:
+
+   ```bash
+   git tag v0.1.0
+   git push origin v0.1.0
+   ```
+
+CI checks that the tag matches `versionName` and that the changelog exists, runs
+every check above, and creates a GitHub Release with the signed
+`mapconquer-<versionName>.apk` attached and the changelog as its notes.
+
+## Tests
+
+The entire simulation layer — hex maths, pathfinding, map and scenario parsing,
+combat, the turn engine and the AI — has no dependency on any Android API. That is
+a deliberate architectural constraint, and the payoff is that it can all be tested
+on a plain JVM against the *real* shipped maps and scenarios rather than against
+fixtures:
+
+- `HexMathTest` — coordinate round-trips, ring/disc sizes, line continuity.
+- `PathfinderTest` — Dijkstra ranges, cost-aware routing, zones of control, no
+  state leaking between searches.
+- `MapAssetTest` — every shipped map parses; neighbour relations are symmetric;
+  every land hex belongs to a province that holds its own capital; straits on
+  the world map are water all the way across; a map's fingerprint changes when a
+  single hex does.
+- `ScenarioAssetTest` — every scenario cross-checks against its map: no province
+  claimed twice, no ship spawned on land, no campaign objective you already own.
+- `CombatTest` — damage bounds, the rock-paper-scissors relationships, terrain and
+  entrenchment, artillery's asymmetry.
+- `SessionTest` — the turn engine on small hand-written maps: capture, sieges,
+  formations, air missions, surrender, the conquest victory and turn limit, and
+  that a new game starts on the player's turn.
+- `ConquestSmokeTest` — loads the real world map with 100+ nations and plays
+  several complete turns with the AI driving every side, asserting a set of state
+  invariants after every turn.
+
+## Generated content
+
+The maps, the scenarios and all three `strings.xml` files are **generated**, and
+the generators are in `tools/`:
+
+```bash
+python3 tools/genworld.py     # → app/src/main/assets/{maps,scenarios}
+python3 tools/genstrings.py   # → app/src/main/res/values*/strings.xml
+```
+
+- `tools/geodata.py` — coastlines, mountain ranges, deserts, jungles and rivers as
+  hand-drawn latitude/longitude polygons, used by the world map and the older
+  regional maps. These are original simplified outlines, not derived from any
+  dataset. It also lists which land masses must never touch (islands, and pairs
+  such as Arabia and Africa).
+- `tools/theatres.py` — the theatre maps: for each one its bounds, its own list of
+  cities (owned as they were on the day the campaign opened), which rivers to
+  draw, and hand-drawn polygons for relief and vegetation.
+- `tools/naturalearth.py` and `tools/data/` — the theatre maps take their
+  coastlines and rivers from [Natural Earth](https://www.naturalearthdata.com),
+  which is in the public domain. Only the small cropped extracts each theatre
+  needs are kept in the repository, so generating the maps needs no network.
+- `tools/hexraster.py` — projects those polygons onto the hex grid, keeps every
+  island and sea gap at least one hex of water, and paints terrain by latitude,
+  elevation and biome.
+- `tools/places.py` — the single source of truth for provinces and nations: one row
+  per city with its coordinates, city tier, owner and its name in all three
+  languages, plus how nations merge, split and ally in each year. Both the map
+  files and the translations come from this table, so they can never drift apart.
+- `tools/scenarios.py` — the campaign battles.
+- `tools/topology.py` — the geography written down as rules: borders that must
+  exist, seas that must stay seas, and countries whose mainland must be one piece.
+  `genworld.py` fails when the world map breaks any of them.
+
+CI re-runs both generators and fails if the committed output differs, so the
+assets in the repository always match the tools that produced them.
+
+## Design notes
+
+A few decisions worth knowing before reading the code:
+
+- **Everything is drawn on a `Canvas`.** One `Activity`, one `SurfaceView`, no
+  Compose, no fragments, no view hierarchy. Screens are states of `GameView`.
+- **No binary assets.** Unit symbols are drawn as vectors, the icon is a vector,
+  flags are emoji — except the Soviet, East German and wartime German flags,
+  which no emoji font has and which are drawn in code in the same waving style —
+  and sound effects are synthesised at runtime. Nothing in the
+  APK needs a provenance statement.
+- **Determinism.** The RNG is a seeded xorshift whose state is part of the save
+  file, so a battle plays out the same way on a reload.
+- **Saves know their map.** A save records the map's fingerprint and a format
+  version; one made on a different map, or under older rules, is refused rather
+  than loaded into the wrong hexes.
+- **Tile indices, not objects.** Pathfinding and AI walk hundreds of thousands of
+  tiles per turn; nothing on those paths allocates.
