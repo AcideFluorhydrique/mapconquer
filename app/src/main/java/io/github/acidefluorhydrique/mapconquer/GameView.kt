@@ -103,6 +103,9 @@ class GameView(context: Context) : SurfaceView(context), SurfaceHolder.Callback 
 
     private val reachable = ArrayList<Int>(160)
     private val attackTargets = ArrayList<Int>(32)
+
+    /** 這次空中任務的起飛點（AirOps 的起飛點鍵）。開空軍面板時定下來。 */
+    private var airBase = AirOps.ANY_BASE
     private val pathBuffer = ArrayList<Int>(32)
 
     private var soundEnabled = true
@@ -195,6 +198,7 @@ class GameView(context: Context) : SurfaceView(context), SurfaceHolder.Callback 
         if (toastTimer > 0) toastTimer -= deltaMs
         val active = session ?: return
         overlay?.tickAnimation(if (animationsEnabled) deltaMs / 180f else 1f)
+        overlay?.tickClock(deltaMs)
         overlay?.let { over ->
             over.tickSortie(deltaMs)
             over.sortie?.let { if (it.arrived && !it.resolved) landSortie(active, it) }
@@ -489,10 +493,7 @@ class GameView(context: Context) : SurfaceView(context), SurfaceHolder.Callback 
             HudRenderer.ID_MENU -> panel = Panel.PAUSE
             HudRenderer.ID_TECH -> panel = Panel.TECH
             HudRenderer.ID_OBJECTIVES -> panel = Panel.OBJECTIVES
-            HudRenderer.ID_AIR -> {
-                cancelMission()
-                panel = Panel.AIR
-            }
+            HudRenderer.ID_AIR -> openAirPanel()
             HudRenderer.ID_BUILD -> panel = Panel.PRODUCTION
             HudRenderer.ID_WAIT -> skipSelectedUnit()
             HudRenderer.ID_REPAIR -> repairSelectedUnit()
@@ -649,19 +650,40 @@ class GameView(context: Context) : SurfaceView(context), SurfaceHolder.Callback 
         }
     }
 
-    /** 從空軍面板選了任務：關掉面板，把能打的格子畫出來，等玩家點。 */
+    /**
+     * 空軍面板只替「現在選中的機場或航艦」開：飛機是從某個地方起飛的，
+     * 所以先點城市，才有空軍可派 —— 跟生產是同一個動線。
+     */
+    private fun openAirPanel() {
+        val active = session ?: return
+        val over = overlay ?: return
+        cancelMission()
+        val base = AirOps.baseAt(active, active.playerNationId, over.selectedTile)
+        if (base == AirOps.ANY_BASE) {
+            Audio.play(Sfx.DENIED)
+            return
+        }
+        airBase = base
+        panelRenderer?.airBase = base
+        panel = Panel.AIR
+    }
+
+    /** 從空軍面板選了任務：關掉面板，把這個起飛點打得到的格子標出來，等玩家點。 */
     private fun beginMission(ordinal: Int) {
         val active = session ?: return
         val over = overlay ?: return
         val mission = AirMission.ALL.getOrNull(ordinal) ?: return
         panel = Panel.NONE
-        AirOps.collectTargets(active, active.playerNationId, mission, attackTargets)
+        AirOps.collectTargets(active, active.playerNationId, mission, attackTargets, airBase)
         if (attackTargets.isEmpty()) {
             Audio.play(Sfx.DENIED)
             toast(Strings.get(R.string.toast_air_no_targets))
             return
         }
+        // 起飛點留著選取框：玩家看得到飛機從哪裡出發。
+        val origin = over.selectedTile
         over.clearSelection()
+        over.selectedTile = origin
         over.mission = mission
         over.setAttackable(attackTargets)
         Audio.play(Sfx.CLICK)
@@ -682,7 +704,7 @@ class GameView(context: Context) : SurfaceView(context), SurfaceHolder.Callback 
         undoRecord = null
         cancelMission()
         val nationId = active.playerNationId
-        if (!AirOps.canFly(active, nationId, mission, tile)) {
+        if (!AirOps.canFly(active, nationId, mission, tile, airBase)) {
             Audio.play(Sfx.DENIED)
             return
         }
@@ -691,7 +713,7 @@ class GameView(context: Context) : SurfaceView(context), SurfaceHolder.Callback 
             resolveMission(active, mission, tile)
             return
         }
-        val from = AirOps.launchTile(active, nationId, mission, tile)
+        val from = AirOps.launchTile(active, nationId, mission, tile, airBase)
         val distance = if (from < 0) 0 else active.map.distance(from, tile)
         over.sortie = MapOverlay.Sortie(
             mission, from, tile,
@@ -707,7 +729,7 @@ class GameView(context: Context) : SurfaceView(context), SurfaceHolder.Callback 
     /** 真正出擊並播報結果。回傳要飄在目標上的傷害，沒有就回 -1。 */
     private fun resolveMission(active: Session, mission: AirMission, tile: Int): Int {
         val target = AirOps.strikeTarget(active, active.playerNationId, mission, tile)
-        val result = AirOps.fly(active, active.playerNationId, mission, tile)
+        val result = AirOps.fly(active, active.playerNationId, mission, tile, airBase)
         if (result == null) {
             Audio.play(Sfx.DENIED)
             return -1

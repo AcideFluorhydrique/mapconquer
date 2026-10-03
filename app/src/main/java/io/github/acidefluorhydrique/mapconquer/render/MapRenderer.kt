@@ -43,6 +43,9 @@ class MapRenderer(private val session: Session) {
     /** visibleCol 的「不在畫面上」哨兵值。 */
     private val OFFSCREEN = Int.MIN_VALUE
 
+    /** 任務目標標記閃一輪的時間。 */
+    private val MARKER_PERIOD_MS = 900
+
     fun draw(canvas: Canvas, camera: Camera, overlay: MapOverlay) {
         ensureHexPath(camera.hexSize)
         camera.visibleBounds(bounds)
@@ -53,6 +56,7 @@ class MapRenderer(private val session: Session) {
         drawOverlayTiles(canvas, camera, overlay)
         drawCities(canvas, camera)
         drawUnits(canvas, camera, overlay)
+        drawMissionMarkers(canvas, camera, overlay)
         drawSortie(canvas, camera, overlay)
         drawPath(canvas, camera, overlay)
     }
@@ -208,12 +212,11 @@ class MapRenderer(private val session: Session) {
                     if (national && otherOwner >= 0 && owner >= 0 && other < tile) continue
 
                     if (national) {
-                        paint.strokeWidth = Ui.dp(1.6f)
-                        paint.color = if (owner >= 0) {
-                            Colors.alpha(Colors.scale(Palette.nationColour(session, owner), 1.6f), 0xE0)
-                        } else {
-                            Colors.of("#66FFFFFF")
-                        }
+                        // 國界的顏色回答「這條線的另一邊是誰」：敵人紅、自己金、盟友綠、
+                        // 其他灰。底色已經是國色了，國界再用國色等於同一件事說兩次。
+                        val front = Palette.isFront(session, owner, otherOwner)
+                        paint.strokeWidth = if (front) Ui.dp(2.4f) else Ui.dp(1.6f)
+                        paint.color = Palette.borderColour(session, owner, otherOwner)
                     } else {
                         if (camera.hexSize < Ui.dp(9f)) continue
                         paint.strokeWidth = Ui.dp(0.7f)
@@ -280,8 +283,10 @@ class MapRenderer(private val session: Session) {
     }
 
     private fun drawOverlayTiles(canvas: Canvas, camera: Camera, overlay: MapOverlay) {
-        if (overlay.selectedUnit == null) return
+        // 不能用「有沒有選中部隊」當提早返回的條件：挑空中任務的目標時沒有選中的部隊，
+        // 而目標格正是要在這裡畫的。沒有東西要畫時兩個陣列本來就是空的。
         val layout = camera.layout
+        val dropping = overlay.mission == AirMission.AIRDROP
         paint.style = Paint.Style.FILL
         for (row in bounds[1]..bounds[3]) {
             for (col in bounds[0]..bounds[2]) {
@@ -294,7 +299,11 @@ class MapRenderer(private val session: Session) {
                     camera.screenX(layout.centerXOffset(col, row)),
                     camera.screenY(layout.centerYOffset(row))
                 )
-                paint.color = if (attackable) Palette.ATTACK_RANGE else Palette.MOVE_RANGE
+                paint.color = when {
+                    attackable && dropping -> Palette.DROP_ZONE
+                    attackable -> Palette.ATTACK_RANGE
+                    else -> Palette.MOVE_RANGE
+                }
                 canvas.drawPath(hexPath, paint)
                 canvas.restore()
             }
@@ -360,9 +369,10 @@ class MapRenderer(private val session: Session) {
             rect.offset(0f, -size * 0.035f)
             paint.color = Colors.scale(plate, 1.15f)
             canvas.drawRoundRect(rect, corner, corner, paint)
+            // 外框是敵我色，跟部隊同一套：紅的城要打，綠的城是盟友的，灰的城別去碰。
             paint.style = Paint.Style.STROKE
-            paint.strokeWidth = size * 0.045f
-            paint.color = Colors.of("#E6F2F6FA")
+            paint.strokeWidth = size * 0.075f
+            paint.color = Palette.relationColour(session, owner)
             canvas.drawRoundRect(rect, corner, corner, paint)
             paint.style = Paint.Style.FILL
 
@@ -469,14 +479,24 @@ class MapRenderer(private val session: Session) {
 
         // 外框是敵我，填色是國別。一百多個國家的顏色一定有相近的，
         // 但「這支是不是我的」不能靠分辨色差。
-        paint.style = Paint.Style.STROKE
-        paint.strokeWidth = Ui.dp(1.6f)
-        val outline = Palette.relationOutline(session, unit.nationId)
-        paint.color = if (unit.isSpent && unit.nationId == session.playerNationId) {
-            Colors.alpha(outline, 0x66)
-        } else {
-            outline
+        val relation = Palette.relationColour(session, unit.nationId)
+        val spent = unit.isSpent && unit.nationId == session.playerNationId
+        val outline = if (spent) Colors.alpha(relation, 0x66) else relation
+
+        // 底邊一條敵我色的色帶：外框在縮小時只剩一條細線，色帶是一整塊顏色，
+        // 遠遠就看得出這支是敵是友。
+        if (size >= Ui.dp(9f)) {
+            val band = h * 0.2f
+            canvas.save()
+            canvas.clipRect(rect.left, rect.bottom - band, rect.right, rect.bottom)
+            paint.color = outline
+            canvas.drawRoundRect(rect, h * 0.25f, h * 0.25f, paint)
+            canvas.restore()
         }
+
+        paint.style = Paint.Style.STROKE
+        paint.strokeWidth = Ui.dp(2.2f)
+        paint.color = outline
         canvas.drawRoundRect(rect, h * 0.25f, h * 0.25f, paint)
         paint.style = Paint.Style.FILL
 
@@ -533,6 +553,61 @@ class MapRenderer(private val session: Session) {
             paint.color = Palette.supplyColour(unit.supply / ArmyUnit.MAX_SUPPLY.toFloat())
             canvas.drawCircle(cx + w / 2f - size * 0.09f, top + h - size * 0.09f, size * 0.07f, paint)
         }
+    }
+
+    /**
+     * 正在挑空中任務的目標時，每一個合法目標上的閃爍標記。
+     *
+     * 空降是一頂降落傘（每一格能落的地都有一頂），打擊是一個準星 ——
+     * 畫在部隊之上，所以玩家看得出「這一支打得到」。底色另外由
+     * [drawOverlayTiles] 鋪：標記負責吸引目光，底色負責在縮小時還看得見範圍。
+     */
+    private fun drawMissionMarkers(canvas: Canvas, camera: Camera, overlay: MapOverlay) {
+        val mission = overlay.mission ?: return
+        val layout = camera.layout
+        val size = camera.hexSize
+        // 一個週期 0.9 秒，在 45% 到 100% 之間呼吸；不整個熄掉，免得某一瞬間什麼都看不到。
+        val phase = (overlay.clockMs % MARKER_PERIOD_MS) / MARKER_PERIOD_MS.toFloat()
+        val pulse = 0.5f - 0.5f * Math.cos(2.0 * Math.PI * phase).toFloat()
+        val alpha = (0xFF * (0.45f + 0.55f * pulse)).toInt()
+
+        for (row in bounds[1]..bounds[3]) {
+            for (col in bounds[0]..bounds[2]) {
+                val tile = map.indexWrapped(col, row)
+                if (!overlay.attackable[tile]) continue
+                val cx = camera.screenX(layout.centerXOffset(col, row))
+                val cy = camera.screenY(layout.centerYOffset(row))
+                if (mission == AirMission.AIRDROP) {
+                    paint.style = Paint.Style.FILL
+                    paint.color = Colors.alpha(Colors.of("#1A232D"), alpha * 2 / 3)
+                    UnitGlyphs.drawParachute(canvas, cx + size * 0.03f, cy + size * 0.04f, size * 0.34f, paint)
+                    paint.color = Colors.alpha(Palette.AIR_ACCENT, alpha)
+                    UnitGlyphs.drawParachute(canvas, cx, cy, size * 0.34f, paint)
+                } else {
+                    drawCrosshair(canvas, cx, cy, size * (0.50f + 0.08f * pulse), alpha)
+                }
+            }
+        }
+        paint.style = Paint.Style.FILL
+    }
+
+    /** 準星：一圈加四道刻線。先畫一層深色的粗線墊底，在任何國色上都讀得出來。 */
+    private fun drawCrosshair(canvas: Canvas, cx: Float, cy: Float, radius: Float, alpha: Int) {
+        paint.style = Paint.Style.STROKE
+        paint.strokeCap = Paint.Cap.ROUND
+        for (pass in 0..1) {
+            paint.strokeWidth = if (pass == 0) Ui.dp(3.4f) else Ui.dp(1.8f)
+            paint.color = if (pass == 0) Colors.alpha(Colors.of("#1A0A08"), alpha * 2 / 3)
+            else Colors.alpha(Palette.TARGET_MARK, alpha)
+            canvas.drawCircle(cx, cy, radius, paint)
+            val inner = radius * 0.62f
+            val outer = radius * 1.28f
+            canvas.drawLine(cx - outer, cy, cx - inner, cy, paint)
+            canvas.drawLine(cx + inner, cy, cx + outer, cy, paint)
+            canvas.drawLine(cx, cy - outer, cx, cy - inner, paint)
+            canvas.drawLine(cx, cy + inner, cx, cy + outer, paint)
+        }
+        paint.style = Paint.Style.FILL
     }
 
     /**

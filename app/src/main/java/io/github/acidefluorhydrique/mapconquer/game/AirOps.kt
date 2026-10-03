@@ -96,11 +96,36 @@ object AirOps {
     private fun cityBaseKey(provinceId: Int) = provinceId
     private fun carrierBaseKey(session: Session, unit: ArmyUnit) = session.map.provinces.size + unit.id
 
+    /** 不指定起飛點：任何一個還能飛的都行。AI 用這個。 */
+    const val ANY_BASE = -1
+
+    /** 最小的機場：工業等級到這裡的城市才有空軍可用。 */
+    val MIN_AIRFIELD_INDUSTRY: Int = AirMission.ALL.minOf { it.industry }
+
+    /**
+     * [tile] 上屬於 [nationId] 的起飛點，回傳它的鍵；沒有就回 [ANY_BASE]。
+     *
+     * 航艦看那一格上的部隊；城市看那一格所屬的省 —— 跟生產一樣，點到省裡
+     * 任何一格都算點到那座城。這回合飛過了的起飛點照樣回傳：面板會說明它飛過了。
+     */
+    fun baseAt(session: Session, nationId: Int, tile: Int): Int {
+        if (tile !in 0 until session.map.tileCount) return ANY_BASE
+        val unit = session.primaryUnitAt(tile)
+        if (unit != null && unit.isAlive && unit.nationId == nationId && unit.kind.isAirbase) {
+            return carrierBaseKey(session, unit)
+        }
+        val province = session.map.provinceAt(tile) ?: return ANY_BASE
+        if (!province.hasCity || province.industry < MIN_AIRFIELD_INDUSTRY) return ANY_BASE
+        if (session.provinceOwner[province.id] != nationId) return ANY_BASE
+        return cityBaseKey(province.id)
+    }
+
     /**
      * 找一個還沒飛過、而且搆得到 [target] 的起飛點，回傳它的鍵；沒有就回 -1。
      * [target] 傳 -1 代表不看距離，只問「這回合還有沒有能飛的」。
+     * [only] 指定起飛點時只考慮那一個：玩家是先點城市（或航艦）才派飛機的。
      */
-    fun launchBase(session: Session, nationId: Int, mission: AirMission, target: Int): Int {
+    fun launchBase(session: Session, nationId: Int, mission: AirMission, target: Int, only: Int = ANY_BASE): Int {
         val map = session.map
         var best = -1
         var bestDistance = Int.MAX_VALUE
@@ -108,6 +133,7 @@ object AirOps {
             if (!province.hasCity || province.industry < mission.industry) continue
             if (session.provinceOwner[province.id] != nationId) continue
             val key = cityBaseKey(province.id)
+            if (only != ANY_BASE && key != only) continue
             if (session.sortieBases.contains(key)) continue
             val d = if (target < 0) 0 else map.distance(province.capitalTile, target)
             if (d > mission.range || d >= bestDistance) continue
@@ -117,6 +143,7 @@ object AirOps {
         for (unit in session.units) {
             if (unit.nationId != nationId || !unit.isAlive || !unit.kind.isAirbase) continue
             val key = carrierBaseKey(session, unit)
+            if (only != ANY_BASE && key != only) continue
             if (session.sortieBases.contains(key)) continue
             val d = if (target < 0) 0 else map.distance(unit.tile, target)
             if (d > mission.range || d >= bestDistance) continue
@@ -126,9 +153,9 @@ object AirOps {
         return best
     }
 
-    fun blocker(session: Session, nationId: Int, mission: AirMission): Blocker {
+    fun blocker(session: Session, nationId: Int, mission: AirMission, only: Int = ANY_BASE): Blocker {
         if (session.nations[nationId].funds < mission.totalCost) return Blocker.NO_FUNDS
-        if (launchBase(session, nationId, mission, -1) < 0) return Blocker.NO_BASE
+        if (launchBase(session, nationId, mission, -1, only) < 0) return Blocker.NO_BASE
         return Blocker.NONE
     }
 
@@ -177,16 +204,16 @@ object AirOps {
                 cityTarget(session, nationId, mission, tile) >= 0
         }
 
-    fun canFly(session: Session, nationId: Int, mission: AirMission, tile: Int): Boolean {
+    fun canFly(session: Session, nationId: Int, mission: AirMission, tile: Int, only: Int = ANY_BASE): Boolean {
         if (tile !in 0 until session.map.tileCount) return false
         if (session.nations[nationId].funds < mission.totalCost) return false
         if (!isValidTarget(session, nationId, mission, tile)) return false
-        return launchBase(session, nationId, mission, tile) >= 0
+        return launchBase(session, nationId, mission, tile, only) >= 0
     }
 
     /** 這次出擊會從地圖上哪一格起飛（城市或航艦所在格）；沒有能飛的起飛點回 -1。給出擊動畫找起點用。 */
-    fun launchTile(session: Session, nationId: Int, mission: AirMission, target: Int): Int {
-        val key = launchBase(session, nationId, mission, target)
+    fun launchTile(session: Session, nationId: Int, mission: AirMission, target: Int, only: Int = ANY_BASE): Int {
+        val key = launchBase(session, nationId, mission, target, only)
         if (key < 0) return -1
         val provinces = session.map.provinces
         return if (key < provinces.size) provinces[key].capitalTile
@@ -194,9 +221,15 @@ object AirOps {
     }
 
     /** 所有合法目標。範圍用每個起飛點各掃一次，比整張地圖逐格試便宜得多。 */
-    fun collectTargets(session: Session, nationId: Int, mission: AirMission, into: MutableList<Int>) {
+    fun collectTargets(
+        session: Session,
+        nationId: Int,
+        mission: AirMission,
+        into: MutableList<Int>,
+        only: Int = ANY_BASE
+    ) {
         into.clear()
-        if (blocker(session, nationId, mission) != Blocker.NONE) return
+        if (blocker(session, nationId, mission, only) != Blocker.NONE) return
         val map = session.map
         val seen = BooleanArray(map.tileCount)
         val area = ArrayList<Int>(3 * mission.range * (mission.range + 1) + 1)
@@ -204,11 +237,13 @@ object AirOps {
         for (province in map.provinces) {
             if (!province.hasCity || province.industry < mission.industry) continue
             if (session.provinceOwner[province.id] != nationId) continue
+            if (only != ANY_BASE && cityBaseKey(province.id) != only) continue
             if (session.sortieBases.contains(cityBaseKey(province.id))) continue
             origins.add(province.capitalTile)
         }
         for (unit in session.units) {
             if (unit.nationId != nationId || !unit.isAlive || !unit.kind.isAirbase) continue
+            if (only != ANY_BASE && carrierBaseKey(session, unit) != only) continue
             if (session.sortieBases.contains(carrierBaseKey(session, unit))) continue
             origins.add(unit.tile)
         }
@@ -271,9 +306,9 @@ object AirOps {
         )
 
     /** 出擊。不合法就回 null，不會留下半套狀態。 */
-    fun fly(session: Session, nationId: Int, mission: AirMission, tile: Int): AirResult? {
-        if (!canFly(session, nationId, mission, tile)) return null
-        val base = launchBase(session, nationId, mission, tile)
+    fun fly(session: Session, nationId: Int, mission: AirMission, tile: Int, only: Int = ANY_BASE): AirResult? {
+        if (!canFly(session, nationId, mission, tile, only)) return null
+        val base = launchBase(session, nationId, mission, tile, only)
         if (base < 0) return null
         val nation = session.nations[nationId]
         nation.funds -= mission.totalCost

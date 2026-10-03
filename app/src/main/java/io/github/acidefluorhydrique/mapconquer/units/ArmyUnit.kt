@@ -192,6 +192,17 @@ class ArmyUnit(
             else -> 250
         }
 
+        /**
+         * 編制的維持費倍率（百分比），取參考遊戲編制表的費率：大編制養起來比
+         * 同樣幾支分開的部隊便宜。
+         */
+        fun upkeepRate(size: Int): Int = when (size.coerceIn(1, MAX_SIZE)) {
+            1 -> 100
+            2 -> 180
+            3 -> 260
+            else -> 340
+        }
+
         /** 每升一級加的生命、攻擊（加在擲骰之外）與防禦，取參考遊戲的級距。 */
         const val LEVEL_HP = 20
         const val LEVEL_ATTACK = 4

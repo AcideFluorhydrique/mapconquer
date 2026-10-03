@@ -382,8 +382,9 @@ class Session(
 
     private fun beginNationTurn(nation: Nation) {
         sortieBases.clear()
-        collectIncome(nation)
+        // 補給先算：維持費要看每支部隊在不在補給線上。
         computeSupply(nation.id)
+        collectIncome(nation)
         refreshUnits(nation)
         repairCities(nation.id)
         pressCities(nation.id)
@@ -410,14 +411,34 @@ class Session(
         val multiplier = if (nation.isPlayer) difficulty.playerIncome else difficulty.aiIncome
         income = income * multiplier / 100
 
-        var upkeep = 0
-        for (unit in units) {
-            if (unit.nationId == nation.id && unit.isAlive) upkeep += unit.kind.upkeep * unit.size
-        }
+        val upkeep = upkeepOf(nation.id)
 
         nation.lastIncome = income
         nation.lastUpkeep = upkeep
         nation.funds = (nation.funds + income - upkeep).coerceAtLeast(0)
+    }
+
+    /**
+     * 一國這一回合的維持費。要在 [computeSupply] 之後呼叫。
+     *
+     * 維持費是本專案自己的規則（參考遊戲沒有）。它不能貴到「這支部隊還不如死掉」，
+     * 所以有兩層折扣：
+     *  - 編制越大越划算：四個編制只算 3.4 倍（[ArmyUnit.upkeepRate]）。
+     *  - 接得上補給線的部隊只付 [UPKEEP_SUPPLIED_PERCENT]%；斷了補給的孤軍付
+     *    [UPKEEP_CUT_OFF_PERCENT]% —— 把東西送進包圍圈本來就貴得多。
+     * 軍艦自帶物資，一律照有補給算。
+     */
+    fun upkeepOf(nationId: Int): Int {
+        var total = 0L
+        for (unit in units) {
+            if (unit.nationId != nationId || !unit.isAlive) continue
+            val supplied = unit.kind.domain == Domain.SEA ||
+                suppliedTiles[unit.tile] || carriedByFriendlyBase(unit)
+            val percent = if (supplied) UPKEEP_SUPPLIED_PERCENT else UPKEEP_CUT_OFF_PERCENT
+            total += unit.kind.upkeep.toLong() * ArmyUnit.upkeepRate(unit.size) * percent
+        }
+        // 全國加總之後才取整，免得每支部隊各自進位。
+        return ((total + 5_000) / 10_000).toInt()
     }
 
     /**
@@ -1040,6 +1061,10 @@ class Session(
          * 十幾回合後會自己沉光 —— 橫渡大洋因此是不可能的。
          */
         const val NAVAL_ATTRITION_RATE = 7
+
+        /** 維持費佔兵種表定價的百分比：有補給、斷補給。見 [upkeepOf]。 */
+        const val UPKEEP_SUPPLIED_PERCENT = 20
+        const val UPKEEP_CUT_OFF_PERCENT = 60
         /** 完全斷補給時每回合掉的 HP，最大 HP 的百分比。 */
         const val STARVATION_PERCENT = 8
 

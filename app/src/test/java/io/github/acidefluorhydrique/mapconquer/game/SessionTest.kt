@@ -297,11 +297,45 @@ class SessionTest {
         assertEquals(2, s.unitsOf(0).size)
     }
 
-    @Test
-    fun `a bigger formation pays more upkeep`() {
-        val s = session(listOf(ScenarioUnit("AAA", 2, 1, "INFANTRY", 1, "", size = 4)))
+    /** 一支戰車在 [col],[row] 的那一國，每回合付多少維持費。 */
+    private fun armourUpkeep(col: Int, row: Int, size: Int): Int {
+        val s = session(listOf(ScenarioUnit("AAA", col, row, "ARMOUR", 1, "", size = size)))
         repeat(s.nations.size) { s.advanceToNextNation() }
-        assertEquals(UnitKind.INFANTRY.upkeep * 4, s.nations[0].lastUpkeep)
+        return s.nations[0].lastUpkeep
+    }
+
+    @Test
+    fun `a bigger formation pays more upkeep, but less than the units it replaces`() {
+        val one = armourUpkeep(2, 1, 1)
+        val four = armourUpkeep(2, 1, 4)
+        // 定價 8，有補給只付兩成：1.6 → 2；四編制算 3.4 倍：5.44 → 5。
+        assertEquals(2, one)
+        assertEquals(5, four)
+        assertTrue("四編制比四支分開的便宜", four < one * 4)
+        for (n in 2..ArmyUnit.MAX_SIZE) {
+            assertTrue(ArmyUnit.upkeepRate(n) > ArmyUnit.upkeepRate(n - 1))
+            assertTrue(ArmyUnit.upkeepRate(n) < 100 * n)
+        }
+    }
+
+    @Test
+    fun `an army cut off from supply costs three times as much to keep`() {
+        val cutOff = session(listOf(ScenarioUnit("AAA", 7, 2, "ARMOUR", 1, "", size = 4)))
+        assertFalse("這支戰車要在補給範圍外，測試才有意義", cutOff.isSupplied(cutOff.units.first().tile))
+        repeat(cutOff.nations.size) { cutOff.advanceToNextNation() }
+        // 定價 8 × 3.4 × 六成 = 16.32 → 16；同一支部隊有補給時是 5。
+        assertEquals(16, cutOff.nations[0].lastUpkeep)
+        assertEquals(5, armourUpkeep(2, 1, 4))
+        assertEquals(Session.UPKEEP_SUPPLIED_PERCENT * 3, Session.UPKEEP_CUT_OFF_PERCENT)
+    }
+
+    @Test
+    fun `a fleet at sea pays the supplied rate`() {
+        val s = session(listOf(ScenarioUnit("AAA", 7, 5, "DESTROYER", 1, "")))
+        assertFalse(s.isSupplied(s.units.first().tile))
+        repeat(s.nations.size) { s.advanceToNextNation() }
+        // 定價 6 × 兩成 = 1.2 → 1。軍艦自帶物資，不算孤軍。
+        assertEquals(1, s.nations[0].lastUpkeep)
     }
 
     @Test
@@ -368,6 +402,29 @@ class SessionTest {
         assertEquals(AirOps.Blocker.NO_BASE, AirOps.blocker(s, 0, AirMission.FIGHTER))
         repeat(s.nations.size) { s.advanceToNextNation() }
         assertTrue("下一回合機場又能飛", AirOps.canFly(s, 0, AirMission.FIGHTER, target.tile))
+    }
+
+    @Test
+    fun `a mission flies from the base the player picked, and only that one`() {
+        val s = session(listOf(ScenarioUnit("BBB", 4, 2, "INFANTRY", 1, "")))
+        s.nations[0].funds = 1_000
+        val target = s.units.first().tile
+        val home = AirOps.baseAt(s, 0, s.map.provinces[0].capitalTile)
+        assertTrue("自己的城是起飛點", home != AirOps.ANY_BASE)
+        assertEquals("別人的城不是", AirOps.ANY_BASE, AirOps.baseAt(s, 0, s.map.provinces[1].capitalTile))
+        assertEquals("海上沒有起飛點", AirOps.ANY_BASE, AirOps.baseAt(s, 0, s.map.index(3, 5)))
+
+        val reachable = ArrayList<Int>()
+        AirOps.collectTargets(s, 0, AirMission.FIGHTER, reachable, home)
+        assertTrue("從這座城打得到的目標要列出來", reachable.contains(target))
+        assertTrue(AirOps.canFly(s, 0, AirMission.FIGHTER, target, home))
+        // 一個不存在的起飛點鍵：指定了它，就不能偷偷改用別的機場。
+        assertFalse(AirOps.canFly(s, 0, AirMission.FIGHTER, target, home + 1_000))
+        AirOps.collectTargets(s, 0, AirMission.FIGHTER, reachable, home + 1_000)
+        assertTrue(reachable.isEmpty())
+
+        assertNotNull(AirOps.fly(s, 0, AirMission.FIGHTER, target, home))
+        assertEquals("飛過的起飛點這回合不能再飛", AirOps.Blocker.NO_BASE, AirOps.blocker(s, 0, AirMission.FIGHTER, home))
     }
 
     @Test

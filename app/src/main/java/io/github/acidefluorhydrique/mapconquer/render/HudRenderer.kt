@@ -11,6 +11,7 @@ import io.github.acidefluorhydrique.mapconquer.core.Colors
 import io.github.acidefluorhydrique.mapconquer.core.Strings
 import io.github.acidefluorhydrique.mapconquer.core.Ui
 import io.github.acidefluorhydrique.mapconquer.core.Widgets
+import io.github.acidefluorhydrique.mapconquer.game.AirOps
 import io.github.acidefluorhydrique.mapconquer.game.Orders
 import io.github.acidefluorhydrique.mapconquer.game.Session
 import io.github.acidefluorhydrique.mapconquer.units.ArmyUnit
@@ -371,6 +372,11 @@ class HudRenderer(private val session: Session) {
                 action(ID_BUILD, R.string.hud_build, true, Widgets.AMBER_TOP, Widgets.AMBER_BOTTOM)
             }
 
+            // 空軍從選中的機場（工業夠的城市）或航艦出動，所以按鈕跟著選取走。
+            if (tile >= 0 && AirOps.baseAt(session, session.playerNationId, tile) != AirOps.ANY_BASE) {
+                action(ID_AIR, R.string.hud_air, true, Widgets.STEEL_TOP, Widgets.STEEL_BOTTOM)
+            }
+
             // 宣戰：點到別國的領土才出現。要按兩次 —— 宣戰收不回來，
             // 一次誤觸就把中立國拖進戰爭不該是可能的事。
             val owner = if (province != null) session.provinceOwner[province.id] else -1
@@ -448,7 +454,6 @@ class HudRenderer(private val session: Session) {
         private val TOP_BUTTONS = arrayOf(
             ID_MENU to R.string.hud_menu,
             ID_TECH to R.string.hud_tech,
-            ID_AIR to R.string.hud_air,
             ID_OBJECTIVES to R.string.hud_objectives
         )
     }

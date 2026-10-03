@@ -76,7 +76,8 @@ UI = {
     "panel_air_subtitle": ("Funds %1$d · each airfield and carrier flies once a turn",
                            "資金 %1$d · 每座機場與航艦每回合出擊一次",
                            "资金 %1$d · 每座机场与航舰每回合出击一次"),
-    "air_blocked_base": ("No airfield ready this turn", "這回合沒有可起飛的機場", "这回合没有可起飞的机场"),
+    "air_blocked_base": ("Already flown this turn, or the airfield is too small",
+                         "這回合已經飛過，或機場等級不夠", "这回合已经飞过，或机场等级不够"),
     "toast_air_no_targets": ("No target within range", "航程內沒有目標", "航程内没有目标"),
     "toast_airdrop": ("Paratroopers have landed", "傘兵已著陸", "伞兵已着陆"),
     "toast_air_strike": ("Air strike: %1$s lost %2$d", "空襲：%1$s 損失 %2$d", "空袭：%1$s 损失 %2$d"),
@@ -248,13 +249,20 @@ UI = {
     "help_basics_body": (
         "Tap a unit to select it. Blue hexes are where it can move; red hexes hold an enemy it can attack. "
         "Tap the same unit again for its full stats. Drag to pan the map, pinch to zoom. "
-        "A land unit that ends its move on a city takes the whole province — its income, its supply and its factories.",
+        "A land unit that ends its move on a city takes the whole province — its income, its supply and its factories. "
+        "Fill colours say which nation; the frame and the bar along the bottom of every unit, the frame of every city "
+        "and the borders say whose side it is on: gold is yours, green an ally, red an enemy, grey a neutral. "
+        "A thick red border is a front line.",
         "點一下部隊即可選取。藍色格是它走得到的地方，紅色格上有它打得到的敵人。"
         "再點一次同一支部隊會打開詳細資料。拖曳可以平移地圖，兩指捏合可以縮放。"
-        "陸軍只要在城市上結束移動，整個省份就會易主 —— 連同它的收入、補給與工業。",
+        "陸軍只要在城市上結束移動，整個省份就會易主 —— 連同它的收入、補給與工業。"
+        "底色代表是哪一國；部隊的外框與底邊色帶、城市的外框、還有國界，代表它站在哪一邊："
+        "金色是你自己，綠色是盟友，紅色是敵人，灰色是中立。粗的紅色國界就是戰線。",
         "点一下部队即可选取。蓝色格是它走得到的地方，红色格上有它打得到的敌人。"
         "再点一次同一支部队会打开详细资料。拖曳可以平移地图，两指捏合可以缩放。"
-        "陆军只要在城市上结束移动，整个省份就会易主 —— 连同它的收入、补给与工业。"),
+        "陆军只要在城市上结束移动，整个省份就会易主 —— 连同它的收入、补给与工业。"
+        "底色代表是哪一国；部队的外框与底边色带、城市的外框、还有国界，代表它站在哪一边："
+        "金色是你自己，绿色是盟友，红色是敌人，灰色是中立。粗的红色国界就是战线。"),
     "help_combat": ("Combat", "戰鬥", "战斗"),
     "help_morale": ("Morale and encirclement", "士氣與包圍", "士气与包围"),
     "help_morale_body": (
@@ -328,15 +336,21 @@ UI = {
         "strength to each blow, but it is never worth as much as the same number of separate units: two "
         "formations of one will out-fight one formation of two. Build big when you need weight in a single "
         "hex — a narrow front, or a target one unit cannot move — and build small when you need to cover "
-        "ground. Upkeep and repairs scale with the size.",
+        "ground. Every unit costs upkeep each turn, shown as the red or green number beside your funds. "
+        "Big formations are cheaper to keep than the same units apart, and a unit on your supply lines costs "
+        "a third of what a cut-off one does — one more reason not to leave an army stranded.",
         "編制在造兵時就決定：在生產面板選 ×1 到 ×4，照編制數付錢，造出來之後不能再併。"
         "編制越大打得越重，每次挨打掉的比例也越少，但永遠比不上同樣數量拆開的部隊：兩支一編制的部隊，"
         "打得贏一支兩編制的。需要在一格裡集中重量時才造大編制 —— 守窄正面，或是單支部隊打不動的目標；"
-        "要佔地盤就造小的。維持費與整補費都照編制數算。",
+        "要佔地盤就造小的。每支部隊每回合都要維持費，就是資金旁邊那個紅色或綠色的數字。"
+        "大編制養起來比同樣幾支分開的便宜；接得上補給線的部隊，維持費只有孤軍的三分之一 —— "
+        "又一個別把部隊丟在包圍圈裡的理由。",
         "编制在造兵时就决定：在生产面板选 ×1 到 ×4，按编制数付钱，造出来之后不能再并。"
         "编制越大打得越重，每次挨打掉的比例也越少，但永远比不上同样数量拆开的部队：两支一编制的部队，"
         "打得赢一支两编制的。需要在一格里集中重量时才造大编制 —— 守窄正面，或是单支部队打不动的目标；"
-        "要占地盘就造小的。维持费与整补费都照编制数算。"),
+        "要占地盘就造小的。每支部队每回合都要维持费，就是资金旁边那个红色或绿色的数字。"
+        "大编制养起来比同样几支分开的便宜；接得上补给线的部队，维持费只有孤军的三分之一 —— "
+        "又一个别把部队丢在包围圈里的理由。"),
     "help_cities": ("Cities and sieges", "城市與攻城", "城市与攻城"),
     "help_cities_body": (
         "A city has defence points as well as income. While they stand, a unit inside the city takes only half "
@@ -366,19 +380,25 @@ UI = {
         "只有能占领的陆军可以停进敌方城市；火炮、补给车与军舰都不行。"),
     "help_air": ("Air power", "空軍", "空军"),
     "help_air_body": (
-        "Aircraft are not units on the map. Open the Air panel, pick a mission, pay for it and tap a target: "
-        "the planes take off from one of your cities or carriers, do their job and go home. "
+        "Aircraft are not units on the map. Tap one of your larger cities, or a carrier, and the Air button appears "
+        "beside Build: pick a mission, pay for it and tap a target. Targets that base can reach are marked — a "
+        "flashing crosshair for a strike, a flashing parachute on every hex an airdrop can land on. "
+        "The planes take off from that base, do their job and go home. "
         "A fighter strike tears into infantry, a bomber strike smashes tanks and ships and can bomb an empty "
         "city's walls, and an airdrop puts a fresh infantry unit on any open land hex in range. "
         "Every airfield and carrier flies once a turn, so more big cities mean more sorties. "
         "Enemy anti-air, cruisers and destroyers within two hexes of the target blunt every strike — "
         "clear the flak first, or send the planes somewhere else.",
-        "飛機不是地圖上的部隊。打開「空軍」面板，選一種任務、付錢、點目標：飛機從你的某座城市或航艦起飛，"
+        "飛機不是地圖上的部隊。點你的一座大城或一艘航艦，「生產」旁邊就會出現「空軍」按鈕："
+        "選一種任務、付錢、點目標。那個起飛點搆得到的目標會標出來 —— 打擊是閃爍的準星，"
+        "空降則在每一格能落的地方閃一頂降落傘。飛機從那個起飛點起飛，"
         "打完就回去。戰鬥機出擊專打步兵，轟炸機出擊專打戰車與軍艦、也能炸空城的城牆，"
         "空降則在航程內任一空著的陸地格放下一支新的步兵。每座機場與航艦每回合出擊一次，"
         "所以大城越多，架次越多。目標兩格內的敵方防空炮、巡洋艦與驅逐艦會削弱每一次空襲 —— "
         "先拔掉防空，或者換個地方炸。",
-        "飞机不是地图上的部队。打开「空军」面板，选一种任务、付钱、点目标：飞机从你的某座城市或航舰起飞，"
+        "飞机不是地图上的部队。点你的一座大城或一艘航舰，「生产」旁边就会出现「空军」按钮："
+        "选一种任务、付钱、点目标。那个起飞点够得到的目标会标出来 —— 打击是闪烁的准星，"
+        "空降则在每一格能落的地方闪一顶降落伞。飞机从那个起飞点起飞，"
         "打完就回去。战斗机出击专打步兵，轰炸机出击专打战车与军舰、也能炸空城的城墙，"
         "空降则在航程内任一空着的陆地格放下一支新的步兵。每座机场与航舰每回合出击一次，"
         "所以大城越多，架次越多。目标两格内的敌方防空炮、巡洋舰与驱逐舰会削弱每一次空袭 —— "

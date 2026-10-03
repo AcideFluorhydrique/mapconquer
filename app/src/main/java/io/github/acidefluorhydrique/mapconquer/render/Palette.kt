@@ -28,6 +28,12 @@ object Palette {
     val SELECTION: Int get() = Colors.of("#FFD98A")
     val MOVE_RANGE: Int get() = Colors.of("#4C6FC7E8")
     val ATTACK_RANGE: Int get() = Colors.of("#59E86A4C")
+
+    /** 空降能落的格子：用空軍的暖黃，不用攻擊的紅 —— 那裡不是要打的地方。 */
+    val DROP_ZONE: Int get() = Colors.of("#40F6D9A0")
+
+    /** 空中打擊的準星。 */
+    val TARGET_MARK: Int get() = Colors.of("#FFE14A")
     val SUPPLY_SHADE: Int get() = Colors.of("#99080C12")
     val SUPPLY_BUBBLE: Int get() = Colors.of("#E67FE0A8")
 
@@ -82,17 +88,63 @@ object Palette {
     val COASTLINE: Int get() = Colors.of("#B37FC4E0")
 
     /**
-     * 部隊外框的敵我色。
+     * 敵我色。
      *
      * 這一層跟國色是分開的：一百多個國家的顏色再怎麼調都會有相近的，
      * 但「這支是不是我的」必須零猶豫。所以國色留給「是誰」，
-     * 外框專門回答「是敵是友」。
+     * 敵我色專門回答「是敵是友」。
      */
-    fun relationOutline(session: Session, nationId: Int): Int = when {
-        nationId == session.playerNationId -> Colors.of("#FFF3C4")
-        session.diplomacy.isAllied(session.playerNationId, nationId) -> Colors.of("#7FE0A0")
-        session.isHostile(session.playerNationId, nationId) -> Colors.of("#FF7B6B")
-        else -> Colors.of("#9AA8B4")
+    fun relationColour(session: Session, nationId: Int): Int = when (relationOf(session, nationId)) {
+        Stance.OWN -> OWN
+        Stance.ALLY -> ALLY
+        Stance.ENEMY -> ENEMY
+        Stance.NEUTRAL -> NEUTRAL
+    }
+
+    /** 某國對玩家而言是什麼：自己、盟友、敵人、其他（中立或無主）。 */
+    enum class Stance { OWN, ALLY, ENEMY, NEUTRAL }
+
+    fun relationOf(session: Session, nationId: Int): Stance = when {
+        nationId < 0 || nationId >= session.nations.size -> Stance.NEUTRAL
+        nationId == session.playerNationId -> Stance.OWN
+        session.isHostile(session.playerNationId, nationId) -> Stance.ENEMY
+        session.diplomacy.isAllied(session.playerNationId, nationId) -> Stance.ALLY
+        else -> Stance.NEUTRAL
+    }
+
+    /**
+     * 四個敵我色。全遊戲只有這一組：部隊外框與色帶、城市徽章外框、國界都用它，
+     * 玩家學一次就夠。色相彼此拉開，而且都比國色亮，壓在任何國色上都跳得出來。
+     */
+    val OWN: Int get() = Colors.of("#FFD23F")
+    val ALLY: Int get() = Colors.of("#3DDC84")
+    val ENEMY: Int get() = Colors.of("#FF3B30")
+    val NEUTRAL: Int get() = Colors.of("#B8C2CC")
+
+    /** 這條國界是不是戰線：一邊是玩家或盟友，另一邊是敵人。 */
+    fun isFront(session: Session, a: Int, b: Int): Boolean {
+        val sa = relationOf(session, a)
+        val sb = relationOf(session, b)
+        val friendlyA = sa == Stance.OWN || sa == Stance.ALLY
+        val friendlyB = sb == Stance.OWN || sb == Stance.ALLY
+        return (friendlyA && sb == Stance.ENEMY) || (friendlyB && sa == Stance.ENEMY)
+    }
+
+    /**
+     * 兩國之間那條國界的顏色，取兩邊對玩家「比較要緊」的那個立場：
+     * 有一邊是敵人就是紅的，否則有一邊是自己就是金的，再來是盟友的綠，都不是才是灰。
+     */
+    fun borderColour(session: Session, a: Int, b: Int): Int {
+        val sa = relationOf(session, a)
+        val sb = relationOf(session, b)
+        val colour = when {
+            sa == Stance.ENEMY || sb == Stance.ENEMY -> ENEMY
+            sa == Stance.OWN || sb == Stance.OWN -> OWN
+            sa == Stance.ALLY || sb == Stance.ALLY -> ALLY
+            else -> NEUTRAL
+        }
+        // 戰線不透明；其他國界淡一些，免得整張地圖都是線。
+        return Colors.alpha(colour, if (isFront(session, a, b)) 0xFF else 0xB0)
     }
 
     /** 單位底板顏色：國色加深，好讓上面的白字讀得出來。 */

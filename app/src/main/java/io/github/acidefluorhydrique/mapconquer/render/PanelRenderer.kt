@@ -52,6 +52,9 @@ class PanelRenderer(private val session: Session) {
     var productionScroll: Float = 0f
     var productionMaxScroll: Float = 0f
 
+    /** 空軍面板是替哪一個起飛點開的（AirOps 的起飛點鍵）。由 GameView 在開面板時設定。 */
+    var airBase: Int = AirOps.ANY_BASE
+
     /** 生產面板上選定的編制數。徵召時就決定，之後不能再併。 */
     var productionSize: Int = 1
         set(value) { field = value.coerceIn(1, ArmyUnit.MAX_SIZE) }
@@ -255,7 +258,7 @@ class PanelRenderer(private val session: Session) {
         var y = panel.top + Ui.dp(52f)
         for (mission in AirMission.ALL) {
             inner.set(panel.left + Ui.dp(12f), y + Ui.dp(2f), panel.right - Ui.dp(12f), y + rowHeight - Ui.dp(2f))
-            val blocker = AirOps.blocker(session, nation.id, mission)
+            val blocker = AirOps.blocker(session, nation.id, mission, airBase)
             val enabled = session.isPlayerTurn && blocker == AirOps.Blocker.NONE
             drawAirRow(canvas, inner, mission, blocker, enabled)
             buttons.add(ID_AIR_MISSION, inner, payload = mission.ordinal, isEnabled = enabled)

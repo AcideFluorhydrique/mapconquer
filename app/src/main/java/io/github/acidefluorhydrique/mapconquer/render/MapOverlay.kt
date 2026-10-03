@@ -19,9 +19,19 @@ class MapOverlay(tileCount: Int) {
 
     /**
      * 正在挑目標的空中任務；null 代表一般的選取模式。
-     * 挑目標時，合法的落點畫在 [attackable] 上，跟攻擊目標同一種紅框。
+     * 挑目標時，合法的目標記在 [attackable] 上：打擊畫紅底加閃爍的準星，
+     * 空降畫閃爍的降落傘（見 MapRenderer.drawMissionMarkers）。
      */
     var mission: AirMission? = null
+
+    /** 一直往前走的時鐘（毫秒），給「閃爍的標記」這類不屬於任何動畫的脈動用。 */
+    var clockMs: Int = 0
+        private set
+
+    fun tickClock(deltaMs: Int) {
+        // 繞回去就好：只拿來算週期，不需要絕對時間。
+        clockMs = (clockMs + deltaMs.coerceAtLeast(0)) and 0x3FFFFFFF
+    }
 
     val movable = BooleanArray(tileCount)
     val attackable = BooleanArray(tileCount)
