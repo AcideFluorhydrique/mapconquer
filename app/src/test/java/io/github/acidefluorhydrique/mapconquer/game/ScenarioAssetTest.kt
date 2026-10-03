@@ -246,6 +246,35 @@ class ScenarioAssetTest {
     }
 
     @Test
+    fun `holding paris - the low countries are allies and poland is already occupied`() {
+        val scenario = TestAssets.scenario("campaign_ww2_02_france_allies")
+        val map = TestAssets.cachedMap(scenario.mapId)
+        val s = Session(map, scenario, Difficulty.OFFICER, "FRA", 1L)
+        fun id(code: String) = s.nationByCode(code)!!.id
+
+        for (ally in listOf("BEL", "NLD", "GBR")) {
+            assertTrue("$ally 是法國的盟友", s.diplomacy.isAllied(id("FRA"), id(ally)))
+        }
+        assertTrue("跟德國在打仗", s.isHostile(id("FRA"), id("DEU")))
+        assertFalse("瑞士是中立國，不是盟友", s.diplomacy.isAllied(id("FRA"), id("CHE")))
+        assertFalse("也不是敵人", s.isHostile(id("FRA"), id("CHE")))
+
+        assertTrue("1940 年沒有波蘭這個國家", s.nationByCode("POL") == null)
+        val warsaw = map.provinces.first { it.nameKey == "prov_warsaw" }
+        assertEquals("華沙在德國手上", id("DEU"), s.provinceOwner[warsaw.id])
+
+        // 德軍主力不該被擺到佔領區去。
+        val krakow = map.provinces.first { it.nameKey == "prov_krakow" }
+        assertTrue(
+            "開局部隊只在劇本點名的省份裡",
+            scenario.startingUnits.filter { it.nationCode == "DEU" }.none {
+                val pid = map.provinceOf[map.index(it.col, it.row)]
+                pid == warsaw.id || pid == krakow.id
+            }
+        )
+    }
+
+    @Test
     fun `range syntax expands the way the files assume`() {
         assertTrue(ScenarioLoader.expandRanges("").isEmpty())
         assertEquals(listOf(3), ScenarioLoader.expandRanges("3").toList())

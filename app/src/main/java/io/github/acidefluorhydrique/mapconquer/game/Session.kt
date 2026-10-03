@@ -940,14 +940,24 @@ class Session(
         return nations.indices.any { opposingBlocs(nationId, it) && diplomacy.isAtWar(nationId, it) }
     }
 
-    /** 所有已參戰、分屬敵對陣營的國家兩兩開戰。重複呼叫沒有副作用。 */
+    /**
+     * 所有已參戰的國家照陣營排好關係：敵對陣營兩兩開戰，同陣營兩兩同盟。
+     * 重複呼叫沒有副作用。
+     *
+     * 同盟這一半原本漏了：同陣營的國家之間只是「和平」，於是 1940 年的比利時
+     * 對法國來說跟瑞士沒有兩樣 —— 補給過不去、城進不去、地圖上也是中立的顏色。
+     * 還沒參戰的成員（1939 年的美國）不算：它在那之前確實是中立的。
+     */
     fun activateBlocWars() {
         for (a in nations.indices) {
             if (!isBelligerent(a)) continue
             for (b in a + 1 until nations.size) {
-                if (!opposingBlocs(a, b) || diplomacy.isAtWar(a, b)) continue
                 if (!isBelligerent(b)) continue
-                diplomacy.set(a, b, Relation.WAR)
+                if (opposingBlocs(a, b)) {
+                    if (!diplomacy.isAtWar(a, b)) diplomacy.set(a, b, Relation.WAR)
+                } else if (sameBloc(a, b) && diplomacy.relation(a, b) == Relation.PEACE) {
+                    diplomacy.set(a, b, Relation.ALLIED)
+                }
             }
         }
     }

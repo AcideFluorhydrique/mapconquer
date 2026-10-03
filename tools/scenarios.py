@@ -89,6 +89,12 @@ CAMPAIGN = [
         "map": "europe",
         "year": 1940,
         "player": "DEU",
+        # 1940 年 5 月：波蘭已經亡國，丹麥與挪威南部在 4 月被佔領。它們不是中立國。
+        "overrides": dict(places.WW2_PROVINCE_OWNERS, **{
+            "prov_warsaw": "DEU", "prov_krakow": "DEU",
+            "prov_copenhagen": "DEU", "prov_aarhus": "DEU",
+            "prov_oslo": "DEU",
+        }),
         "turn_limit": 30,
         "stars": (16, 22),
         "forces": {

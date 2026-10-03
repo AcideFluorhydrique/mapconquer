@@ -625,6 +625,10 @@ def write_campaign(built, mission):
     if missing:
         print("  ! %s: 這些省份不在 %s 上：%s" % (mission["id"], built.id, ", ".join(missing)))
 
+    # 開局部隊只擺在劇本點名的省份裡。下面會把其餘省份也分出去（包括被佔領、
+    # 劃給交戰國的），那些地方不該被擺上主力 —— 1940 年的德軍不在華沙集結。
+    deploy = {code: list(ids) for code, ids in owners.items()}
+
     # 地圖上沒被劇本點名的省份，交還給它們真正的主人，而且是中立的。
     #
     # 原本這些省份沒有主人：地圖邊上一整排沒有國旗的空城，AI 走過去就白拿。
@@ -688,7 +692,7 @@ def write_campaign(built, mission):
     lines.append("")
     lines.append("[units]")
     taken = set()
-    lines.extend(campaign_units(built, owners, mission, taken))
+    lines.extend(campaign_units(built, deploy, mission, taken))
     lines.extend(garrison_only(built, owners, bystanders, taken))
     lines.append("")
     lines.append("[playable]")
