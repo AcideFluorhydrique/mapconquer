@@ -26,6 +26,9 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 MAPS_DIR = os.path.join(ROOT, "app", "src", "main", "assets", "maps")
 SCEN_DIR = os.path.join(ROOT, "app", "src", "main", "assets", "scenarios")
 
+# 城市格在地圖檔裡的地形代碼，對應遊戲端的 Terrain.CITY。
+CITY_TERRAIN = "c"
+
 # 世界地圖的分段權重。權重是「每一度分到幾格」的相對值。
 #
 # 等距投影在遊戲上是行不通的：太平洋吃掉三分之一的寬度，而歐洲 ——
@@ -317,8 +320,13 @@ def write_map(built):
         lines.append("wrap x")
     lines.append("")
     lines.append("[terrain]")
+    # 城市所在的格子寫成「城市」地形，不沿用底下的山或叢林（見 world/Terrain.kt 的 CITY）。
+    # 只改寫出去的檔案：產生器自己擺兵、分省時看的仍然是自然地形。
+    cities = {tile for _key, tier, _nation, tile in built.provinces if tier > 0}
     for row in range(grid.rows):
-        lines.append("".join(built.terrain[grid.index(col, row)] for col in range(grid.cols)))
+        lines.append("".join(
+            CITY_TERRAIN if grid.index(col, row) in cities else built.terrain[grid.index(col, row)]
+            for col in range(grid.cols)))
     lines.append("")
     lines.append("[provinces]")
     for row in range(grid.rows):

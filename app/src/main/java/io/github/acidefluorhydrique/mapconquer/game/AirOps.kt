@@ -49,8 +49,16 @@ enum class AirMission(
     fun versus(target: TargetClass): Int =
         if (attackMax > 0 && target.ordinal < versus.size) versus[target.ordinal] else 0
 
-    /** 打城牆：跟地面部隊一樣取對步兵、對裝甲兩欄的較高者。 */
-    val versusCity: Int get() = maxOf(versus(TargetClass.SOFT), versus(TargetClass.ARMOURED))
+    /**
+     * 打城牆的效果。轟炸機是幹這個的；戰鬥機的機炮與小炸彈只有一半的效果，
+     * 但打得到 —— 原本只有轟炸機能炸空城，而轟炸機要大城才起飛得了，
+     * 於是小機場旁邊就算有一座空城也完全沒有辦法。
+     */
+    val versusCity: Int get() = when (this) {
+        BOMBER -> 100
+        FIGHTER -> 50
+        AIRDROP -> 0
+    }
 
     companion object {
         val ALL: Array<AirMission> = values()
@@ -209,9 +217,9 @@ object AirOps {
         return unit
     }
 
-    /** 轟炸機可以直接炸一座沒有守軍的敵城，回傳省份 id；不行回 -1。 */
+    /** 打擊任務可以直接炸一座沒有守軍的敵城，回傳省份 id；不行回 -1。 */
     fun cityTarget(session: Session, nationId: Int, mission: AirMission, tile: Int): Int {
-        if (mission != AirMission.BOMBER) return -1
+        if (mission.versusCity <= 0) return -1
         if (session.anyUnitAt(tile)) return -1
         val pid = session.cityProvinceAt(tile)
         if (pid < 0 || session.cityHp[pid] <= 0) return -1

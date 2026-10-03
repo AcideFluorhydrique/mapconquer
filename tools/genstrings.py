@@ -252,6 +252,7 @@ UI = {
     "terrain_tundra": ("Tundra", "凍原", "冻原"),
     "terrain_ice": ("Ice", "冰原", "冰原"),
     "terrain_river": ("River valley", "河谷", "河谷"),
+    "terrain_city": ("City", "城市", "城市"),
 
     # 說明
     "help_basics": ("The basics", "基本操作", "基本操作"),
@@ -300,20 +301,21 @@ UI = {
         "strength, and a defender that survives always fires back at full strength. "
         "Artillery strikes from two or more hexes away and takes no return fire, but cannot fire back once something "
         "reaches it — keep infantry in front of it. Terrain does not shield the defender; it hampers tanks and guns "
-        "attacking into it (hills, mountains, forest, jungle, desert), which is why infantry holds the high ground. "
+        "attacking into it (hills, mountains, forest, jungle, desert — and city streets, once the walls are down), "
+        "which is why infantry holds the high ground and clears the cities. "
         "Entrenchment and city walls cut the damage a defender takes.",
         "每次攻擊在部隊的最小與最大攻擊之間擲一個數，目標的每一點防禦都會把傷害削掉一些 —— 但永遠削不完。"
         "部隊對步兵、裝甲、艦艇、飛機各有不同的效果：反坦克炮打戰車勢如破竹，打步兵卻軟弱無力。"
         "HP 不到一半的部隊攻擊減半；挨打後還活著的守方一定會全力反擊。"
         "火炮從兩格以外開火且不會被反擊，可是一旦被貼身就還不了手 —— 前面一定要有步兵擋著。"
-        "地形不會替守方擋傷害，而是讓打進去的戰車與火炮打折（丘陵、山地、森林、叢林、沙漠），"
-        "所以守高地的是步兵。築壕與城牆會減少守方挨的傷害。",
+        "地形不會替守方擋傷害，而是讓打進去的戰車與火炮打折（丘陵、山地、森林、叢林、沙漠，還有城防被打掉之後的城市街道），"
+        "所以守高地、打巷戰的都是步兵。築壕與城牆會減少守方挨的傷害。",
         "每次攻击在部队的最小与最大攻击之间掷一个数，目标的每一点防御都会把伤害削掉一些 —— 但永远削不完。"
         "部队对步兵、装甲、舰艇、飞机各有不同的效果：反坦克炮打战车势如破竹，打步兵却软弱无力。"
         "HP 不到一半的部队攻击减半；挨打后还活着的守方一定会全力反击。"
         "火炮从两格以外开火且不会被反击，可是一旦被贴身就还不了手 —— 前面一定要有步兵挡着。"
-        "地形不会替守方挡伤害，而是让打进去的战车与火炮打折（丘陵、山地、森林、丛林、沙漠），"
-        "所以守高地的是步兵。筑壕与城墙会减少守方挨的伤害。"),
+        "地形不会替守方挡伤害，而是让打进去的战车与火炮打折（丘陵、山地、森林、丛林、沙漠，还有城防被打掉之后的城市街道），"
+        "所以守高地、打巷战的都是步兵。筑壕与城墙会减少守方挨的伤害。"),
     "morale_elevated": ("Elevated", "士氣高昂", "士气高昂"),
     "morale_steady": ("Steady", "正常", "正常"),
     "morale_shaken": ("Shaken", "士氣下降", "士气下降"),
@@ -393,8 +395,8 @@ UI = {
         "beside Build: pick a mission, pay for it and tap a target. Targets that base can reach are marked — a "
         "flashing crosshair for a strike, a flashing parachute on every hex an airdrop can land on. "
         "The planes take off from that base, do their job and go home. "
-        "A fighter strike tears into infantry, a bomber strike smashes tanks and ships and can bomb an empty "
-        "city's walls, and an airdrop puts a fresh infantry unit on any open land hex in range. "
+        "A fighter strike tears into infantry, a bomber strike smashes tanks and ships, either can hit an empty "
+        "city's walls (a bomber does it twice as well), and an airdrop puts a fresh infantry unit on any open land hex in range. "
         "A bigger airfield flies more often: two sorties a turn from a mid-sized city, three from a large one, "
         "four from a metropolis — and one from a carrier. Researching Air also improves what an airdrop "
         "delivers: a higher level, then a formation of two, and at the top troops that can attack as they land. "
@@ -403,7 +405,7 @@ UI = {
         "飛機不是地圖上的部隊。點你的一座大城或一艘航艦，「生產」旁邊就會出現「空軍」按鈕："
         "選一種任務、付錢、點目標。那個起飛點搆得到的目標會標出來 —— 打擊是閃爍的準星，"
         "空降則在每一格能落的地方閃一頂降落傘。飛機從那個起飛點起飛，"
-        "打完就回去。戰鬥機出擊專打步兵，轟炸機出擊專打戰車與軍艦、也能炸空城的城牆，"
+        "打完就回去。戰鬥機出擊專打步兵，轟炸機出擊專打戰車與軍艦，兩者都能炸空城的城牆（轟炸機的效果是兩倍），"
         "空降則在航程內任一空著的陸地格放下一支新的步兵。機場越大，一回合飛得越多次："
         "中型城市兩次、大城三次、都會四次，航艦只有一次。研發空軍還會讓空降兵變強："
         "先是等級，再來是兩個編制，滿級時落地當回合就能攻擊。目標兩格內的敵方防空炮、巡洋艦與驅逐艦會削弱每一次空襲 —— "
@@ -411,7 +413,7 @@ UI = {
         "飞机不是地图上的部队。点你的一座大城或一艘航舰，「生产」旁边就会出现「空军」按钮："
         "选一种任务、付钱、点目标。那个起飞点够得到的目标会标出来 —— 打击是闪烁的准星，"
         "空降则在每一格能落的地方闪一顶降落伞。飞机从那个起飞点起飞，"
-        "打完就回去。战斗机出击专打步兵，轰炸机出击专打战车与军舰、也能炸空城的城墙，"
+        "打完就回去。战斗机出击专打步兵，轰炸机出击专打战车与军舰，两者都能炸空城的城墙（轰炸机的效果是两倍），"
         "空降则在航程内任一空着的陆地格放下一支新的步兵。机场越大，一回合飞得越多次："
         "中型城市两次、大城三次、都会四次，航舰只有一次。研发空军还会让空降兵变强："
         "先是等级，再来是两个编制，满级时落地当回合就能攻击。目标两格内的敌方防空炮、巡洋舰与驱逐舰会削弱每一次空袭 —— "

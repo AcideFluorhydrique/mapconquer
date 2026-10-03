@@ -31,6 +31,14 @@ class UnitMoveRules(
     private val map = session.map
     private val mountaineer = unit.kind.isMountaineer
 
+    /**
+     * 一格最多花掉這支部隊一整回合的移動力。
+     *
+     * 沒有這個上限的話，移動力比地形成本低的部隊會被卡死：缺補給的步兵只剩三點，
+     * 而山地要四點，它就永遠走不出山區。有了上限，它用一整回合可以挪一格。
+     */
+    private val stepCap = session.movementFor(unit).coerceAtLeast(1)
+
     /** stopsAt 躺在 Dijkstra 的內迴圈上，這裡配置陣列會被跑上萬次。 */
     private val zocBuf = IntArray(6)
 
@@ -64,7 +72,7 @@ class UnitMoveRules(
             else -> {
                 var cost = terrain.moveCost
                 if (mountaineer && cost > 2) cost = 2
-                cost.coerceAtLeast(1)
+                cost.coerceIn(1, stepCap)
             }
         }
     }

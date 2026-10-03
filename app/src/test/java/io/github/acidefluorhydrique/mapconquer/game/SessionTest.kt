@@ -8,6 +8,7 @@ import io.github.acidefluorhydrique.mapconquer.units.ArmyUnit
 import io.github.acidefluorhydrique.mapconquer.units.Domain
 import io.github.acidefluorhydrique.mapconquer.units.UnitKind
 import io.github.acidefluorhydrique.mapconquer.world.MapLoader
+import io.github.acidefluorhydrique.mapconquer.world.Terrain
 import io.github.acidefluorhydrique.mapconquer.world.WorldMap
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -554,16 +555,42 @@ class SessionTest {
     }
 
     @Test
-    fun `only a bomber can bomb an empty city`() {
+    fun `any strike can hit an empty city, and a bomber does it better`() {
         val s = session()
         s.nations[0].funds = 1_000
         val enemyCapital = s.map.provinces[1].capitalTile
-        assertFalse(AirOps.canFly(s, 0, AirMission.FIGHTER, enemyCapital))
+        assertTrue("戰鬥機也炸得到空城", AirOps.canFly(s, 0, AirMission.FIGHTER, enemyCapital))
         assertTrue(AirOps.canFly(s, 0, AirMission.BOMBER, enemyCapital))
-        val before = s.cityHp[1]
+        assertFalse("空降落不進城防還在的敵城", AirOps.canFly(s, 0, AirMission.AIRDROP, enemyCapital))
+
+        val full = s.cityHp[1]
+        assertNotNull(AirOps.fly(s, 0, AirMission.FIGHTER, enemyCapital))
+        val byFighter = full - s.cityHp[1]
+        s.cityHp[1] = full
         assertNotNull(AirOps.fly(s, 0, AirMission.BOMBER, enemyCapital))
-        assertTrue(s.cityHp[1] < before)
+        val byBomber = full - s.cityHp[1]
+        // 戰鬥機 24–32 的一半是 12–16；轟炸機 26–40 整份。
+        assertTrue("戰鬥機 $byFighter", byFighter in 12..16)
+        assertTrue("轟炸機 $byBomber", byBomber in 26..40)
         assertEquals("炸城不會讓它易主", 1, s.provinceOwner[1])
+    }
+
+    @Test
+    fun `a unit short of movement can still take one step into rough ground`() {
+        val s = session(listOf(ScenarioUnit("AAA", 3, 1, "INFANTRY", 1, "")))
+        val infantry = s.units.first()
+        val mountain = s.map.index(4, 1)
+        assertEquals(Terrain.MOUNTAIN, s.map.terrainAt(mountain))
+
+        // 補給告急，移動力從四掉到三，而山地要四點。
+        infantry.supply = ArmyUnit.SUPPLY_CRITICAL - 1
+        infantry.movesLeft = s.movementFor(infantry)
+        assertEquals(3, infantry.movesLeft)
+        val reachable = ArrayList<Int>()
+        Orders.computeReachable(s, infantry, reachable)
+        assertTrue("用一整回合可以挪進旁邊的山地", reachable.contains(mountain))
+        assertEquals(mountain, Orders.move(s, infantry, mountain, ArrayList()))
+        assertEquals("那一步用掉整回合", 0, infantry.movesLeft)
     }
 
     @Test

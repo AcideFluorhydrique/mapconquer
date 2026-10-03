@@ -88,6 +88,30 @@ class MapAssetTest {
         }
     }
 
+    /**
+     * 城市格自己就是一種地形：誰都進得去，不沿用底下的山或叢林。
+     * 原本拉薩與迪化坐在山地格上，輪車進不去、缺補給的步兵也進不去。
+     */
+    @Test
+    fun `every city stands on city terrain, which anything can enter`() {
+        assertTrue(Terrain.CITY.vehiclePassable)
+        assertEquals(1, Terrain.CITY.moveCost)
+        for (id in TestAssets.mapIds()) {
+            val map = TestAssets.cachedMap(id)
+            for (province in map.provinces) {
+                if (!province.hasCity) continue
+                assertEquals(
+                    "$id/${province.nameKey}: 城市格的地形",
+                    Terrain.CITY, map.terrainAt(province.capitalTile)
+                )
+            }
+            val cities = map.provinces.filter { it.hasCity }.map { it.capitalTile }.toSet()
+            for (tile in 0 until map.tileCount) {
+                if (map.terrainAt(tile) == Terrain.CITY) assertTrue("$id: 沒有城的格子不該是城市地形", tile in cities)
+            }
+        }
+    }
+
     @Test
     fun `every land tile belongs to a province and every water tile does not`() {
         for (id in TestAssets.mapIds()) {

@@ -97,6 +97,26 @@ class CombatTest {
     }
 
     @Test
+    fun `street fighting favours infantry once the walls are down`() {
+        fun hit(attacker: UnitKind, terrain: Terrain, distance: Int = 1, walls: Boolean = false) = Combat.hit(
+            context(
+                unit(attacker), unit(UnitKind.INFANTRY, nation = 1),
+                distance = distance, defenderTerrain = terrain, defenderInCity = walls
+            ),
+            36, unit(attacker).hp, exchange = false
+        ).toUnit
+
+        // 擲骰 36、守方防禦 1：36000/1016 = 35。戰車進城 −20% → 28，火炮 −15% → 29，步兵不變。
+        assertEquals(35, hit(UnitKind.ARMOUR, Terrain.PLAIN))
+        assertEquals(28, hit(UnitKind.ARMOUR, Terrain.CITY))
+        assertEquals(29, hit(UnitKind.ARTILLERY, Terrain.CITY, distance = 2))
+        assertEquals(35, hit(UnitKind.INFANTRY, Terrain.CITY))
+        // 城防還在時不看地形：一律一半。
+        assertEquals(17, hit(UnitKind.ARMOUR, Terrain.CITY, walls = true))
+        assertEquals(17, hit(UnitKind.INFANTRY, Terrain.CITY, walls = true))
+    }
+
+    @Test
     fun `entrenchment protects the defender`() {
         val open = Combat.previewDamage(
             context(unit(UnitKind.INFANTRY), unit(UnitKind.INFANTRY, nation = 1))

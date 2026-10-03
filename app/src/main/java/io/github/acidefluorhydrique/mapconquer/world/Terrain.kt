@@ -48,7 +48,19 @@ enum class Terrain(
     SWAMP('s', "terrain_swamp", 3, 10, 10, false, false, false, "#40573F", 1),
     TUNDRA('t', "terrain_tundra", 2, 0, 0, false, false, true, "#6B7461", 1),
     ICE('*', "terrain_ice", 3, 5, 5, false, false, false, "#B7C6CE", 0),
-    RIVER('r', "terrain_river", 3, 0, 0, false, false, true, "#3C6272", 3);
+    RIVER('r', "terrain_river", 3, 0, 0, false, false, true, "#3C6272", 3),
+
+    /**
+     * 城市。城市所在的那一格不再沿用底下的自然地形：它是街道與建築。
+     *
+     * - 誰都進得去、出得來，只花一點移動力。原本城市格就是底下的山或叢林，
+     *   於是山城（拉薩、迪化）輪車進不去、缺補給的步兵也進不去，守軍還走不出來。
+     * - 巷戰對步兵有利：戰車與火炮打進城裡的傷害打折，步兵不受影響。
+     *   城防還在的時候不看這一條 —— 那時城牆替守軍擋掉一半（見 units.Combat）。
+     *
+     * 地圖檔由產生器把每座城所在的格子寫成這個地形（tools/genworld.py 的 write_map）。
+     */
+    CITY('c', "terrain_city", 1, 20, 15, false, false, true, "#7A7468", 2);
 
     val isLand: Boolean get() = !isWater
 
