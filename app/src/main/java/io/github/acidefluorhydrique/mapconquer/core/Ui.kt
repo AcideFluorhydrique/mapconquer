@@ -36,7 +36,7 @@ object Ui {
     val topBarHeight: Float get() = dp(40f)
 
     /** 下方單位／地格資訊列。 */
-    val bottomBarHeight: Float get() = dp(54f)
+    val bottomBarHeight: Float get() = dp(68f)
 
     /** 觸控判定的最小舒適邊長。 */
     val touchSlop: Float get() = dp(9f)

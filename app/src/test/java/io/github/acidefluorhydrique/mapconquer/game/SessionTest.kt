@@ -330,6 +330,36 @@ class SessionTest {
     }
 
     @Test
+    fun `an ally's cities supply your troops, an enemy's do not`() {
+        val far = ScenarioUnit("AAA", 7, 2, "INFANTRY", 1, "")
+        val atWar = session(listOf(far))
+        assertFalse("敵國的城不供應你", atWar.isSupplied(atWar.map.index(7, 2)))
+
+        val allied = session(listOf(far), relations = listOf(Triple("AAA", "BBB", Relation.ALLIED)))
+        assertTrue("盟友的城就是補給來源", allied.isSupplied(allied.map.provinces[1].capitalTile))
+        assertTrue("站在盟友領土深處也有補給", allied.isSupplied(allied.map.index(7, 2)))
+        val soldier = allied.units.first()
+        repeat(6) { repeat(allied.nations.size) { allied.advanceToNextNation() } }
+        assertEquals("在盟友那邊不會掉補給", ArmyUnit.MAX_SUPPLY, soldier.supply)
+        assertEquals(soldier.maxHp, soldier.hp)
+    }
+
+    @Test
+    fun `the ai's landmass table tells continents from islands`() {
+        val map = testMap()
+        val ids = io.github.acidefluorhydrique.mapconquer.ai.AiPlayer.landmassesOf(map)
+        assertEquals("測試地圖是一整塊陸地", ids[map.index(1, 1)], ids[map.index(6, 1)])
+        assertTrue(ids[map.index(1, 1)] >= 0)
+        assertEquals("水域沒有陸塊編號", -1, ids[map.index(3, 5)])
+
+        val world = io.github.acidefluorhydrique.mapconquer.TestAssets.cachedMap("france_1940")
+        val table = io.github.acidefluorhydrique.mapconquer.ai.AiPlayer.landmassesOf(world)
+        fun at(key: String) = table[world.provinces.first { it.nameKey == key }.capitalTile]
+        assertEquals("巴黎與科隆在同一塊大陸上", at("prov_paris"), at("prov_cologne"))
+        assertTrue("倫敦在海峽對面", at("prov_london") != at("prov_paris"))
+    }
+
+    @Test
     fun `a fleet at sea pays the supplied rate`() {
         val s = session(listOf(ScenarioUnit("AAA", 7, 5, "DESTROYER", 1, "")))
         assertFalse(s.isSupplied(s.units.first().tile))

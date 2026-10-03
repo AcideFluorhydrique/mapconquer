@@ -456,9 +456,12 @@ class Session(
         java.util.Arrays.fill(suppliedTiles, false)
         java.util.Arrays.fill(supplyCost, Int.MAX_VALUE)
 
+        // 盟友的城市也是補給來源：同盟國的港口與鐵路本來就替盟軍運補。沒有這一條，
+        // 派到盟友前線的部隊一離開自己城市的範圍就斷補給，跟站在敵境沒有兩樣。
         val fromCities = ArrayDeque<Int>()
         for (province in map.provinces) {
-            if (provinceOwner[province.id] != nationId) continue
+            val owner = provinceOwner[province.id]
+            if (owner < 0 || !diplomacy.isAllied(owner, nationId)) continue
             if (!province.hasCity) continue
             val tile = province.capitalTile
             suppliedTiles[tile] = true

@@ -14,6 +14,7 @@ import io.github.acidefluorhydrique.mapconquer.units.Combat
 import io.github.acidefluorhydrique.mapconquer.units.Domain
 import io.github.acidefluorhydrique.mapconquer.units.TechBranch
 import io.github.acidefluorhydrique.mapconquer.units.UnitKind
+import io.github.acidefluorhydrique.mapconquer.world.WorldMap
 
 /**
  * 電腦玩家。
@@ -356,6 +357,8 @@ class AiPlayer(private val session: Session, private val nationId: Int) {
             var score = province.cityTier * 30f + 20f - distance * 2.5f
             // 中立省份是白送的，優先吃。
             if (owner < 0) score += 25f
+            // 隔著海的目標要渡海才到得了：同一塊陸地上還有事做就先做。
+            if (needsCrossing(unit, province.capitalTile)) score -= OVERSEAS_GOAL_PENALTY
             if (score > bestScore) {
                 bestScore = score
                 best = province.capitalTile
@@ -416,19 +419,29 @@ class AiPlayer(private val session: Session, private val nationId: Int) {
         var bestTile = -1
         var bestScore = Float.NEGATIVE_INFINITY
         val currentDistance = map.distance(unit.tile, goal)
+        // 目標在另一塊陸地上（或這支部隊已經在海上）：這一趟就是渡海，水不再是要避開的東西。
+        val crossing = needsCrossing(unit, goal)
 
         for (tile in reachable) {
             var score = (currentDistance - map.distance(tile, goal)) * 10f
             // 同樣的推進距離下，挑戰車與火炮難打的地形。
             val terrain = map.terrainAt(tile)
             score += (terrain.armourPenalty + terrain.artilleryPenalty) * 0.25f
+            val afloat = unit.kind.domain == Domain.LAND && terrain.isWater
             // 別走出補給範圍。軍艦自帶物資，離港只是慢慢變弱，罰得輕得多。
-            if (!session.isSupplied(tile)) {
+            // 渡海途中本來就沒有補給，不為這個罰。
+            if (!session.isSupplied(tile) && !(crossing && afloat)) {
                 score -= if (unit.kind.domain == Domain.SEA) 3f else 12f
             }
-            // 浮渡中的陸軍防禦幾乎歸零，是活靶。AI 只有在能大幅拉近距離時
-            // 才值得下水 —— 這個懲罰讓它願意渡窄海峽，但不會整批走進大洋。
-            if (unit.kind.domain == Domain.LAND && map.terrainAt(tile).isWater) score -= 35f
+            if (afloat) {
+                // 浮渡中的陸軍沒有防禦，是活靶。不必渡海的時候，只有能大幅拉近距離才值得
+                // 下水（抄近路過窄海峽）。必須渡海的時候不罰 —— 原本一律扣 35 分，而一回合
+                // 最多只賺得到 40 分，於是 AI 永遠站在岸邊，隔著海的敵人它一輩子打不到。
+                if (!crossing) score -= 35f
+            } else if (crossing && landmassOf(tile) == landmassOf(goal)) {
+                // 上岸：踏上目標那塊陸地本身就是進展。
+                score += 15f
+            }
             if (tile == goal) score += 40f
             if (score > bestScore) {
                 bestScore = score
@@ -438,6 +451,19 @@ class AiPlayer(private val session: Session, private val nationId: Int) {
         if (bestTile < 0 || bestScore <= 0f) return
         Orders.move(session, unit, bestTile, path)
     }
+
+    /** 陸軍要到 [goal] 是不是得渡海：它已經在海上，或目標在另一塊陸地上。 */
+    private fun needsCrossing(unit: ArmyUnit, goal: Int): Boolean {
+        if (unit.kind.domain != Domain.LAND) return false
+        val here = landmassOf(unit.tile)
+        return here < 0 || here != landmassOf(goal)
+    }
+
+    /** 這一格屬於哪一塊相連的陸地；水域是 -1。 */
+    private fun landmassOf(tile: Int): Int = landmasses[tile]
+
+    /** 每一格的陸塊編號。地圖不會變，所以整局只算一次（見 [landmassesOf]）。 */
+    private val landmasses: IntArray by lazy { landmassesOf(session.map) }
 
     /** 給 AI 用的無敵人路徑規劃，保留給之後的長程海運調度。 */
     @Suppress("unused")
@@ -462,6 +488,38 @@ class AiPlayer(private val session: Session, private val nationId: Int) {
         /** 預期戰果至少要值任務價錢的這個比例才飛。 */
         const val MIN_SORTIE_VALUE_RATIO = 0.75f
         const val MAX_GOAL_DISTANCE = 28
+
+        /** 隔海目標的扣分：大約等於十格的距離，本地的目標優先。 */
+        const val OVERSEAS_GOAL_PENALTY = 25f
+
+        private val landmassCache = java.util.WeakHashMap<WorldMap, IntArray>()
+
+        /** 把陸地分成一塊一塊相連的陸塊，回傳每一格的編號（水域 -1）。 */
+        @Synchronized
+        fun landmassesOf(map: WorldMap): IntArray = landmassCache.getOrPut(map) {
+            val ids = IntArray(map.tileCount) { -1 }
+            val buf = IntArray(6)
+            val stack = ArrayList<Int>()
+            var next = 0
+            for (start in 0 until map.tileCount) {
+                if (ids[start] >= 0 || !map.isLand(start)) continue
+                ids[start] = next
+                stack.add(start)
+                while (stack.isNotEmpty()) {
+                    val tile = stack.removeAt(stack.size - 1)
+                    val n = map.neighbours(tile, buf)
+                    for (i in 0 until n) {
+                        val other = buf[i]
+                        if (ids[other] < 0 && map.isLand(other)) {
+                            ids[other] = next
+                            stack.add(other)
+                        }
+                    }
+                }
+                next++
+            }
+            ids
+        }
         const val CITY_ALERT_RANGE = 6
     }
 }
