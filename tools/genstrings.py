@@ -20,6 +20,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import places
 import scenarios as scn
+import theatres
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 RES = os.path.join(ROOT, "app", "src", "main", "res")
@@ -723,6 +724,11 @@ def collect(locale_index):
     entries.append(("__section__", "Provinces"))
     for row in places.PROVINCES:
         add(row[0], row[5:8])
+    # 戰區地圖自己的城市。世界地圖上已經有的鍵沿用上面的譯名。
+    known = {row[0] for row in places.PROVINCES}
+    for key, row in sorted(theatres.CITIES.items()):
+        if key not in known:
+            add(key, row[5:8])
 
     return entries
 

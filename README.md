@@ -30,7 +30,7 @@ Traditional Chinese, Simplified Chinese and English, switchable inside the app.
 
 | System | Summary |
 | --- | --- |
-| Map | Pointy-top hexes, axial maths, odd-r storage. The world map is 120×76 and wraps east–west. It is deliberately stretched — Europe and East Asia wide, the oceans narrow — but the geography stays true: which countries share a border and which are separated by sea is checked every time the map is generated. |
+| Map | Pointy-top hexes, axial maths, odd-r storage. The world map is 120×76 and wraps east–west. It is deliberately stretched — Europe and East Asia wide, the oceans narrow — but the geography stays true: which countries share a border and which are separated by sea is checked every time the map is generated. Campaign missions are moving to their own theatre maps instead: one battlefield at true proportions, with real coastlines and rivers and many more cities (Poland 1939 and France 1940 so far). |
 | Terrain | 13 types, each with a movement cost, an income, and a penalty on tanks and guns attacking into it. Vehicles cannot enter mountains, jungle or swamp. |
 | Territory | Ownership is per **province**, not per hex; each province is one city and its land. A city falls when its defence is worn down and a land unit stands in it, and the whole province changes hands with it. Hong Kong, Gibraltar and Belfast are single-hex strongholds. |
 | Units | 17 kinds: 11 land, 6 sea. Each has four attack values — against infantry, armour, ships and aircraft — so the counter matters more than the raw number. Units are built as formations of one to four. |
@@ -146,11 +146,17 @@ python3 tools/genstrings.py   # → app/src/main/res/values*/strings.xml
 ```
 
 - `tools/geodata.py` — coastlines, mountain ranges, deserts, jungles and rivers as
-  hand-drawn latitude/longitude polygons. These are original simplified outlines,
-  not derived from OpenStreetMap, Natural Earth or any other dataset — at this
-  scale there is nothing a real dataset would buy, and keeping everything under
-  one licence makes the F-Droid build trivially auditable. It also lists which
-  land masses must never touch (islands, and pairs such as Arabia and Africa).
+  hand-drawn latitude/longitude polygons, used by the world map and the older
+  regional maps. These are original simplified outlines, not derived from any
+  dataset. It also lists which land masses must never touch (islands, and pairs
+  such as Arabia and Africa).
+- `tools/theatres.py` — the theatre maps: for each one its bounds, its own list of
+  cities (owned as they were on the day the campaign opened), which rivers to
+  draw, and hand-drawn polygons for relief and vegetation.
+- `tools/naturalearth.py` and `tools/data/` — the theatre maps take their
+  coastlines and rivers from [Natural Earth](https://www.naturalearthdata.com),
+  which is in the public domain. Only the small cropped extracts each theatre
+  needs are kept in the repository, so generating the maps needs no network.
 - `tools/hexraster.py` — projects those polygons onto the hex grid, keeps every
   island and sea gap at least one hex of water, and paints terrain by latitude,
   elevation and biome.

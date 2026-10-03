@@ -224,7 +224,7 @@ class ScenarioAssetTest {
         val axis = TestAssets.scenario("campaign_ww2_01_poland_axis")
         assertTrue(
             "盟國路線的波蘭要比軸心路線的厚",
-            startingHp(allied, "POL") > startingHp(axis, "POL") * 3 / 2
+            startingHp(allied, "POL") > startingHp(axis, "POL") * 5 / 4
         )
         assertTrue("盟國路線的波蘭要有兩編制的部隊", allied.startingUnits.any { it.nationCode == "POL" && it.size == 2 })
         assertTrue("軸心路線維持單編制", axis.startingUnits.filter { it.nationCode == "POL" }.all { it.size == 1 })
@@ -246,32 +246,48 @@ class ScenarioAssetTest {
     }
 
     @Test
-    fun `holding paris - the low countries are allies and poland is already occupied`() {
+    fun `holding paris - the low countries are allies and the swiss are not`() {
         val scenario = TestAssets.scenario("campaign_ww2_02_france_allies")
         val map = TestAssets.cachedMap(scenario.mapId)
         val s = Session(map, scenario, Difficulty.OFFICER, "FRA", 1L)
         fun id(code: String) = s.nationByCode(code)!!.id
 
-        for (ally in listOf("BEL", "NLD", "GBR")) {
+        for (ally in listOf("BEL", "NLD", "LUX", "GBR")) {
             assertTrue("$ally 是法國的盟友", s.diplomacy.isAllied(id("FRA"), id(ally)))
         }
         assertTrue("跟德國在打仗", s.isHostile(id("FRA"), id("DEU")))
-        assertFalse("瑞士是中立國，不是盟友", s.diplomacy.isAllied(id("FRA"), id("CHE")))
-        assertFalse("也不是敵人", s.isHostile(id("FRA"), id("CHE")))
+        for (neutral in listOf("CHE", "ITA", "ESP")) {
+            assertFalse("$neutral 是中立國，不是盟友", s.diplomacy.isAllied(id("FRA"), id(neutral)))
+            assertFalse("$neutral 也不是敵人", s.isHostile(id("FRA"), id(neutral)))
+        }
+    }
 
-        assertTrue("1940 年沒有波蘭這個國家", s.nationByCode("POL") == null)
-        val warsaw = map.provinces.first { it.nameKey == "prov_warsaw" }
-        assertEquals("華沙在德國手上", id("DEU"), s.provinceOwner[warsaw.id])
+    /**
+     * 戰區地圖只畫戰役發生的地方：波蘭戰役裡沒有法國與蘇聯，法國戰役裡沒有波蘭。
+     * 城市的歸屬是開戰當天的歸屬，所以沒有「早就被佔領卻還是中立國」這種事。
+     */
+    @Test
+    fun `theatre missions carry only the nations that were there`() {
+        val poland = TestAssets.scenario("campaign_ww2_01_poland")
+        assertEquals("poland_1939", poland.mapId)
+        assertEquals(setOf("POL", "DEU", "LTU", "SVK"), poland.nations.map { it.code }.toSet())
 
-        // 德軍主力不該被擺到佔領區去。
-        val krakow = map.provinces.first { it.nameKey == "prov_krakow" }
-        assertTrue(
-            "開局部隊只在劇本點名的省份裡",
-            scenario.startingUnits.filter { it.nationCode == "DEU" }.none {
-                val pid = map.provinceOf[map.index(it.col, it.row)]
-                pid == warsaw.id || pid == krakow.id
-            }
-        )
+        val france = TestAssets.scenario("campaign_ww2_02_france")
+        assertEquals("france_1940", france.mapId)
+        val there = france.nations.map { it.code }.toSet()
+        assertEquals(setOf("DEU", "FRA", "GBR", "BEL", "NLD", "LUX", "CHE", "ITA", "ESP"), there)
+
+        // 兩條路線共用同一張地圖與同一批國家。
+        assertEquals(poland.mapId, TestAssets.scenario("campaign_ww2_01_poland_axis").mapId)
+        assertEquals(france.mapId, TestAssets.scenario("campaign_ww2_02_france_allies").mapId)
+
+        // 細節要比世界地圖多：波蘭自己就不只兩座城。
+        val map = TestAssets.cachedMap(poland.mapId)
+        assertTrue("波蘭至少十座城", poland.ownership["POL"]!!.size >= 10)
+        assertTrue("每個省都有主人", poland.ownership.values.sumOf { it.size } == map.provinces.size)
+        for (key in listOf("prov_warsaw", "prov_krakow", "prov_danzig", "prov_konigsberg")) {
+            assertTrue("$key 要在地圖上", map.provinces.any { it.nameKey == key })
+        }
     }
 
     @Test

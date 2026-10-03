@@ -10,6 +10,7 @@
 所有玩家看到的都是同一張地圖，存檔也就永遠對得起來。
 """
 
+import math
 import os
 import sys
 
@@ -18,6 +19,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import hexraster
 import places
 import scenarios as scn
+import theatres
 import topology
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -259,6 +261,44 @@ def build_map(map_id, cols, rows, lon_min, lon_max, lat_max, lat_min,
     built.province_of = province_of
     built.dropped = dropped
     built.rescued = rescued
+    return built
+
+
+def build_theatre(theatre):
+    """
+    一張戰區地圖：真實比例、真實海岸線與河流、自己的城市清單（見 theatres.py）。
+
+    跟 [build_map] 產出同一種 BuiltMap，後面寫檔與擺兵的程式不必分辨兩者。
+    城市找最近的陸地格落腳；兩座城擠到同一格、或範圍內根本沒有陸地時直接
+    失敗 —— 戰區的城市是逐一挑過的，放不下就是表寫錯了，不該默默少一座。
+    """
+    grid = theatres.grid_for(theatre)
+    terrain, is_land = theatres.build_terrain(theatre, grid)
+
+    seeds = []
+    provinces = []
+    used = set()
+    for key, lon, lat, tier, nation, *_names in theatre["cities"]:
+        best, best_d = None, None
+        scale = math.cos(math.radians(lat))
+        for row in range(grid.rows):
+            for col in range(grid.cols):
+                i = grid.index(col, row)
+                if not is_land[i] or i in used:
+                    continue
+                glon, glat = grid.lonlat(col, row)
+                d = ((glon - lon) * scale) ** 2 + (glat - lat) ** 2
+                if best_d is None or d < best_d:
+                    best, best_d = i, d
+        if best is None or best_d > 1.0:
+            raise SystemExit("%s：%s 附近沒有陸地可以落腳" % (theatre["id"], key))
+        used.add(best)
+        theatres.settle_city(terrain, best)
+        seeds.append(best)
+        provinces.append((key, tier, nation, best))
+
+    built = BuiltMap(theatre["id"], grid, terrain, is_land, provinces)
+    built.province_of = assign_provinces(grid, is_land, seeds)
     return built
 
 
@@ -882,6 +922,15 @@ def main():
             print("    海岸線內縮，靠城市錨點補救 %d 座城" % built.rescued)
         for key, reason in built.dropped:
             print("    - %s 放不下：%s" % (key, reason))
+
+    for theatre in theatres.THEATRES:
+        built = build_theatre(theatre)
+        built_maps[built.id] = built
+        path = write_map(built)
+        land = sum(1 for t in built.terrain if t not in "~-")
+        print("map %-13s %3dx%-3d  provinces %3d  land %4d  -> %s"
+              % (built.id, built.grid.cols, built.grid.rows,
+                 len(built.provinces), land, os.path.relpath(path, ROOT)))
 
     world = built_maps["world"]
     errors = topology.check(world)

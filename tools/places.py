@@ -704,6 +704,10 @@ EXTRA_NATIONS = {
     "ROC":       ("Republic of China", "中華民國", "中华民国", "#B4454C", "BALANCED", 1100),
     # 東德的國旗由 flag_for 依年份決定。
     "DDR":       ("East Germany", "東德", "东德", "#8C5A5A", "BALANCED", 700),
+    # 只出現在戰區地圖上的小國（世界地圖上沒有它們的城市）。
+    "LTU":       ("Lithuania", "立陶宛", "立陶宛", "#8FA85C", "TURTLE", 300),
+    "SVK":       ("Slovakia", "斯洛伐克", "斯洛伐克", "#5C6FA8", "TURTLE", 300),
+    "LUX":       ("Luxembourg", "盧森堡", "卢森堡", "#5CA8A0", "TURTLE", 250),
 }
 
 
@@ -711,6 +715,9 @@ EXTRA_NATIONS = {
 # 而且在沒有 emoji 字型的裝置上會自然退化成兩個字母（🇩🇪 → DE），仍然讀得出來。
 # 併出來的歷史勢力沿用最接近的現代國旗。
 FLAGS = {
+    "LTU": "🇱🇹",
+    "SVK": "🇸🇰",
+    "LUX": "🇱🇺",
     "AFG": "🇦🇫",
     "ROC": "🇹🇼",
     "AGO": "🇦🇴",
