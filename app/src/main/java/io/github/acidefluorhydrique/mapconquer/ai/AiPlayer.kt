@@ -285,15 +285,17 @@ class AiPlayer(private val session: Session, private val nationId: Int) {
 
         val goal = chooseGoal(unit)
         if (goal >= 0) {
-            // 遠渡重洋搭船去：旁邊有船就上，附近有船就走過去等，都沒有才自己下水。
-            val ferry = if (wantsFerry(unit, goal)) nearestFerry(unit) else null
-            if (ferry != null) {
-                if (Orders.canLoad(session, unit, ferry)) {
-                    Orders.load(session, unit, ferry)
-                    return
+            if (wantsFerry(unit, goal)) {
+                // 遠渡重洋只能搭船：旁邊有船就上，附近有船就走過去等。都沒有的話往海邊走、
+                // 留在岸上等船來接（空船會來找等船的人，船不夠時會先造船）。
+                // 絕不自己下水 —— 浮渡沒有補給，漂三十幾格到對岸之前早就餓死了。
+                val ferry = nearestFerry(unit)
+                if (ferry != null) {
+                    if (!Orders.canLoad(session, unit, ferry)) moveTowards(unit, ferry.tile, stayAshore = true)
+                    if (Orders.canLoad(session, unit, ferry)) Orders.load(session, unit, ferry)
+                } else {
+                    moveTowards(unit, goal, stayAshore = true)
                 }
-                moveTowards(unit, ferry.tile, stayAshore = true)
-                if (Orders.canLoad(session, unit, ferry)) Orders.load(session, unit, ferry)
                 return
             }
             moveTowards(unit, goal)
@@ -378,8 +380,10 @@ class AiPlayer(private val session: Session, private val nationId: Int) {
             if (!hostile) continue
             if (owner < 0 && !province.hasCity) continue
 
+            // 距離只扣分，不設上限。原本超過 28 格的目標一律不看，於是紐約的美軍（離最近的
+            // 敵城 34 格）與澳洲的部隊（31 格）整局找不到目標，站在原地 —— 既不出發，
+            // 也不會去要船，因為渡海與搭船的判斷都排在「選好目標」之後。
             val distance = session.map.distance(unit.tile, province.capitalTile)
-            if (distance > MAX_GOAL_DISTANCE) continue
             var score = province.cityTier * 30f + 20f - distance * 2.5f
             // 中立省份是白送的，優先吃。
             if (owner < 0) score += 25f
@@ -633,8 +637,6 @@ class AiPlayer(private val session: Session, private val nationId: Int) {
 
         /** 預期戰果至少要值任務價錢的這個比例才飛。 */
         const val MIN_SORTIE_VALUE_RATIO = 0.75f
-        const val MAX_GOAL_DISTANCE = 28
-
         /** 固守性格的國家一回合最多造幾支兵。 */
         const val TURTLE_BUILDS_PER_TURN = 2
 
@@ -645,7 +647,7 @@ class AiPlayer(private val session: Session, private val nationId: Int) {
         const val FERRY_CALL_RANGE = 10
 
         /** AI 最多養幾艘運輸艦。 */
-        const val MAX_TRANSPORTS = 3
+        const val MAX_TRANSPORTS = 4
 
         /** 隔海目標的扣分：大約等於十格的距離，本地的目標優先。 */
         const val OVERSEAS_GOAL_PENALTY = 25f

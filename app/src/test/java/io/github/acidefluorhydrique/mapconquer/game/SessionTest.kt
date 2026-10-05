@@ -1370,6 +1370,71 @@ class SessionTest {
     }
 
     @Test
+    fun `with no ship in reach the ai waits ashore, builds one, and then crosses`() {
+        // 城在海邊（造得出船），步兵在內陸一格。一開始沒有任何船。
+        val text = """
+            format 1
+            id shores2
+            cols 14
+            rows 3
+
+            [terrain]
+            ..~~~~~~~~~~..
+            ..~~~~~~~~~~..
+            ..~~~~~~~~~~..
+
+            [provinces]
+            2:0 10:-1 2:1
+            2:0 10:-1 2:1
+            2:0 10:-1 2:1
+
+            [meta]
+            0|prov_a|3|1,1
+            1|prov_b|3|13,1
+        """.trimIndent()
+        val map = MapLoader.parse(text.reader().buffered(), "shores2")
+        val s = Session(
+            map, scenario(listOf(ScenarioUnit("AAA", 0, 1, "INFANTRY", 1, ""))),
+            Difficulty.OFFICER, "BBB", 7L
+        )
+        val attacker = s.nationByCode("AAA")!!.id
+        val infantry = s.units.first { it.kind == UnitKind.INFANTRY }
+        val landmass = io.github.acidefluorhydrique.mapconquer.ai.AiPlayer.landmassesOf(map)
+        val farShore = landmass[map.index(13, 1)]
+
+        fun playRound() {
+            repeat(s.nations.size) {
+                if (s.activeNationId == attacker) {
+                    val ai = io.github.acidefluorhydrique.mapconquer.ai.AiPlayer(s, attacker)
+                    var steps = 0
+                    while (ai.step() && steps < 2000) steps++
+                }
+                s.advanceToNextNation()
+            }
+        }
+
+        var rounds = 0
+        var floated = false
+        while (infantry.isAlive && rounds < 10 &&
+            (infantry.isLoaded || landmass[infantry.tile] != farShore)
+        ) {
+            playRound()
+            rounds++
+            if (!infantry.isLoaded && map.isWater(infantry.tile)) floated = true
+            if (rounds == 1) {
+                assertTrue(
+                    "沒有船就先造船",
+                    s.unitsOf(attacker).any { it.kind == UnitKind.TRANSPORT_SHIP }
+                )
+            }
+        }
+        assertFalse("十格寬的海不該自己浮渡", floated)
+        assertTrue(infantry.isAlive)
+        assertEquals("搭船到了對岸", farShore, landmass[infantry.tile])
+        assertEquals("一路都有補給", ArmyUnit.MAX_SUPPLY, infantry.supply)
+    }
+
+    @Test
     fun `marines can fight the turn they land`() {
         val s = session(
             listOf(
