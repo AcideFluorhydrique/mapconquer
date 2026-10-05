@@ -10,6 +10,7 @@
 所有玩家看到的都是同一張地圖，存檔也就永遠對得起來。
 """
 
+import heapq
 import math
 import os
 import sys
@@ -303,6 +304,106 @@ def build_theatre(theatre):
     built = BuiltMap(theatre["id"], grid, terrain, is_land, provinces)
     built.province_of = assign_provinces(grid, is_land, seeds)
     return built
+
+
+# 輪車與履帶進不去的地形，以及開路時把它換成什麼：山口是丘陵，林道是森林，
+# 堤道是平原，冰原上的路是凍原。對應遊戲端 Terrain 的 vehiclePassable。
+PASS_THROUGH = {"^": "h", "j": "f", "s": ".", "*": "t"}
+
+
+def carve_passes(built):
+    """
+    保證同一塊陸地上的每一座城，輪車都走得到；走不到就開一條路。
+
+    山脈是照經緯度畫的線，在一格好幾百公里的地圖上，任何一條山脈都會變成兩三格厚、
+    沒有缺口的牆。洛磯山把太平洋岸關在外面，阿帕拉契山把東岸關在外面，草原上的戰車
+    哪一邊的港口都到不了，港口造出來的戰車也出不來 —— 而 AI 只會朝目標直線前進，
+    於是整排部隊停在山腳下。
+
+    做法：把陸地分成輪車走得通的區塊。同一塊陸地上，城市最多的那個區塊當作本體，
+    其餘有城市的區塊各自沿著「要改的格子最少」的路線接上去，路上的山改成丘陵
+    （其餘見 [PASS_THROUGH]）。沒有城市的區塊不管 —— 山裡的死谷就讓它是死谷。
+
+    回傳改了幾格。結果只跟地圖本身有關，重跑會得到一樣的山口。
+    """
+    grid = built.grid
+    count = grid.cols * grid.rows
+    terrain = built.terrain
+    cities = {tile: pid for pid, (_key, _tier, _nation, tile) in enumerate(built.provinces)}
+
+    def neighbours(i):
+        return [grid.index(c, r) for c, r in grid.neighbours(i % grid.cols, i // grid.cols)]
+
+    def open_to_vehicles(i):
+        return built.is_land[i] and (i in cities or terrain[i] not in PASS_THROUGH)
+
+    def flood(start, allowed, label, into):
+        stack = [start]
+        into[start] = label
+        while stack:
+            tile = stack.pop()
+            for j in neighbours(tile):
+                if j not in into and allowed(j):
+                    into[j] = label
+                    stack.append(j)
+
+    landmass = {}
+    for i in range(count):
+        if built.is_land[i] and i not in landmass:
+            flood(i, lambda j: built.is_land[j], i, landmass)
+
+    carved = 0
+    for land in sorted(set(landmass.values())):
+        towns = sorted((pid, tile) for tile, pid in cities.items() if landmass[tile] == land)
+        if len(towns) < 2:
+            continue
+        region = {}
+        for _pid, tile in towns:
+            if tile not in region:
+                flood(tile, lambda j: open_to_vehicles(j), tile, region)
+        sizes = {}
+        for _pid, tile in towns:
+            sizes[region[tile]] = sizes.get(region[tile], 0) + 1
+        # 本體：城市最多的區塊；一樣多就取省份編號最小的那座城所在的。
+        main = max(sizes, key=lambda label: (sizes[label], -cities[label]))
+        connected = {tile for tile, label in region.items() if label == main}
+
+        for _pid, town in towns:
+            if town in connected:
+                continue
+            # 0-1 最短路：走得通的格子不花錢，要改的格子花一格。
+            cost = {town: 0}
+            came = {}
+            queue = [(0, town)]
+            reached = None
+            while queue:
+                spent, tile = heapq.heappop(queue)
+                if spent > cost.get(tile, 1 << 30):
+                    continue
+                if tile in connected:
+                    reached = tile
+                    break
+                for j in neighbours(tile):
+                    if not built.is_land[j]:
+                        continue
+                    step = spent + (0 if open_to_vehicles(j) else 1)
+                    if step < cost.get(j, 1 << 30):
+                        cost[j] = step
+                        came[j] = tile
+                        heapq.heappush(queue, (step, j))
+            if reached is None:
+                continue
+            tile = reached
+            while tile != town:
+                if not open_to_vehicles(tile):
+                    terrain[tile] = PASS_THROUGH[terrain[tile]]
+                    carved += 1
+                tile = came[tile]
+            # 這座城所在的區塊（加上剛開的路）現在跟本體相通了。
+            joined = {}
+            flood(town, lambda j: open_to_vehicles(j), main, joined)
+            connected.update(joined)
+    return carved
 
 
 def write_map(built):
@@ -924,6 +1025,7 @@ def main():
     for definition in MAP_DEFS:
         built = build_map(**definition)
         built_maps[built.id] = built
+        passes = carve_passes(built)
         path = write_map(built)
         land = sum(1 for t in built.terrain if t not in "~-")
         print("map %-13s %3dx%-3d  provinces %3d  land %4d  -> %s"
@@ -931,12 +1033,15 @@ def main():
                  len(built.provinces), land, os.path.relpath(path, ROOT)))
         if built.rescued:
             print("    海岸線內縮，靠城市錨點補救 %d 座城" % built.rescued)
+        if passes:
+            print("    替輪車開路，改了 %d 格" % passes)
         for key, reason in built.dropped:
             print("    - %s 放不下：%s" % (key, reason))
 
     for theatre in theatres.THEATRES:
         built = build_theatre(theatre)
         built_maps[built.id] = built
+        passes = carve_passes(built)
         path = write_map(built)
         land = sum(1 for t in built.terrain if t not in "~-")
         print("map %-13s %3dx%-3d  provinces %3d  land %4d  -> %s"

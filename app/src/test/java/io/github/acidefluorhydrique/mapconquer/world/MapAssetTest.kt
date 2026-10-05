@@ -112,6 +112,55 @@ class MapAssetTest {
         }
     }
 
+    /**
+     * 同一塊陸地上的城市，輪車彼此都走得到。
+     *
+     * 山脈在大格子的地圖上會變成沒有缺口的牆：洛磯山曾經把整個太平洋岸關在外面，
+     * 草原上的戰車到不了任何一座西岸的港口。產生器現在會替輪車開山口
+     * （tools/genworld.py 的 carve_passes），這裡把它釘住。
+     */
+    @Test
+    fun `vehicles can drive between any two cities on the same landmass`() {
+        for (id in TestAssets.mapIds()) {
+            val map = TestAssets.cachedMap(id)
+            val buf = IntArray(6)
+            fun flood(start: Int, into: IntArray, label: Int, open: (Int) -> Boolean) {
+                val stack = ArrayList<Int>()
+                into[start] = label
+                stack.add(start)
+                while (stack.isNotEmpty()) {
+                    val tile = stack.removeAt(stack.size - 1)
+                    val n = map.neighbours(tile, buf)
+                    for (i in 0 until n) {
+                        val other = buf[i]
+                        if (into[other] < 0 && open(other)) {
+                            into[other] = label
+                            stack.add(other)
+                        }
+                    }
+                }
+            }
+            val land = IntArray(map.tileCount) { -1 }
+            val road = IntArray(map.tileCount) { -1 }
+            for (tile in 0 until map.tileCount) {
+                if (map.isLand(tile) && land[tile] < 0) flood(tile, land, tile) { map.isLand(it) }
+            }
+            val drivable = { tile: Int -> map.isLand(tile) && map.terrainAt(tile).vehiclePassable }
+            val cities = map.provinces.filter { it.hasCity }
+            for (city in cities) {
+                if (road[city.capitalTile] < 0) flood(city.capitalTile, road, city.capitalTile, drivable)
+            }
+            val hub = HashMap<Int, Province>()
+            for (city in cities) {
+                val first = hub.getOrPut(land[city.capitalTile]) { city }
+                assertEquals(
+                    "$id: 輪車從 ${first.nameKey} 開不到 ${city.nameKey}",
+                    road[first.capitalTile], road[city.capitalTile]
+                )
+            }
+        }
+    }
+
     @Test
     fun `every land tile belongs to a province and every water tile does not`() {
         for (id in TestAssets.mapIds()) {

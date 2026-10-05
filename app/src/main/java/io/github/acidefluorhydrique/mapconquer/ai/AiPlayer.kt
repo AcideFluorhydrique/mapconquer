@@ -44,6 +44,8 @@ class AiPlayer(private val session: Session, private val nationId: Int) {
     private val targets = ArrayList<Int>(32)
     private val path = ArrayList<Int>(32)
     private val airTargets = ArrayList<Int>(64)
+    private val route = ArrayList<Int>(64)
+    private val coastBuf = IntArray(6)
     private var sortiesFlown = 0
     private var builtThisTurn = 0
 
@@ -482,8 +484,57 @@ class AiPlayer(private val session: Session, private val nationId: Int) {
                 bestTile = tile
             }
         }
-        if (bestTile < 0 || bestScore <= 0f) return
+        if (bestTile < 0 || bestScore <= 0f) {
+            // 直線走不動了。陸軍改用尋路繞過去 —— 山脈、湖泊、海灣都會讓「往目標靠近一格」
+            // 無路可走，而真正的路要先往旁邊繞。已經站在海邊等船的部隊不必再找。
+            val ashore = unit.kind.domain == Domain.LAND && !map.isWater(unit.tile)
+            val waitingAtShore = stayAshore && map.isCoastal(unit.tile, coastBuf)
+            if (ashore && !waitingAtShore) followRoute(unit, goal, toCoast = crossing)
+            return
+        }
         Orders.move(session, unit, bestTile, path)
+    }
+
+    /**
+     * 沿著真正算出來的路線走一回合能走的那一段。
+     *
+     * 目標走得到就走向目標。走不到（隔著海，或 [toCoast] 表示這一趟要搭船）就改去
+     * 「自己走得到的海岸裡，離目標最近的那一格」—— 船要到那裡才接得到人。原本等船的
+     * 部隊只會朝對岸的方向直線前進，戰車因此在山腳下排成一排：它面前那片海岸，
+     * 輪車根本下不去。
+     *
+     * 整張地圖的尋路不便宜，所以只在直線走不動時才用。
+     */
+    private fun followRoute(unit: ArmyUnit, goal: Int, toCoast: Boolean) {
+        val map = session.map
+        val finder = session.pathfinder
+        finder.explore(unit.tile, Int.MAX_VALUE / 4, UnitMoveRules(session, unit, ignoreEnemies = true))
+
+        var target = if (!toCoast && finder.isReachable(goal)) goal else -1
+        if (target < 0) {
+            var bestDistance = Int.MAX_VALUE
+            for (tile in 0 until map.tileCount) {
+                if (!map.isLand(tile) || !finder.isReachable(tile)) continue
+                if (!map.isCoastal(tile, coastBuf)) continue
+                // 不佔港口本身：城市格要留給生產。
+                if (session.cityProvinceAt(tile) >= 0) continue
+                val d = map.distance(tile, goal)
+                if (d < bestDistance) {
+                    bestDistance = d
+                    target = tile
+                }
+            }
+        }
+        if (target < 0 || target == unit.tile) return
+        finder.buildPath(target, route)
+
+        // 路線上這一回合走得到、而且停得下來的最遠一格。
+        Orders.computeReachable(session, unit, reachable)
+        var step = -1
+        for (tile in route) {
+            if (tile != unit.tile && reachable.contains(tile) && !isAlliedCity(tile)) step = tile
+        }
+        if (step >= 0) Orders.move(session, unit, step, path)
     }
 
     // ------------------------------------------------------------------
