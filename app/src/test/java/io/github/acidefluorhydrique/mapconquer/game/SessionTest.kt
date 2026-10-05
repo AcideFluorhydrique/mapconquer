@@ -346,6 +346,32 @@ class SessionTest {
     }
 
     @Test
+    fun `an ally may pass through your city but not stop in it`() {
+        val s = session(
+            listOf(ScenarioUnit("AAA", 5, 1, "INFANTRY", 1, "")),
+            relations = listOf(Triple("AAA", "BBB", Relation.ALLIED))
+        )
+        s.nations[0].funds = 1_000
+        val guest = s.units.first()
+        val alliedCity = s.map.provinces[1].capitalTile
+        val reachable = ArrayList<Int>()
+        Orders.computeReachable(s, guest, reachable)
+        assertFalse("盟友的城不能停", reachable.contains(alliedCity))
+        assertTrue("但可以穿過去到另一邊", reachable.contains(s.map.index(7, 1)))
+        assertEquals("硬要走也走不進去", guest.tile, Orders.move(s, guest, alliedCity, ArrayList()))
+        assertFalse("也不能空降進盟友的城", AirOps.canFly(s, 0, AirMission.AIRDROP, alliedCity))
+
+        // 所以盟友那座城永遠有位置生產。
+        assertEquals(Orders.BuildBlocker.NONE, Orders.buildBlocker(s, 1, 1, UnitKind.INFANTRY))
+        // 自己的城當然可以停。
+        Orders.computeReachable(s, guest, reachable)
+        val own = session(listOf(ScenarioUnit("AAA", 2, 1, "INFANTRY", 1, "")))
+        val home = own.units.first()
+        Orders.computeReachable(own, home, reachable)
+        assertTrue(reachable.contains(own.map.provinces[0].capitalTile))
+    }
+
+    @Test
     fun `the ai's landmass table tells continents from islands`() {
         val map = testMap()
         val ids = io.github.acidefluorhydrique.mapconquer.ai.AiPlayer.landmassesOf(map)

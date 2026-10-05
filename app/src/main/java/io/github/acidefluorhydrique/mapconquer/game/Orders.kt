@@ -164,7 +164,9 @@ object Orders {
         val pid = session.cityProvinceAt(tile)
         if (pid < 0) return true
         val owner = session.provinceOwner[pid]
-        if (owner >= 0 && session.diplomacy.isAllied(owner, unit.nationId)) return true
+        if (owner == unit.nationId) return true
+        // 盟友的城可以路過，不能停。陸軍是直接生在城市格上的，守軍也站在那一格修城防：
+        // 讓盟軍停進去，那座城就造不了兵、主人自己的守軍也進不來。
         if (owner >= 0 && !session.isHostile(owner, unit.nationId)) return false
         if (session.isCityShutTo(tile, unit.nationId)) return false
         return unit.kind.canCapture && unit.kind.domain == Domain.LAND

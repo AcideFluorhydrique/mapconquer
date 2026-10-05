@@ -239,8 +239,9 @@ object AirOps {
         if (session.isCityShutTo(tile, nationId)) return false
         // 跟走路進城同一條規則：自己與盟友的城、交戰國的城、無主的城可以；
         // 沒在打仗的第三國不行。
+        // 盟友的城不行 —— 佔住它的城市格，它就造不了兵（見 Orders.mayStandIn）。
         val owner = session.provinceOwner[pid]
-        return owner < 0 || session.diplomacy.isAllied(owner, nationId) || session.isHostile(owner, nationId)
+        return owner < 0 || owner == nationId || session.isHostile(owner, nationId)
     }
 
     private fun isValidTarget(session: Session, nationId: Int, mission: AirMission, tile: Int): Boolean =
