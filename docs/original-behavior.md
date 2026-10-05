@@ -223,7 +223,7 @@ enemies(P) = 與玩家 P 分屬敵對陣營的國家 ∪ 目前與 P 交戰中�
 | AI 不會這樣做 | 觀察 | ✅ |
 
 本專案**不照做**。盟友的城平常只能路過、不能停（部隊是造在城市格上的，停進去那座城就
-造不了兵）。城防歸零的盟友城市，能佔領的陸軍可以走進去「代守」：城不易主，敵人進不來，
+造不了兵）。城防歸零的盟友城市，能佔領的陸軍可以走進去、或是空降進去「代守」：城不易主，敵人進不來，
 代守的部隊替它修城防，代守期間城主不能在那裡造兵。AI 不代守。
 
 理由：原版那條規則同時滿足兩種動機 —— 搶在敵人前面保住一座注定要丟的城，以及搶隊友
@@ -232,7 +232,8 @@ enemies(P) = 與玩家 P 分屬敵對陣營的國家 ∪ 目前與 P 交戰中�
 
 - 實作：`Orders.mayStandIn`、`Orders.isCustodian`、`Session.repairCities`。
 - 測試：`SessionTest` 的 ``an ally may pass through your city but not stop in it``、
-  ``you can hold an ally's broken city for it, and it stays the ally's``。
+  ``you can hold an ally's broken city for it, and it stays the ally's``、
+  ``paratroopers can be dropped into an ally's broken city to hold it``。
 
 ### 本專案的決定
 

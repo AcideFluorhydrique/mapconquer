@@ -416,6 +416,26 @@ class SessionTest {
     }
 
     @Test
+    fun `paratroopers can be dropped into an ally's broken city to hold it`() {
+        val s = session(relations = listOf(Triple("AAA", "BBB", Relation.ALLIED)))
+        s.nations[0].funds = 1_000
+        val city = s.map.provinces[1].capitalTile
+        assertFalse("城防還在的盟友城市落不進去", AirOps.canFly(s, 0, AirMission.AIRDROP, city))
+
+        s.cityHp[1] = 0
+        assertTrue("城防被打光了就可以空降進去代守", AirOps.canFly(s, 0, AirMission.AIRDROP, city))
+        val trooper = AirOps.fly(s, 0, AirMission.AIRDROP, city)!!.dropped!!
+        assertEquals(city, trooper.tile)
+        assertTrue(Orders.isCustodian(s, trooper))
+        assertEquals("空降進去也不會把城拿走", 1, s.provinceOwner[1])
+        assertFalse(s.nations[1].eliminated)
+
+        repeat(s.nations.size) { s.advanceToNextNation() }
+        assertEquals(1, s.provinceOwner[1])
+        assertTrue("傘兵替盟友把城防修回來", s.cityHp[1] > 0)
+    }
+
+    @Test
     fun `the ai's landmass table tells continents from islands`() {
         val map = testMap()
         val ids = io.github.acidefluorhydrique.mapconquer.ai.AiPlayer.landmassesOf(map)

@@ -237,10 +237,15 @@ object AirOps {
         if (pid < 0) return true
         // 還有城防的敵城落不下去，跟走不進去是同一條規則。
         if (session.isCityShutTo(tile, nationId)) return false
-        // 跟走路進城同一條規則：自己與盟友的城、交戰國的城、無主的城可以；
+        // 跟走路進城同一條規則：自己的城、交戰國的城、無主的城可以；
         // 沒在打仗的第三國不行。
-        // 盟友的城不行 —— 佔住它的城市格，它就造不了兵（見 Orders.mayStandIn）。
         val owner = session.provinceOwner[pid]
+        // 盟友的城：平常不行，佔住它的城市格它就造不了兵。城防被打光的例外 —— 那是代守，
+        // 而空降正是代守最常用的方式：盟友被圍、援軍走不到，只能從天上送一支進去
+        // （見 Orders.mayStandIn 與 Orders.isCustodian）。
+        if (owner >= 0 && owner != nationId && session.diplomacy.isAllied(owner, nationId)) {
+            return session.cityHp[pid] <= 0
+        }
         return owner < 0 || owner == nationId || session.isHostile(owner, nationId)
     }
 
