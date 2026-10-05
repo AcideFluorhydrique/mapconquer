@@ -454,6 +454,8 @@ class AiPlayer(private val session: Session, private val nationId: Int) {
             val terrain = map.terrainAt(tile)
             // 要去搭船的部隊留在岸上等，不自己下水。
             if (stayAshore && terrain.isWater) continue
+            // AI 不替盟友代守：那是玩家的判斷，電腦去做只會佔住盟友的城。
+            if (isAlliedCity(tile)) continue
             score += (terrain.armourPenalty + terrain.artilleryPenalty) * 0.25f
             val afloat = unit.kind.domain == Domain.LAND && terrain.isWater
             // 別走出補給範圍。軍艦自帶物資，離港只是慢慢變弱，罰得輕得多。
@@ -556,6 +558,7 @@ class AiPlayer(private val session: Session, private val nationId: Int) {
             for (i in 0 until n) {
                 val tile = shore[i]
                 if (landmassOf(tile) < 0 || landmassOf(tile) != landmassOf(goal)) continue
+                if (isAlliedCity(tile)) continue
                 if (!Orders.canUnload(session, passenger, tile)) continue
                 val d = session.map.distance(tile, goal)
                 if (d < bestDistance) {
@@ -585,6 +588,14 @@ class AiPlayer(private val session: Session, private val nationId: Int) {
         if (waiting == 0 || ships >= MAX_TRANSPORTS) return false
         // 一艘船載三支：等船的人多到現有的船兩趟也載不完，才再造一艘。
         return waiting > ships * UnitKind.TRANSPORT_SHIP.capacity * 2
+    }
+
+    /** 這一格是不是盟友（不是自己）的城市格。 */
+    private fun isAlliedCity(tile: Int): Boolean {
+        val pid = session.cityProvinceAt(tile)
+        if (pid < 0) return false
+        val owner = session.provinceOwner[pid]
+        return owner >= 0 && owner != nationId && session.diplomacy.isAllied(owner, nationId)
     }
 
     /** 陸軍要到 [goal] 是不是得渡海：它已經在海上，或目標在另一塊陸地上。 */

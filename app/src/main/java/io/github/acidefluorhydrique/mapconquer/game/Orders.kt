@@ -165,11 +165,31 @@ object Orders {
         if (pid < 0) return true
         val owner = session.provinceOwner[pid]
         if (owner == unit.nationId) return true
-        // 盟友的城可以路過，不能停。陸軍是直接生在城市格上的，守軍也站在那一格修城防：
+        // 盟友的城可以路過，平常不能停。陸軍是直接生在城市格上的，守軍也站在那一格修城防：
         // 讓盟軍停進去，那座城就造不了兵、主人自己的守軍也進不來。
+        // 例外是「代守」：城防已經被打光的盟友城市，能佔領的陸軍可以站進去替它擋著。
+        // 城不易主（見 [isCustodian]）。
+        if (owner >= 0 && session.diplomacy.isAllied(owner, unit.nationId)) {
+            return session.cityHp[pid] <= 0 && unit.kind.canCapture && unit.kind.domain == Domain.LAND
+        }
         if (owner >= 0 && !session.isHostile(owner, unit.nationId)) return false
         if (session.isCityShutTo(tile, unit.nationId)) return false
         return unit.kind.canCapture && unit.kind.domain == Domain.LAND
+    }
+
+    /**
+     * 這支部隊是不是正在替盟友代守一座城：站在盟友的城市格上，而那座城不是它自己的。
+     *
+     * 代守是本專案的規則。參考遊戲裡走進盟友的空城會直接把它拿走，連盟友最後一座城
+     * 也拿得走、盟友因此滅亡；這裡保留「搶在敵人前面保住那座城」這個用途，
+     * 拿掉「搶隊友的城」這個漏洞。代守期間城主不能在那裡造兵，城防由代守的部隊修。
+     */
+    fun isCustodian(session: Session, unit: ArmyUnit): Boolean {
+        if (unit.isLoaded || unit.kind.domain != Domain.LAND) return false
+        val pid = session.cityProvinceAt(unit.tile)
+        if (pid < 0) return false
+        val owner = session.provinceOwner[pid]
+        return owner >= 0 && owner != unit.nationId && session.diplomacy.isAllied(owner, unit.nationId)
     }
 
     /**

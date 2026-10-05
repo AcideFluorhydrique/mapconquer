@@ -314,6 +314,11 @@ class HudRenderer(private val session: Session) {
                 canvas, Strings.format(R.string.hud_morale, moraleLabel(morale)),
                 barX, top + Ui.dp(44f), Ui.dp(10f), moraleColour(morale)
             )
+        } else if (Orders.isCustodian(session, unit)) {
+            Widgets.left(
+                canvas, Strings.get(R.string.hud_custodian),
+                barX, top + Ui.dp(44f), Ui.dp(10f), Colors.of("#7FE0A0")
+            )
         } else if (unit.entrenchment > 0) {
             Widgets.left(
                 canvas, Strings.format(R.string.hud_entrenched, unit.entrenchment),

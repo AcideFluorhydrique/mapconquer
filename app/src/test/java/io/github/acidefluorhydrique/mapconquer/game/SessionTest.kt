@@ -372,6 +372,50 @@ class SessionTest {
     }
 
     @Test
+    fun `you can hold an ally's broken city for it, and it stays the ally's`() {
+        val s = session(
+            listOf(
+                ScenarioUnit("AAA", 5, 1, "INFANTRY", 1, ""),
+                ScenarioUnit("AAA", 5, 2, "ARTILLERY", 1, "")
+            ),
+            relations = listOf(Triple("AAA", "BBB", Relation.ALLIED))
+        )
+        val infantry = s.units.first { it.kind == UnitKind.INFANTRY }
+        val gun = s.units.first { it.kind == UnitKind.ARTILLERY }
+        val city = s.map.provinces[1].capitalTile
+        val reachable = ArrayList<Int>()
+
+        // 城防被打光了：能佔領的陸軍可以進去代守，火炮不行。
+        s.cityHp[1] = 0
+        Orders.computeReachable(s, gun, reachable)
+        assertFalse("火炮不能代守", reachable.contains(city))
+        Orders.computeReachable(s, infantry, reachable)
+        assertTrue("步兵可以走進城防歸零的盟友城市", reachable.contains(city))
+        assertFalse(Orders.isCustodian(s, infantry))
+        assertEquals(city, Orders.move(s, infantry, city, ArrayList()))
+
+        assertTrue(Orders.isCustodian(s, infantry))
+        assertEquals("城不易主", 1, s.provinceOwner[1])
+        assertFalse("盟友沒有因此滅亡", s.nations[1].eliminated)
+        assertEquals("代守期間城主不能在那裡造兵", Orders.BuildBlocker.NO_ROOM, Orders.buildBlocker(s, 1, 1, UnitKind.INFANTRY))
+
+        // 過一輪：城還是盟友的，代守的部隊替它把城防修回來一些。
+        repeat(s.nations.size) { s.advanceToNextNation() }
+        assertEquals("過了一輪城仍然是盟友的", 1, s.provinceOwner[1])
+        assertTrue("代守的部隊替它修城防", s.cityHp[1] > 0)
+
+        // 走出來之後城防已經不是零，就回不去了；城主又可以造兵。
+        Orders.computeReachable(s, infantry, reachable)
+        val outside = s.map.index(5, 1)
+        assertEquals(outside, Orders.move(s, infantry, outside, ArrayList()))
+        assertFalse(Orders.isCustodian(s, infantry))
+        assertEquals(Orders.BuildBlocker.NONE, Orders.buildBlocker(s, 1, 1, UnitKind.INFANTRY))
+        repeat(s.nations.size) { s.advanceToNextNation() }
+        Orders.computeReachable(s, infantry, reachable)
+        assertFalse("城防修回來之後不能再進去", reachable.contains(city))
+    }
+
+    @Test
     fun `the ai's landmass table tells continents from islands`() {
         val map = testMap()
         val ids = io.github.acidefluorhydrique.mapconquer.ai.AiPlayer.landmassesOf(map)

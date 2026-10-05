@@ -882,8 +882,9 @@ class Session(
             if (provinceOwner[province.id] != nationId) continue
             val max = province.maxCityHp
             if (cityHp[province.id] >= max) continue
+            // 守軍可以是城主自己的，也可以是替它代守的盟軍（見 Orders.isCustodian）。
             val garrison = unitAt(province.capitalTile, Domain.LAND)
-            if (garrison == null || garrison.nationId != nationId) continue
+            if (garrison == null || !diplomacy.isAllied(garrison.nationId, nationId)) continue
             // 城裡站著敵人也算被威脅 —— 不然圍攻期間城防還會一邊自修，
             // 攻城就變成「傷害要跑得比修復快」的數值檢定。
             var threatened = hasHostileAt(province.capitalTile, nationId)

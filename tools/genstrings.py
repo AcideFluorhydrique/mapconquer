@@ -111,6 +111,7 @@ UI = {
                          "%1$s · 裝甲 −%2$d%% · 火炮 −%3$d%%",
                          "%1$s · 装甲 −%2$d%% · 火炮 −%3$d%%"),
     "hud_unit_level": ("Level %1$d · moves %2$d/%3$d", "等級 %1$d · 移動 %2$d/%3$d", "等级 %1$d · 移动 %2$d/%3$d"),
+    "hud_custodian": ("Holding an ally's city", "替盟友代守", "替盟友代守"),
     "hud_entrenched": ("Entrenched %1$d", "築壕 %1$d 級", "筑壕 %1$d 级"),
     "hud_ai_turn": ("%1$s is moving…", "%1$s 行動中…", "%1$s 行动中…"),
 
@@ -374,8 +375,11 @@ UI = {
         "and neither recovers while an enemy is adjacent. A captured city keeps only a third of its defence, so "
         "whether you leave someone behind to restore it is the difference between holding a place and passing "
         "through it. Only land units that can capture may stop in an enemy city; guns, trucks and ships "
-        "cannot park there. An ally's city you may march through but not stop in: a city builds its "
-        "units on its own hex, so a guest standing there would shut its factories.",
+        "cannot park there. An ally's city you may march through but not normally stop in: a city builds "
+        "its units on its own hex, so a guest standing there would shut its factories. The exception is "
+        "an ally's city whose defence has been knocked to zero. A land unit that can capture may step in "
+        "and hold it: the city stays your ally's, the enemy cannot walk in while you stand there, and your "
+        "unit rebuilds its defence — but your ally cannot build there until you leave.",
         "城市除了收入之外還有城防。城防還在的時候，城裡的部隊只吃一半傷害，城市再替它多擋一層，"
         "所以攻下一座有守軍的首都，代價是野戰的好幾倍。城防還在的城市跟一支敵軍一樣擋路："
         "走不進去、也穿不過去。從旁邊或遠處把城防打光，城裡沒有守軍時，第一支走進去的陸軍就拿下整省。\\n\\n"
@@ -383,7 +387,9 @@ UI = {
         "空城永遠不會自己長回來，而且只要旁邊有敵人，兩邊都停。打下來的城市只剩三分之一的城防，"
         "所以要不要留一支部隊把它補起來，就是「佔領」與「路過」的差別。"
         "只有能佔領的陸軍可以停進敵方城市；火砲、補給車與軍艦都不行。"
-        "盟友的城可以路過，但不能停在裡面：部隊是直接造在城市格上的，客人站在那裡，那座城就造不了兵。",
+        "盟友的城可以路過，平常不能停在裡面：部隊是直接造在城市格上的，客人站在那裡，那座城就造不了兵。"
+        "例外是城防已經被打到零的盟友城市：能佔領的陸軍可以走進去代守。城仍然是盟友的，"
+        "你站在裡面敵人就進不來，你的部隊還會替它修城防 —— 只是你離開之前，盟友不能在那裡造兵。",
         "城市除了收入之外还有城防。城防还在的时候，城里的部队只吃一半伤害，城市再替它多挡一层，"
         "所以攻下一座有守军的首都，代价是野战的好几倍。城防还在的城市跟一支敌军一样挡路："
         "走不进去、也穿不过去。从旁边或远处把城防打光，城里没有守军时，第一支走进去的陆军就拿下整省。\\n\\n"
@@ -391,7 +397,9 @@ UI = {
         "空城永远不会自己长回来，而且只要旁边有敌人，两边都停。打下来的城市只剩三分之一的城防，"
         "所以要不要留一支部队把它补起来，就是「占领」与「路过」的差别。"
         "只有能占领的陆军可以停进敌方城市；火炮、补给车与军舰都不行。"
-        "盟友的城可以路过，但不能停在里面：部队是直接造在城市格上的，客人站在那里，那座城就造不了兵。"),
+        "盟友的城可以路过，平常不能停在里面：部队是直接造在城市格上的，客人站在那里，那座城就造不了兵。"
+        "例外是城防已经被打到零的盟友城市：能占领的陆军可以走进去代守。城仍然是盟友的，"
+        "你站在里面敌人就进不来，你的部队还会替它修城防 —— 只是你离开之前，盟友不能在那里造兵。"),
     "help_air": ("Air power", "空軍", "空军"),
     "help_air_body": (
         "Aircraft are not units on the map. Tap one of your larger cities, or a carrier, and the Air button appears "
