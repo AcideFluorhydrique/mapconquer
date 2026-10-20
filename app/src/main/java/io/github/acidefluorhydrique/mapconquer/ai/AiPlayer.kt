@@ -174,9 +174,8 @@ class AiPlayer(private val session: Session, private val nationId: Int) {
     /** 一次只造一支，讓 [step] 保持細粒度。回傳 false 代表這回合造完了。 */
     private fun buildOneUnit(): Boolean {
         if (nation.funds < MIN_BUILD_FUNDS) return false
-        // 固守的國家一回合只補幾支兵。這條是為了地盤很大的守方（1980 年的灰燼軍團）：
-        // 沒有上限的話，兩百座城的收入每回合都會整筆變成部隊，開局幾回合就把所有人淹死。
-        if (profile == AiProfile.TURTLE && builtThisTurn >= TURTLE_BUILDS_PER_TURN) return false
+        // 固守的國家一回合只補幾支兵，上限跟著城市數走（見 [turtleBuildCap]）。
+        if (profile == AiProfile.TURTLE && builtThisTurn >= turtleBuildCap(ownedCities())) return false
         val kind = chooseUnitKind() ?: return false
         val size = chooseFormationSize(kind)
 
@@ -185,8 +184,13 @@ class AiPlayer(private val session: Session, private val nationId: Int) {
         for (province in session.map.provinces) {
             if (session.provinceOwner[province.id] != nationId) continue
             if (!Orders.canBuild(session, nationId, province.id, kind, size)) continue
-            // 靠近戰線的城市優先出兵，省下行軍的回合。
-            val score = province.cityTier * 10 - distanceToNearestThreat(province.capitalTile)
+            // 靠近戰線的城市優先出兵，省下行軍的回合。運輸艦例外：在最靠近等船部隊的港口造，
+            // 不然船造在大西洋岸、人等在太平洋岸，光是繞過去就要十幾回合。
+            val score = if (kind.isTransport) {
+                -nearestWaitingDistance(province.capitalTile)
+            } else {
+                province.cityTier * 10 - distanceToNearestThreat(province.capitalTile)
+            }
             if (score > bestScore) {
                 bestScore = score
                 bestProvince = province.id
@@ -444,6 +448,11 @@ class AiPlayer(private val session: Session, private val nationId: Int) {
      */
     private fun moveTowards(unit: ArmyUnit, goal: Int, stayAshore: Boolean = false) {
         if (unit.movesLeft <= 0) return
+        // 軍艦跑遠路一律照航線走：直線前進的船會一頭撞上大陸，從大西洋到太平洋永遠到不了。
+        if (unit.kind.domain == Domain.SEA && session.map.distance(unit.tile, goal) > session.movementFor(unit)) {
+            followSeaRoute(unit, goal)
+            return
+        }
         Orders.computeReachable(session, unit, reachable)
         if (reachable.isEmpty()) return
 
@@ -485,6 +494,10 @@ class AiPlayer(private val session: Session, private val nationId: Int) {
             }
         }
         if (bestTile < 0 || bestScore <= 0f) {
+            if (unit.kind.domain == Domain.SEA) {
+                followSeaRoute(unit, goal)
+                return
+            }
             // 直線走不動了。陸軍改用尋路繞過去 —— 山脈、湖泊、海灣都會讓「往目標靠近一格」
             // 無路可走，而真正的路要先往旁邊繞。已經站在海邊等船的部隊不必再找。
             val ashore = unit.kind.domain == Domain.LAND && !map.isWater(unit.tile)
@@ -493,6 +506,39 @@ class AiPlayer(private val session: Session, private val nationId: Int) {
             return
         }
         Orders.move(session, unit, bestTile, path)
+    }
+
+    /**
+     * 軍艦照航線開往 [goal]。
+     *
+     * 目標通常是一座陸上的城（或一支在岸上等船的部隊），船到不了那一格，所以終點取
+     * 「開得到的水域裡離目標最近的那一格」，再沿著算出來的航線走這一回合走得到的最遠處。
+     */
+    private fun followSeaRoute(ship: ArmyUnit, goal: Int) {
+        val map = session.map
+        val finder = session.pathfinder
+        finder.explore(ship.tile, Int.MAX_VALUE / 4, UnitMoveRules(session, ship, ignoreEnemies = true))
+        var target = -1
+        var bestDistance = Int.MAX_VALUE
+        var bestCost = Int.MAX_VALUE
+        for (tile in 0 until map.tileCount) {
+            if (!map.isWater(tile) || !finder.isReachable(tile)) continue
+            val d = map.distance(tile, goal)
+            val c = finder.costTo(tile)
+            if (d < bestDistance || (d == bestDistance && c < bestCost)) {
+                bestDistance = d
+                bestCost = c
+                target = tile
+            }
+        }
+        if (target < 0 || target == ship.tile) return
+        finder.buildPath(target, route)
+        Orders.computeReachable(session, ship, reachable)
+        var step = -1
+        for (tile in route) {
+            if (tile != ship.tile && reachable.contains(tile)) step = tile
+        }
+        if (step >= 0) Orders.move(session, ship, step, path)
     }
 
     /**
@@ -627,6 +673,24 @@ class AiPlayer(private val session: Session, private val nationId: Int) {
     }
 
     /** 這一國有多少陸軍在等船，以及手上有幾艘運輸艦。決定要不要造船。 */
+    /** 這一國有幾座城。 */
+    private fun ownedCities(): Int =
+        session.map.provinces.count { it.hasCity && session.provinceOwner[it.id] == nationId }
+
+    /** 離 [tile] 最近的一支等船部隊有多遠；沒有人在等就回一個很大的數。 */
+    private fun nearestWaitingDistance(tile: Int): Int {
+        var best = Int.MAX_VALUE / 2
+        for (unit in session.units) {
+            if (unit.nationId != nationId || !unit.isAlive || unit.isLoaded) continue
+            if (unit.kind.domain != Domain.LAND || unit.kind.isSupplier) continue
+            val goal = chooseGoal(unit)
+            if (goal < 0 || !wantsFerry(unit, goal)) continue
+            val d = session.map.distance(tile, unit.tile)
+            if (d < best) best = d
+        }
+        return best
+    }
+
     private fun needsAnotherTransport(): Boolean {
         var waiting = 0
         var ships = 0
@@ -688,8 +752,17 @@ class AiPlayer(private val session: Session, private val nationId: Int) {
 
         /** 預期戰果至少要值任務價錢的這個比例才飛。 */
         const val MIN_SORTIE_VALUE_RATIO = 0.75f
-        /** 固守性格的國家一回合最多造幾支兵。 */
-        const val TURTLE_BUILDS_PER_TURN = 2
+        /**
+         * 固守性格的國家一回合最多造幾支兵：兩支，加上每二十座城一支。
+         *
+         * 上限是為了地盤很大的守方（1980 年的灰燼軍團）：沒有上限，兩百座城的收入每回合
+         * 都會整筆變成部隊。原本一律兩支，結果佔了大半個世界的勢力跟一個小國補得一樣慢；
+         * 現在兩百一十座城一回合十二支，小國仍然是兩三支。
+         */
+        fun turtleBuildCap(cities: Int): Int = TURTLE_BASE_BUILDS + cities.coerceAtLeast(0) / TURTLE_CITIES_PER_BUILD
+
+        const val TURTLE_BASE_BUILDS = 2
+        const val TURTLE_CITIES_PER_BUILD = 20
 
         /** 目標在這個距離以內就自己浮渡過去，不等船。大約是一道海峽的寬度。 */
         const val FLOAT_RANGE = 6

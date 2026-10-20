@@ -95,12 +95,15 @@ class ConquestSmokeTest {
     }
 
     @Test
-    fun `the 1980 world runs, and the legion does not flood the map with new units`() {
+    fun `the 1980 world runs, and the legion reinforces within its cap`() {
         val scenario = TestAssets.scenario("conquest_1980")
         val map = TestAssets.map(scenario.mapId)
         val session = Session(map, scenario, Difficulty.OFFICER, "FRA", 19800101L)
         val legion = session.nationByCode("LGN")!!
         val before = session.unitsOf(legion.id).size
+        val cities = map.provinces.count { it.hasCity && session.provinceOwner[it.id] == legion.id }
+        val cap = AiPlayer.turtleBuildCap(cities)
+        assertTrue("佔了大半個世界的勢力，一回合補得比小國多：$cap", cap >= 10)
         assertInvariants(session, "turn 0")
 
         repeat(3) {
@@ -108,10 +111,10 @@ class ConquestSmokeTest {
             assertInvariants(session, "turn ${session.turn}")
         }
         assertEquals("玩家什麼都沒做，三回合內不該分出勝負", SessionStatus.PLAYING, session.status)
-        // 固守的國家一回合最多造兩支：三回合最多多六支（被打掉的只會讓它更少）。
+        // 有上限：三回合最多多 3 × cap 支（被打掉的只會讓它更少）。
         assertTrue(
             "灰燼軍團三回合從 $before 支變成 ${session.unitsOf(legion.id).size} 支",
-            session.unitsOf(legion.id).size <= before + 3 * AiPlayer.TURTLE_BUILDS_PER_TURN
+            session.unitsOf(legion.id).size <= before + 3 * cap
         )
     }
 

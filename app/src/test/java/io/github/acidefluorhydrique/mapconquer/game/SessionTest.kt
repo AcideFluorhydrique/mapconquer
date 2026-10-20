@@ -1435,6 +1435,54 @@ class SessionTest {
     }
 
     @Test
+    fun `an ai warship sails around a coast instead of running into it`() {
+        // 一道南北向的半島（第 6 欄）從上緣伸到第 3 列，只能從最下面一列繞過去。
+        // 驅逐艦在半島西北，目標在東邊：照直線開會一頭撞上半島，永遠過不去。
+        val text = """
+            format 1
+            id peninsula
+            cols 16
+            rows 5
+
+            [terrain]
+            ..~~~~.~~~~~~...
+            ..~~~~.~~~~~~...
+            ..~~~~.~~~~~~...
+            ..~~~~.~~~~~~...
+            ..~~~~~~~~~~~...
+
+            [provinces]
+            2:0 4:-1 1:0 6:-1 3:1
+            2:0 4:-1 1:0 6:-1 3:1
+            2:0 4:-1 1:0 6:-1 3:1
+            2:0 4:-1 1:0 6:-1 3:1
+            2:0 11:-1 3:1
+
+            [meta]
+            0|prov_a|3|0,2
+            1|prov_b|3|14,2
+        """.trimIndent()
+        val map = MapLoader.parse(text.reader().buffered(), "peninsula")
+        val s = Session(
+            map, scenario(listOf(ScenarioUnit("AAA", 4, 0, "DESTROYER", 1, ""))),
+            Difficulty.OFFICER, "BBB", 3L
+        )
+        val attacker = s.nationByCode("AAA")!!.id
+        val ship = s.units.first { it.kind == UnitKind.DESTROYER }
+        repeat(3) {
+            repeat(s.nations.size) {
+                if (s.activeNationId == attacker) {
+                    val ai = io.github.acidefluorhydrique.mapconquer.ai.AiPlayer(s, attacker)
+                    var steps = 0
+                    while (ai.step() && steps < 2000) steps++
+                }
+                s.advanceToNextNation()
+            }
+        }
+        assertTrue("驅逐艦要繞過半島到東邊（現在在第 ${map.colOf(ship.tile)} 欄）", map.colOf(ship.tile) >= 10)
+    }
+
+    @Test
     fun `marines can fight the turn they land`() {
         val s = session(
             listOf(

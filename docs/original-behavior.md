@@ -402,8 +402,9 @@ enemies(P) = 與玩家 P 分屬敵對陣營的國家 ∪ 目前與 P 交戰中�
   原版裡殘存各國之間是不是同盟未確認，🟡。
 - 各國剩下哪幾座城參考了原版的分佈，但用的是本專案地圖上的城市：
   `places.CONQUEST_1980_REMNANTS`。沒列到的省份全部歸灰燼軍團。
-- 灰燼軍團開局科技 4 級、殘存各國 3 級；它的 AI 性格是固守，一回合最多造兩支兵
-  （`AiPlayer.TURTLE_BUILDS_PER_TURN`）。這是本專案的平衡手段，原版的做法未研究。
+- 灰燼軍團開局科技 4 級、殘存各國 3 級；它的 AI 性格是固守，一回合最多造「兩支，加上
+  每二十座城一支」（`AiPlayer.turtleBuildCap`；開局約十二支）。這是本專案的平衡手段，
+  原版的做法未研究。
 - 測試：`ScenarioAssetTest` 的 ``1980 is the survivors against the legion, and the legion is not playable``。
 
 ---
