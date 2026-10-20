@@ -613,7 +613,7 @@ def placed_units(built, units, taken_lines, owners):
 def write_conquest(built, scenario_id, name_key, desc_key, order, merge,
                    start_year, turtle=None, blocs=None, overrides=None,
                    renames=None, war_turns=None, start_month=None, turn_limit=0,
-                   extra_units=(), tech=None, playable=None):
+                   extra_units=(), tech=None, playable=None, funds_bonus=None):
     """把 places 的國家分佈展開成一份征服劇本。"""
     owners = {}
     for pid, (key, _tier, nation, _tile) in enumerate(built.provinces):
@@ -634,6 +634,7 @@ def write_conquest(built, scenario_id, name_key, desc_key, order, merge,
         if merge:
             # 併成帝國之後，資金按吃下的省份數重算，否則母國會比殖民地還窮。
             base = int(base * (1.0 + 0.05 * len(pids)))
+        base = int(base * (funds_bonus or {}).get(code, 1.0))
         nation_funds[code] = base
 
     lines = []
@@ -1063,7 +1064,8 @@ def main():
                          renames=places.WW2_RENAMES,
                          war_turns=places.WW2_WAR_TURNS, start_month=9,
                          turn_limit=places.CONQUEST_TURN_LIMIT,
-                         extra_units=places.CONQUEST_EXTRA_UNITS.get(1939, ())))
+                         extra_units=places.CONQUEST_EXTRA_UNITS.get(1939, ()),
+                         funds_bonus=places.WW2_1939_FUNDS_BONUS))
     print(write_conquest(world, "conquest_1943", "scn_conquest_1943",
                          "scn_conquest_1943_desc", 20, places.WW2_MERGE, 1943,
                          turtle=places.WW2_NEUTRALS, blocs=places.WW2_1943_BLOCS,

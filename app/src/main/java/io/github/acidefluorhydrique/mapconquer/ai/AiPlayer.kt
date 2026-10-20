@@ -181,6 +181,10 @@ class AiPlayer(private val session: Session, private val nationId: Int) {
             if (builtThisTurn >= buildCap(cities)) return false
             if (unitCount >= armyCap(cities)) return false
         }
+        // 所有 AI 共用的兵力上限，寬到正常打仗碰不到。它防的是打贏之後還一直堆兵：
+        // 全 AI 模擬裡，敵人都投降了，贏的一方仍然每回合造兵，一局下來上千支，
+        // 手機上每一個 AI 回合都會越來越慢。
+        if (unitCount >= generalArmyCap(cities)) return false
         val kind = chooseUnitKind() ?: return false
         val size = chooseFormationSize(kind)
 
@@ -803,6 +807,17 @@ class AiPlayer(private val session: Session, private val nationId: Int) {
 
         /** 最多養多少部隊：城市數的一倍半（至少六支）。灰燼軍團大約三百多支。 */
         fun armyCap(cities: Int): Int = maxOf(CAPPED_MIN_ARMY, cities * 3 / 2)
+
+        /**
+         * 所有 AI 的兵力上限：城市數的四倍，至少六十支（見 [buildOneUnit]）。
+         *
+         * 下限要高：省份少的國家（1939 年的德國只有六個省）正是需要靠兵力撐場面的那一方，
+         * 照城市數算會被這條上限卡死。
+         */
+        fun generalArmyCap(cities: Int): Int = maxOf(GENERAL_MIN_ARMY, cities * GENERAL_UNITS_PER_CITY)
+
+        const val GENERAL_MIN_ARMY = 60
+        const val GENERAL_UNITS_PER_CITY = 4
 
         const val HUGE_NATION_CITIES = 60
         const val CAPPED_BASE_BUILDS = 2

@@ -125,6 +125,25 @@ class ConquestSmokeTest {
         )
     }
 
+    /**
+     * 兵力上限要寬到碰不到任何一個劇本的開局兵力 —— 它只該擋「打贏之後還一直堆兵」。
+     */
+    @Test
+    fun `no nation starts above the general army cap`() {
+        for (id in TestAssets.scenarioIds()) {
+            val scenario = TestAssets.scenario(id)
+            val map = TestAssets.cachedMap(scenario.mapId)
+            for (nation in scenario.nations) {
+                val units = scenario.startingUnits.count { it.nationCode == nation.code }
+                val cities = scenario.ownership[nation.code]?.count { map.provinces[it].hasCity } ?: 0
+                assertTrue(
+                    "$id/${nation.code}: 開局 $units 支，上限 ${AiPlayer.generalArmyCap(cities)}",
+                    units < AiPlayer.generalArmyCap(cities)
+                )
+            }
+        }
+    }
+
     @Test
     fun `the 1939 world runs for several full turns`() {
         val scenario = TestAssets.scenario("conquest_1939")
