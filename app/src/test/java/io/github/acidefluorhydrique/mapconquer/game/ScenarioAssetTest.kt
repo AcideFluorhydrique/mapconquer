@@ -310,6 +310,11 @@ class ScenarioAssetTest {
             val held = scenario.ownership[code]!!.size
             assertTrue("$code 只剩幾座城（$held）", held in 1..5)
             assertTrue("$code 開局要有部隊", scenario.startingUnits.any { it.nationCode == code })
+            assertTrue(
+                "$code 的開局部隊是兩個編制（運輸艦除外）",
+                scenario.startingUnits.filter { it.nationCode == code && it.kindName != "TRANSPORT_SHIP" }
+                    .all { it.size == 2 }
+            )
         }
 
         val s = Session(map, scenario, Difficulty.OFFICER, "FRA", 1L)

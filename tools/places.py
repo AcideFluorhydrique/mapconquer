@@ -680,6 +680,10 @@ for _code, _keys in CONQUEST_1980_REMNANTS.items():
             raise ValueError("1980 征服：地圖上沒有 %s" % _key)
         CONQUEST_1980_PROVINCE_OWNERS[_key] = _code
 
+# 殘存各國的開局部隊一律是兩個編制（產生器的 formation_bonus）。全 AI 模擬裡印度、泰國、
+# 伊拉克這些只剩一兩座城的國家總是在第 13–20 回合就投降；聯合國軍仍然處於絕對劣勢，
+# 但最小的國家至少要撐得過開局。
+
 # 開局科技：灰燼軍團的裝備比誰都好，殘存各國也都是打過仗的軍隊。
 CONQUEST_1980_TECH = {code: [3, 3, 3, 3, 3, 2] for code in CONQUEST_1980_REMNANTS}
 CONQUEST_1980_TECH[LEGION] = [4, 4, 4, 4, 4, 3]

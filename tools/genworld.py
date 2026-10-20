@@ -610,10 +610,24 @@ def placed_units(built, units, taken_lines, owners):
     return out
 
 
+def with_formation(line, bonus):
+    """
+    替一行開局部隊加上編制：[bonus] 是 {國家: 多幾個編制}。
+
+    部隊行是 `國家|欄,列|兵種|等級|指揮官`，編制寫在第六欄。運輸艦不加 —— 編制對它沒有
+    意義，AI 也只造單編制的船。
+    """
+    extra = (bonus or {}).get(line.split("|", 1)[0], 0)
+    if extra <= 0 or "|TRANSPORT_SHIP|" in line:
+        return line
+    return "%s|%d" % (line, 1 + extra)
+
+
 def write_conquest(built, scenario_id, name_key, desc_key, order, merge,
                    start_year, turtle=None, blocs=None, overrides=None,
                    renames=None, war_turns=None, start_month=None, turn_limit=0,
-                   extra_units=(), tech=None, playable=None, funds_bonus=None):
+                   extra_units=(), tech=None, playable=None, funds_bonus=None,
+                   formation_bonus=None):
     """把 places 的國家分佈展開成一份征服劇本。"""
     owners = {}
     for pid, (key, _tier, nation, _tile) in enumerate(built.provinces):
@@ -684,8 +698,9 @@ def write_conquest(built, scenario_id, name_key, desc_key, order, merge,
     lines.append("")
     lines.append("[units]")
     garrison = garrison_lines(built, owners, nation_funds)
-    lines.extend(garrison)
-    lines.extend(placed_units(built, extra_units, garrison, owners))
+    placed = placed_units(built, extra_units, garrison, owners)
+    for line in garrison + placed:
+        lines.append(with_formation(line, formation_bonus))
     lines.append("")
     lines.append("[playable]")
     # 可選國家：有陣營的才能選。中立國不參戰、也沒有敵對陣營可打垮，
@@ -1089,7 +1104,8 @@ def main():
                          turn_limit=places.CONQUEST_TURN_LIMIT,
                          extra_units=places.CONQUEST_EXTRA_UNITS.get(1980, ()),
                          tech=places.CONQUEST_1980_TECH,
-                         playable=set(places.CONQUEST_1980_REMNANTS)))
+                         playable=set(places.CONQUEST_1980_REMNANTS),
+                         formation_bonus={code: 1 for code in places.CONQUEST_1980_REMNANTS}))
 
     for mission in scn.CAMPAIGN:
         built = built_maps[mission["map"]]
