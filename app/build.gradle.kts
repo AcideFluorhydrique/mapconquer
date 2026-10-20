@@ -44,6 +44,19 @@ android {
     }
 }
 
+// 征服的平衡模擬（ConquestSimulation）平常不跑；要跑時用 -Dmapconquer.simulate=true，
+// 這幾個屬性得轉交給執行測試的那個 JVM，不然它看不到。
+tasks.withType<Test>().configureEach {
+    for (key in listOf(
+        "mapconquer.simulate",
+        "mapconquer.simulate.scenarios",
+        "mapconquer.simulate.turns",
+        "mapconquer.simulate.seeds"
+    )) {
+        System.getProperty(key)?.let { systemProperty(key, it) }
+    }
+}
+
 dependencies {
     implementation("androidx.core:core-ktx:1.12.0")
     implementation("androidx.appcompat:appcompat:1.6.1")

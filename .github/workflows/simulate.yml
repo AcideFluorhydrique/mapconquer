@@ -1,0 +1,64 @@
+# SPDX-FileCopyrightText: 2026 AcideFluorhydrique
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+# 征服地圖的平衡模擬：每一個國家都交給 AI 打 N 回合，報告各陣營的消長。
+# 只能手動觸發（Actions → Simulate conquest balance → Run workflow），
+# 不擋任何建置。報告顯示在這次執行的摘要頁面，也存成 artifact。
+# 測試本身見 app/src/test/java/.../game/ConquestSimulation.kt。
+
+name: Simulate conquest balance
+
+on:
+  workflow_dispatch:
+    inputs:
+      turns:
+        description: 'Turns to play'
+        default: '50'
+      seeds:
+        description: 'Games per scenario (different random seeds)'
+        default: '2'
+
+permissions:
+  contents: read
+
+jobs:
+  simulate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    strategy:
+      # 一個劇本一個 job，平行跑；某一個超時或出錯不影響其他的。
+      fail-fast: false
+      matrix:
+        scenario: [ conquest_1939, conquest_1943, conquest_1950, conquest_1980 ]
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v5
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Play ${{ matrix.scenario }} with the AI on every side
+        run: >
+          ./gradlew testDebugUnitTest --tests '*ConquestSimulation*' --stacktrace
+          -Dmapconquer.simulate=true
+          -Dmapconquer.simulate.scenarios=${{ matrix.scenario }}
+          -Dmapconquer.simulate.turns=${{ inputs.turns }}
+          -Dmapconquer.simulate.seeds=${{ inputs.seeds }}
+
+      - name: Show the report
+        if: always()
+        run: cat app/build/reports/simulation/*.md >> "$GITHUB_STEP_SUMMARY" || echo "No report was written." >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the report
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: simulation-${{ matrix.scenario }}
+          path: app/build/reports/simulation/
+          if-no-files-found: ignore
