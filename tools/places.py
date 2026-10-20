@@ -796,9 +796,9 @@ EXTRA_NATIONS = {
     # 東德的國旗由 flag_for 依年份決定。
     "DDR":       ("East Germany", "東德", "东德", "#8C5A5A", "BALANCED", 700),
     # 只出現在戰區地圖上的小國（世界地圖上沒有它們的城市）。
-    # 1980 年征服裡的敵人（見 CONQUEST_1980_REMNANTS 上面的說明）。性格是固守：
-    # 它的城被威脅時才增兵，不然以它的收入，開局幾回合就能把所有人淹死。
-    "LGN":       ("The Ashen Legion", "灰燼軍團", "灰烬军团", "#4A4458", "TURTLE", 3000),
+    # 1980 年征服裡的敵人（見 CONQUEST_1980_REMNANTS 上面的說明）。它要佔領全世界，
+    # 性格是侵略。地盤太大，造兵的速度與兵力總數另有上限（遊戲端 AiPlayer.isCapped）。
+    "LGN":       ("The Ashen Legion", "灰燼軍團", "灰烬军团", "#4A4458", "AGGRESSIVE", 3000),
     "LTU":       ("Lithuania", "立陶宛", "立陶宛", "#8FA85C", "TURTLE", 300),
     "SVK":       ("Slovakia", "斯洛伐克", "斯洛伐克", "#5C6FA8", "TURTLE", 300),
     "LUX":       ("Luxembourg", "盧森堡", "卢森堡", "#5CA8A0", "TURTLE", 250),

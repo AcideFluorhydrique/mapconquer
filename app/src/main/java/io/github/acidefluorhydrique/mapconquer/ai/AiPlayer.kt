@@ -175,12 +175,11 @@ class AiPlayer(private val session: Session, private val nationId: Int) {
     /** 一次只造一支，讓 [step] 保持細粒度。回傳 false 代表這回合造完了。 */
     private fun buildOneUnit(): Boolean {
         if (nation.funds < MIN_BUILD_FUNDS) return false
-        // 固守的國家一回合只補幾支兵，上限跟著城市數走（見 [turtleBuildCap]）。
-        if (profile == AiProfile.TURTLE) {
-            val cities = ownedCities()
-            if (builtThisTurn >= turtleBuildCap(cities)) return false
-            // 兵力也有上限：守得住每一座城就夠了，不必無止境地堆。
-            if (unitCount >= turtleArmyCap(cities)) return false
+        // 固守的國家與地盤超大的勢力，一回合只補幾支兵、兵力也有上限（見 [buildCap]）。
+        val cities = ownedCities()
+        if (isCapped(profile, cities)) {
+            if (builtThisTurn >= buildCap(cities)) return false
+            if (unitCount >= armyCap(cities)) return false
         }
         val kind = chooseUnitKind() ?: return false
         val size = chooseFormationSize(kind)
@@ -789,27 +788,29 @@ class AiPlayer(private val session: Session, private val nationId: Int) {
         /** 預期戰果至少要值任務價錢的這個比例才飛。 */
         const val MIN_SORTIE_VALUE_RATIO = 0.75f
         /**
-         * 固守性格的國家一回合最多造幾支兵：兩支，加上每二十座城一支。
+         * 這個國家受不受造兵上限：固守性格的國家，或地盤超過 [HUGE_NATION_CITIES] 座城的勢力。
          *
-         * 上限是為了地盤很大的守方（1980 年的灰燼軍團）：沒有上限，兩百座城的收入每回合
-         * 都會整筆變成部隊。原本一律兩支，結果佔了大半個世界的勢力跟一個小國補得一樣慢；
-         * 現在兩百一十座城一回合十二支，小國仍然是兩三支。
+         * 上限跟性格是兩回事。1980 年的灰燼軍團要主動攻佔全世界，性格是侵略；但它握有兩百多
+         * 座城，不設限的話，收入每回合都會整筆變成部隊，開局幾回合就把所有人淹死，AI 的
+         * 計算量也會跟著部隊數失控。其他劇本裡最大的國家（1939 年的大英帝國）四十幾個省，
+         * 碰不到這條線。
          */
-        fun turtleBuildCap(cities: Int): Int = TURTLE_BASE_BUILDS + cities.coerceAtLeast(0) / TURTLE_CITIES_PER_BUILD
+        fun isCapped(profile: AiProfile, cities: Int): Boolean =
+            profile == AiProfile.TURTLE || cities >= HUGE_NATION_CITIES
 
-        /**
-         * 固守性格的國家最多養多少部隊：城市數的一倍半（至少六支）。
-         * 灰燼軍團兩百多座城大約三百多支；它開局就有快兩百支，所以前面幾十回合照樣補兵。
-         */
-        fun turtleArmyCap(cities: Int): Int = maxOf(TURTLE_MIN_ARMY, cities * 3 / 2)
+        /** 一回合最多造幾支兵：兩支，加上每二十座城一支（灰燼軍團開局約十二支）。 */
+        fun buildCap(cities: Int): Int = CAPPED_BASE_BUILDS + cities.coerceAtLeast(0) / CAPPED_CITIES_PER_BUILD
 
-        const val TURTLE_MIN_ARMY = 6
+        /** 最多養多少部隊：城市數的一倍半（至少六支）。灰燼軍團大約三百多支。 */
+        fun armyCap(cities: Int): Int = maxOf(CAPPED_MIN_ARMY, cities * 3 / 2)
+
+        const val HUGE_NATION_CITIES = 60
+        const val CAPPED_BASE_BUILDS = 2
+        const val CAPPED_CITIES_PER_BUILD = 20
+        const val CAPPED_MIN_ARMY = 6
 
         /** 見 [spendRoute]。 */
         const val MAX_ROUTES_PER_TURN = 24
-
-        const val TURTLE_BASE_BUILDS = 2
-        const val TURTLE_CITIES_PER_BUILD = 20
 
         /** 目標在這個距離以內就自己浮渡過去，不等船。大約是一道海峽的寬度。 */
         const val FLOAT_RANGE = 6

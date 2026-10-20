@@ -102,9 +102,11 @@ class ConquestSmokeTest {
         val legion = session.nationByCode("LGN")!!
         val before = session.unitsOf(legion.id).size
         val cities = map.provinces.count { it.hasCity && session.provinceOwner[it.id] == legion.id }
-        val cap = AiPlayer.turtleBuildCap(cities)
+        assertEquals("灰燼軍團要主動攻佔全世界，性格是侵略", AiProfile.AGGRESSIVE, legion.aiProfile)
+        assertTrue("地盤超大，所以仍然受造兵上限", AiPlayer.isCapped(legion.aiProfile, cities))
+        val cap = AiPlayer.buildCap(cities)
         assertTrue("佔了大半個世界的勢力，一回合補得比小國多：$cap", cap >= 10)
-        assertTrue("兵力也有上限，而且高於開局兵力", AiPlayer.turtleArmyCap(cities) > before)
+        assertTrue("兵力也有上限，而且高於開局兵力", AiPlayer.armyCap(cities) > before)
         assertInvariants(session, "turn 0")
 
         val began = System.currentTimeMillis()
