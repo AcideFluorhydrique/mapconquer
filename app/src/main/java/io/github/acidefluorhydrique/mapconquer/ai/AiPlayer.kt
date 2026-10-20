@@ -48,6 +48,7 @@ class AiPlayer(private val session: Session, private val nationId: Int) {
     private val coastBuf = IntArray(6)
     private var sortiesFlown = 0
     private var builtThisTurn = 0
+    private var unitCount = session.units.count { it.nationId == nationId && it.isAlive }
 
     private val nation get() = session.nations[nationId]
     private val profile get() = nation.aiProfile
@@ -175,7 +176,12 @@ class AiPlayer(private val session: Session, private val nationId: Int) {
     private fun buildOneUnit(): Boolean {
         if (nation.funds < MIN_BUILD_FUNDS) return false
         // 固守的國家一回合只補幾支兵，上限跟著城市數走（見 [turtleBuildCap]）。
-        if (profile == AiProfile.TURTLE && builtThisTurn >= turtleBuildCap(ownedCities())) return false
+        if (profile == AiProfile.TURTLE) {
+            val cities = ownedCities()
+            if (builtThisTurn >= turtleBuildCap(cities)) return false
+            // 兵力也有上限：守得住每一座城就夠了，不必無止境地堆。
+            if (unitCount >= turtleArmyCap(cities)) return false
+        }
         val kind = chooseUnitKind() ?: return false
         val size = chooseFormationSize(kind)
 
@@ -199,6 +205,7 @@ class AiPlayer(private val session: Session, private val nationId: Int) {
         if (bestProvince < 0) return false
         if (Orders.build(session, nationId, bestProvince, kind, size) == null) return false
         builtThisTurn++
+        unitCount++
         return true
     }
 
@@ -247,15 +254,30 @@ class AiPlayer(private val session: Session, private val nationId: Int) {
         return null
     }
 
-    private fun distanceToNearestThreat(tile: Int): Int {
+    /**
+     * [tile] 離最近的敵軍有多遠。一回合裡同一格只算一次。
+     *
+     * 這裡原本每次都把全地圖的部隊掃一遍，而固守的國家替每一支部隊選目標時，都會對
+     * 自己的每一座城問一次 —— 部隊數 × 城市數 × 部隊數。1980 年的灰燼軍團兩百多座城、
+     * 上千支部隊，一回合要算十億次，一局模擬跑了三個小時還沒結束。
+     * 敵軍在我方的回合裡不會移動，所以一回合內的快取不會過時（被打掉的只會讓它略微高估）。
+     */
+    private fun distanceToNearestThreat(tile: Int): Int = threatCache.getOrPut(tile) {
         var best = Int.MAX_VALUE
-        for (unit in session.units) {
-            if (!unit.isAlive || !session.isHostile(unit.nationId, nationId)) continue
-            val d = session.map.distance(tile, unit.tile)
+        for (other in hostileTiles) {
+            val d = session.map.distance(tile, other)
             if (d < best) best = d
         }
-        return if (best == Int.MAX_VALUE) 40 else best
+        if (best == Int.MAX_VALUE) 40 else best
     }
+
+    /** 這一回合開始時所有敵軍站的格子。 */
+    private val hostileTiles: IntArray by lazy {
+        session.units.filter { it.isAlive && session.isHostile(it.nationId, nationId) }
+            .map { it.tile }.toIntArray()
+    }
+
+    private val threatCache = HashMap<Int, Int>()
 
     // ------------------------------------------------------------------
     // 部隊行動
@@ -290,6 +312,7 @@ class AiPlayer(private val session: Session, private val nationId: Int) {
         if (tryAttackFrom(unit)) return
 
         val goal = chooseGoal(unit)
+        goalCache[unit.id] = goal
         if (goal >= 0) {
             if (wantsFerry(unit, goal)) {
                 // 遠渡重洋只能搭船：旁邊有船就上，附近有船就走過去等。都沒有的話往海邊走、
@@ -372,6 +395,23 @@ class AiPlayer(private val session: Session, private val nationId: Int) {
         if (unit.maxHp <= 0) return 0f
         val share = damage.coerceAtMost(unit.hp).toFloat() / unit.maxHp
         return share * unit.kind.cost * unit.size
+    }
+
+    /**
+     * 這支部隊這一回合的目標，算過就記住。[actOn] 輪到它自己行動時會重算一次；
+     * 其他地方（造船、找等船的人）只是要個大概，用記住的就好。
+     */
+    private fun goalOf(unit: ArmyUnit): Int = goalCache.getOrPut(unit.id) { chooseGoal(unit) }
+
+    private val goalCache = HashMap<Int, Int>()
+
+    /** 這一回合在岸上等船的部隊站的格子（造船時算一次）。 */
+    private val waitingTiles: IntArray by lazy {
+        session.units.filter {
+            it.nationId == nationId && it.isAlive && !it.isLoaded &&
+                it.kind.domain == Domain.LAND && !it.kind.isSupplier &&
+                goalOf(it).let { goal -> goal >= 0 && wantsFerry(it, goal) }
+        }.map { it.tile }.toIntArray()
     }
 
     private fun chooseGoal(unit: ArmyUnit): Int {
@@ -515,6 +555,7 @@ class AiPlayer(private val session: Session, private val nationId: Int) {
      * 「開得到的水域裡離目標最近的那一格」，再沿著算出來的航線走這一回合走得到的最遠處。
      */
     private fun followSeaRoute(ship: ArmyUnit, goal: Int) {
+        if (!spendRoute()) return
         val map = session.map
         val finder = session.pathfinder
         finder.explore(ship.tile, Int.MAX_VALUE / 4, UnitMoveRules(session, ship, ignoreEnemies = true))
@@ -552,6 +593,7 @@ class AiPlayer(private val session: Session, private val nationId: Int) {
      * 整張地圖的尋路不便宜，所以只在直線走不動時才用。
      */
     private fun followRoute(unit: ArmyUnit, goal: Int, toCoast: Boolean) {
+        if (!spendRoute()) return
         val map = session.map
         val finder = session.pathfinder
         finder.explore(unit.tile, Int.MAX_VALUE / 4, UnitMoveRules(session, unit, ignoreEnemies = true))
@@ -622,7 +664,7 @@ class AiPlayer(private val session: Session, private val nationId: Int) {
     private fun actAsTransport(ship: ArmyUnit) {
         val first = ship.cargo.firstNotNullOfOrNull { session.unitById(it) }
         if (first != null) {
-            val goal = chooseGoal(first)
+            val goal = goalOf(first)
             if (goal < 0) return
             if (landCargo(ship, goal)) return
             moveTowards(ship, goal)
@@ -631,15 +673,11 @@ class AiPlayer(private val session: Session, private val nationId: Int) {
         }
         var pickup = -1
         var bestDistance = Int.MAX_VALUE
-        for (unit in session.units) {
-            if (unit.nationId != nationId || !unit.isAlive || unit.isLoaded) continue
-            if (unit.kind.domain != Domain.LAND || unit.kind.isSupplier) continue
-            val goal = chooseGoal(unit)
-            if (goal < 0 || !wantsFerry(unit, goal)) continue
-            val d = session.map.distance(ship.tile, unit.tile)
+        for (tile in waitingTiles) {
+            val d = session.map.distance(ship.tile, tile)
             if (d < bestDistance) {
                 bestDistance = d
-                pickup = unit.tile
+                pickup = tile
             }
         }
         if (pickup >= 0 && bestDistance > 1) moveTowards(ship, pickup)
@@ -673,6 +711,18 @@ class AiPlayer(private val session: Session, private val nationId: Int) {
     }
 
     /** 這一國有多少陸軍在等船，以及手上有幾艘運輸艦。決定要不要造船。 */
+    /**
+     * 全地圖的尋路一回合最多算幾次。每次是整張地圖的最短路，上千支部隊都要算的話，
+     * 一回合要好幾秒；額度用完的部隊這回合先等，下回合再走。
+     */
+    private fun spendRoute(): Boolean {
+        if (routesLeft <= 0) return false
+        routesLeft--
+        return true
+    }
+
+    private var routesLeft = MAX_ROUTES_PER_TURN
+
     /** 這一國有幾座城。 */
     private fun ownedCities(): Int =
         session.map.provinces.count { it.hasCity && session.provinceOwner[it.id] == nationId }
@@ -680,30 +730,16 @@ class AiPlayer(private val session: Session, private val nationId: Int) {
     /** 離 [tile] 最近的一支等船部隊有多遠；沒有人在等就回一個很大的數。 */
     private fun nearestWaitingDistance(tile: Int): Int {
         var best = Int.MAX_VALUE / 2
-        for (unit in session.units) {
-            if (unit.nationId != nationId || !unit.isAlive || unit.isLoaded) continue
-            if (unit.kind.domain != Domain.LAND || unit.kind.isSupplier) continue
-            val goal = chooseGoal(unit)
-            if (goal < 0 || !wantsFerry(unit, goal)) continue
-            val d = session.map.distance(tile, unit.tile)
+        for (other in waitingTiles) {
+            val d = session.map.distance(tile, other)
             if (d < best) best = d
         }
         return best
     }
 
     private fun needsAnotherTransport(): Boolean {
-        var waiting = 0
-        var ships = 0
-        for (unit in session.units) {
-            if (unit.nationId != nationId || !unit.isAlive) continue
-            if (unit.kind.isTransport) {
-                ships++
-                continue
-            }
-            if (unit.isLoaded || unit.kind.domain != Domain.LAND || unit.kind.isSupplier) continue
-            val goal = chooseGoal(unit)
-            if (goal >= 0 && wantsFerry(unit, goal)) waiting++
-        }
+        val waiting = waitingTiles.size
+        val ships = session.units.count { it.nationId == nationId && it.isAlive && it.kind.isTransport }
         if (waiting == 0 || ships >= MAX_TRANSPORTS) return false
         // 一艘船載三支：等船的人多到現有的船兩趟也載不完，才再造一艘。
         return waiting > ships * UnitKind.TRANSPORT_SHIP.capacity * 2
@@ -760,6 +796,17 @@ class AiPlayer(private val session: Session, private val nationId: Int) {
          * 現在兩百一十座城一回合十二支，小國仍然是兩三支。
          */
         fun turtleBuildCap(cities: Int): Int = TURTLE_BASE_BUILDS + cities.coerceAtLeast(0) / TURTLE_CITIES_PER_BUILD
+
+        /**
+         * 固守性格的國家最多養多少部隊：城市數的一倍半（至少六支）。
+         * 灰燼軍團兩百多座城大約三百多支；它開局就有快兩百支，所以前面幾十回合照樣補兵。
+         */
+        fun turtleArmyCap(cities: Int): Int = maxOf(TURTLE_MIN_ARMY, cities * 3 / 2)
+
+        const val TURTLE_MIN_ARMY = 6
+
+        /** 見 [spendRoute]。 */
+        const val MAX_ROUTES_PER_TURN = 24
 
         const val TURTLE_BASE_BUILDS = 2
         const val TURTLE_CITIES_PER_BUILD = 20

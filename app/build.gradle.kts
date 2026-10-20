@@ -55,6 +55,10 @@ tasks.withType<Test>().configureEach {
     )) {
         System.getProperty(key)?.let { systemProperty(key, it) }
     }
+    // 模擬的進度要印在 log 上，不然跑一個小時都看不出它是卡住了還是只是慢。
+    if (System.getProperty("mapconquer.simulate") == "true") {
+        testLogging.showStandardStreams = true
+    }
 }
 
 dependencies {

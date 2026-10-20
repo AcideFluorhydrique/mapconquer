@@ -104,12 +104,17 @@ class ConquestSmokeTest {
         val cities = map.provinces.count { it.hasCity && session.provinceOwner[it.id] == legion.id }
         val cap = AiPlayer.turtleBuildCap(cities)
         assertTrue("佔了大半個世界的勢力，一回合補得比小國多：$cap", cap >= 10)
+        assertTrue("兵力也有上限，而且高於開局兵力", AiPlayer.turtleArmyCap(cities) > before)
         assertInvariants(session, "turn 0")
 
+        val began = System.currentTimeMillis()
         repeat(3) {
             playOneTurn(session)
             assertInvariants(session, "turn ${session.turn}")
         }
+        // 防的是演算法退化：AI 曾經在灰燼軍團身上做「部隊數 × 城市數 × 部隊數」的計算，
+        // 一局 200 回合的模擬跑了三個小時。三回合遠遠用不到一分鐘。
+        assertTrue("三回合花了 ${(System.currentTimeMillis() - began) / 1000} 秒", System.currentTimeMillis() - began < 60_000)
         assertEquals("玩家什麼都沒做，三回合內不該分出勝負", SessionStatus.PLAYING, session.status)
         // 有上限：三回合最多多 3 × cap 支（被打掉的只會讓它更少）。
         assertTrue(

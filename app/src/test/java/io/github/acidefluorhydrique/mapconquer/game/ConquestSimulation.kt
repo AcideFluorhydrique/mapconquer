@@ -44,8 +44,7 @@ class ConquestSimulation {
         val outDir = File("build/reports/simulation").apply { mkdirs() }
 
         for (id in scenarios) {
-            val report = simulate(id, turns, seeds)
-            File(outDir, "$id.md").writeText(report)
+            val report = simulate(id, turns, seeds, File(outDir, "$id.md"))
             println(report)
         }
     }
@@ -87,12 +86,16 @@ class ConquestSimulation {
         return Snapshot(turn, provinces, cities, units, alive)
     }
 
-    private fun simulate(id: String, turns: Int, seeds: Int): String {
+    /**
+     * 跑完每一局就先把報告寫出去：一局很長，萬一在 CI 上超時，已經跑完的那幾局不會白費。
+     */
+    private fun simulate(id: String, turns: Int, seeds: Int, out: File): String {
         val scenario = TestAssets.scenario(id)
         val map = TestAssets.cachedMap(scenario.mapId)
         val checkpoints = (listOf(1, 5, 10) + (25..turns step 25) + listOf(turns)).filter { it <= turns }.toSortedSet()
 
-        val runs = (1..seeds).map { seed ->
+        val runs = ArrayList<Run>()
+        for (seed in 1..seeds) {
             // 玩家那一國也交給 AI；選誰都一樣，選第一個可選的。
             val session = Session(map, scenario, Difficulty.OFFICER, scenario.playable.first(), seed * 7919L)
             val start = session.nations.associate { it.code to session.provincesOf(it.id) }
@@ -113,14 +116,26 @@ class ConquestSimulation {
                 for (nation in session.nations) {
                     if (nation.eliminated && nation.code !in eliminated) eliminated[nation.code] = turn
                 }
-                if (turn in checkpoints) snapshots.add(snapshot(session, turn))
+                if (turn in checkpoints) {
+                    snapshots.add(snapshot(session, turn))
+                    // 進度印在 CI 的 log 上：跑得慢的時候看得出是卡住了還是只是慢。
+                    println(
+                        "[$id seed $seed] turn $turn, ${(System.currentTimeMillis() - began) / 1000}s, " +
+                            "${session.units.count { it.isAlive }} units, " +
+                            "${session.nations.count { !it.eliminated }} nations left"
+                    )
+                    System.out.flush()
+                }
             }
             val elapsed = System.currentTimeMillis() - began
-            Run(
-                seed.toLong(), snapshots, eliminated, start,
-                session.nations.associate { it.code to session.provincesOf(it.id) },
-                elapsed / turns.coerceAtLeast(1)
+            runs.add(
+                Run(
+                    seed.toLong(), snapshots, eliminated, start,
+                    session.nations.associate { it.code to session.provincesOf(it.id) },
+                    elapsed / turns.coerceAtLeast(1)
+                )
             )
+            out.writeText(render(id, scenario, map.provinces.size, turns, runs))
         }
         return render(id, scenario, map.provinces.size, turns, runs)
     }
