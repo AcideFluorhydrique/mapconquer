@@ -1786,4 +1786,84 @@ class SessionTest {
         repeat(3) { diplomacy.tickTruces() }
         assertTrue(diplomacy.declareWar(0, 1))
     }
+
+    // ------------------------------------------------------------------
+    // AI 性格：侵略性格會攻城，穩健的只圍不打
+    // ------------------------------------------------------------------
+
+    /**
+     * B 城（6,1）裡一支步兵，A 的四支步兵圍在它的西、西北、東北、東四格。
+     * 兩國都沒有錢，只看部隊本身怎麼決定，不會冒出新造的兵。
+     */
+    private fun siege(profile: AiProfile): Session {
+        val scenario = Scenario(
+            id = "siege", mapId = "test", mode = GameMode.CAMPAIGN,
+            nameKey = "n", descKey = "d", order = 1, turnLimit = 50,
+            startYear = 2026, startMonth = 1,
+            nations = listOf(
+                ScenarioNation("AAA", "nation_aaa", "#FF0000", 0, profile, 0, IntArray(6)),
+                ScenarioNation("BBB", "nation_bbb", "#0000FF", 1, AiProfile.BALANCED, 0, IntArray(6))
+            ),
+            relations = listOf(Triple("AAA", "BBB", Relation.WAR)),
+            ownership = mapOf("AAA" to intArrayOf(0), "BBB" to intArrayOf(1)),
+            startingUnits = listOf(
+                ScenarioUnit("BBB", 6, 1, "INFANTRY", 1, ""),
+                ScenarioUnit("AAA", 5, 1, "INFANTRY", 1, ""),
+                ScenarioUnit("AAA", 6, 0, "INFANTRY", 1, ""),
+                ScenarioUnit("AAA", 7, 0, "INFANTRY", 1, ""),
+                ScenarioUnit("AAA", 7, 1, "INFANTRY", 1, "")
+            ),
+            playable = listOf("BBB"),
+            objectives = emptyList(),
+            starTurns = intArrayOf(10, 20)
+        )
+        return Session(testMap(), scenario, Difficulty.OFFICER, "BBB", 99L)
+    }
+
+    private fun playAiTurn(s: Session, code: String) {
+        val id = s.nationByCode(code)!!.id
+        while (s.activeNationId != id) s.advanceToNextNation()
+        val ai = io.github.acidefluorhydrique.mapconquer.ai.AiPlayer(s, id)
+        var steps = 0
+        while (ai.step() && steps < 2000) steps++
+    }
+
+    @Test
+    fun `an aggressive ai storms a garrisoned city that a balanced one only besieges`() {
+        for (profile in listOf(AiProfile.BALANCED, AiProfile.AGGRESSIVE)) {
+            val s = siege(profile)
+            val city = s.map.index(6, 1)
+            val pid = s.cityProvinceAt(city)
+            val garrison = s.unitAt(city, Domain.LAND)!!
+            val attackers = s.unitsOf(s.nationByCode("AAA")!!.id)
+            assertTrue("四支步兵都貼著城", attackers.all { s.map.distance(it.tile, city) == 1 })
+            val wallsBefore = s.cityHp[pid]
+            val hpBefore = garrison.hp
+
+            playAiTurn(s, "AAA")
+
+            if (profile == AiProfile.BALANCED) {
+                // 城裡的守軍只吃一半傷害、反擊卻是全額：步兵打城裡的步兵，單擊算下來一定虧。
+                assertEquals("穩健性格不拿步兵換城：守軍沒被打", hpBefore, garrison.hp)
+                assertEquals("城防也沒動", wallsBefore, s.cityHp[pid])
+            } else {
+                assertTrue("侵略性格把城防算進去，願意攻城", s.cityHp[pid] < wallsBefore)
+                assertTrue("守軍也挨了打", !garrison.isAlive || garrison.hp < hpBefore)
+            }
+        }
+    }
+
+    @Test
+    fun `the force a city needs grows with its walls and garrison, within bounds`() {
+        val ai = io.github.acidefluorhydrique.mapconquer.ai.AiPlayer
+        // 華沙級的城（城防 450）、一支步兵守著：大約七支。
+        assertEquals(7, ai.needFor(80, 450))
+        assertTrue("城防越高要越多兵", ai.needFor(0, 600) > ai.needFor(0, 300))
+        assertTrue("守軍越多要越多兵", ai.needFor(1200, 300) > ai.needFor(80, 300))
+        assertEquals("再小的城也不派一支去送", ai.MIN_ASSAULT, ai.needFor(0, 0))
+        assertEquals("再大的城也有上限，免得全軍擠在一座城前", ai.MAX_ASSAULT, ai.needFor(10_000, 600))
+        // 法定數是 N* 的六成，無條件進位。
+        assertEquals(5, ai.quorumOf(7))
+        assertEquals(2, ai.quorumOf(2))
+    }
 }

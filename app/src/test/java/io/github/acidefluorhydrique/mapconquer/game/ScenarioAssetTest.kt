@@ -294,6 +294,27 @@ class ScenarioAssetTest {
      * 1980 年的征服：殘存各國聯手對抗一個佔了大半個世界、玩家不能選的勢力。
      * 不是北約對華約 —— 那樣地圖上大半是不參戰的中立國。
      */
+    /**
+     * 打閃電戰的國家是逐年指定的（tools/places.py 的 CONQUEST_AGGRESSORS），
+     * 國家表的預設性格裡沒有侵略。這裡把每一年的名單釘住，改名單要連這裡一起改。
+     */
+    @Test
+    fun `only the nations chosen for each year fight a blitzkrieg`() {
+        val expected = mapOf(
+            "conquest_1939" to setOf("DEU", "JPN"),
+            "conquest_1943" to emptySet(),
+            "conquest_1950" to emptySet(),
+            "conquest_1980" to setOf("LGN")
+        )
+        for ((id, codes) in expected) {
+            val aggressive = TestAssets.scenario(id).nations
+                .filter { it.aiProfile == AiProfile.AGGRESSIVE }
+                .map { it.code }
+                .toSet()
+            assertEquals("$id 的侵略性格國家", codes, aggressive)
+        }
+    }
+
     @Test
     fun `1980 is the survivors against the legion, and the legion is not playable`() {
         val scenario = TestAssets.scenario("conquest_1980")

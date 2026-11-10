@@ -627,7 +627,7 @@ def write_conquest(built, scenario_id, name_key, desc_key, order, merge,
                    start_year, turtle=None, blocs=None, overrides=None,
                    renames=None, war_turns=None, start_month=None, turn_limit=0,
                    extra_units=(), tech=None, playable=None, funds_bonus=None,
-                   formation_bonus=None):
+                   formation_bonus=None, aggressors=None):
     """把 places 的國家分佈展開成一份征服劇本。"""
     owners = {}
     for pid, (key, _tier, nation, _tile) in enumerate(built.provinces):
@@ -676,6 +676,9 @@ def write_conquest(built, scenario_id, name_key, desc_key, order, merge,
         # 意願差很多，所以由劇本指定，而不是寫死在國家表裡。
         if turtle and code in turtle:
             profile = "TURTLE"
+        # 打閃電戰的國家逐年指定（places.CONQUEST_AGGRESSORS）。
+        if aggressors and code in aggressors:
+            profile = "AGGRESSIVE"
         funds = nation_funds[code]
         capital = max(owners[code], key=lambda pid: built.provinces[pid][1])
         lines.append("%s|%s|%s|%d|%s|%d|%s|%s|%s|%d" % (
@@ -1080,6 +1083,7 @@ def main():
                          war_turns=places.WW2_WAR_TURNS, start_month=9,
                          turn_limit=places.CONQUEST_TURN_LIMIT,
                          extra_units=places.CONQUEST_EXTRA_UNITS.get(1939, ()),
+                         aggressors=places.CONQUEST_AGGRESSORS[1939],
                          funds_bonus=places.WW2_1939_FUNDS_BONUS))
     print(write_conquest(world, "conquest_1943", "scn_conquest_1943",
                          "scn_conquest_1943_desc", 20, places.WW2_MERGE, 1943,
@@ -1087,7 +1091,8 @@ def main():
                          overrides=places.WW2_1943_PROVINCE_OWNERS,
                          renames=places.WW2_RENAMES, start_month=3,
                          turn_limit=places.CONQUEST_TURN_LIMIT,
-                         extra_units=places.CONQUEST_EXTRA_UNITS.get(1943, ())))
+                         extra_units=places.CONQUEST_EXTRA_UNITS.get(1943, ()),
+                         aggressors=places.CONQUEST_AGGRESSORS[1943]))
     print(write_conquest(world, "conquest_1950", "scn_conquest_1950",
                          "scn_conquest_1950_desc", 30, places.COLD_WAR_1950_MERGE, 1950,
                          turtle=unaligned(places.COLD_WAR_1950_BLOCS),
@@ -1095,7 +1100,8 @@ def main():
                          overrides=places.COLD_WAR_1950_PROVINCE_OWNERS,
                          renames=places.COLD_WAR_RENAMES, start_month=1,
                          turn_limit=places.CONQUEST_TURN_LIMIT,
-                         extra_units=places.CONQUEST_EXTRA_UNITS.get(1950, ())))
+                         extra_units=places.CONQUEST_EXTRA_UNITS.get(1950, ()),
+                         aggressors=places.CONQUEST_AGGRESSORS[1950]))
     print(write_conquest(world, "conquest_1980", "scn_conquest_1980",
                          "scn_conquest_1980_desc", 40, None, 1980,
                          blocs=places.CONQUEST_1980_BLOCS,
@@ -1103,6 +1109,7 @@ def main():
                          renames=places.COLD_WAR_RENAMES, start_month=1,
                          turn_limit=places.CONQUEST_TURN_LIMIT,
                          extra_units=places.CONQUEST_EXTRA_UNITS.get(1980, ()),
+                         aggressors=places.CONQUEST_AGGRESSORS[1980],
                          tech=places.CONQUEST_1980_TECH,
                          playable=set(places.CONQUEST_1980_REMNANTS),
                          formation_bonus={code: 1 for code in places.CONQUEST_1980_REMNANTS}))

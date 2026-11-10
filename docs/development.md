@@ -28,7 +28,7 @@ decisions behind the code. For what the game is and how to play it, see the
 | Research | Six branches, five levels each, +8% per level. |
 | Upkeep | Every unit costs money each turn. Big formations are cheaper than the same units apart, and a unit in supply costs a third of what a cut-off one does. |
 | Diplomacy | Members of a bloc are allies. Blocs go to war on their historical turn; you can declare war on a neutral, which makes it an enemy you must also defeat. Truce cooldowns stop the AI from flip-flopping. |
-| AI | Resource-based difficulty only — the AI plays by exactly the same rules you do. It runs as a resumable state machine so a hundred nations can move without freezing a frame. |
+| AI | Resource-based difficulty only — the AI plays by exactly the same rules you do. It runs as a resumable state machine so a hundred nations can move without freezing a frame. Nations a scenario marks aggressive (in conquest: Germany and Japan in 1939, the Legion in 1980) mass on a few target cities and attack together once enough troops have arrived; everyone else trades blow for blow only when each blow pays. |
 
 ## Building
 

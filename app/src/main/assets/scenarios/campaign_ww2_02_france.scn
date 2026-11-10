@@ -15,7 +15,7 @@ startYear 1940
 starTurns 16,22
 
 [nations]
-DEU|nation_deu|#6E7A86|29|AGGRESSIVE|1800|3,3,2,1,0,2|@reich|AXIS|1
+DEU|nation_deu|#6E7A86|29|BALANCED|1800|3,3,2,1,0,2|@reich|AXIS|1
 FRA|nation_fra|#4C5C9E|0|TURTLE|1400|2,1,2,0,0,1|🇫🇷|ALLIES|1
 GBR|nation_gbr|#8C4C4C|41|BALANCED|1000|1,1,1,0,0,1|🇬🇧|ALLIES|1
 BEL|nation_bel|#9E8C4C|21|TURTLE|500|1,1,1,0,0,1|🇧🇪|ALLIES|1

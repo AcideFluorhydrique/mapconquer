@@ -11,6 +11,7 @@ import io.github.acidefluorhydrique.mapconquer.game.Session
 import io.github.acidefluorhydrique.mapconquer.game.UnitMoveRules
 import io.github.acidefluorhydrique.mapconquer.units.ArmyUnit
 import io.github.acidefluorhydrique.mapconquer.units.Combat
+import io.github.acidefluorhydrique.mapconquer.units.CombatContext
 import io.github.acidefluorhydrique.mapconquer.units.Domain
 import io.github.acidefluorhydrique.mapconquer.units.TechBranch
 import io.github.acidefluorhydrique.mapconquer.units.UnitKind
@@ -52,6 +53,12 @@ class AiPlayer(private val session: Session, private val nationId: Int) {
 
     private val nation get() = session.nations[nationId]
     private val profile get() = nation.aiProfile
+
+    /**
+     * 侵略性格：集中兵力、成群攻城（見 [focus]、[coupling]、[assaultValue]）。
+     * 其他性格完全不走這些路徑 —— 哪些國家要打閃電戰，是劇本逐國決定的。
+     */
+    private val aggressive: Boolean get() = profile == AiProfile.AGGRESSIVE
 
     val isDone: Boolean get() = phase == Phase.DONE
 
@@ -316,6 +323,11 @@ class AiPlayer(private val session: Session, private val nationId: Int) {
 
         val goal = chooseGoal(unit)
         goalCache[unit.id] = goal
+        if (aggressive && goal >= 0) {
+            // 報到：後面選目標的同伴看得到這支已經往哪裡去了（見 [coupling]）。
+            committed[goal] = (committed[goal] ?: 0) + 1
+            memory[unit.id] = goal
+        }
         if (goal >= 0) {
             if (wantsFerry(unit, goal)) {
                 // 遠渡重洋只能搭船：旁邊有船就上，附近有船就走過去等。都沒有的話往海邊走、
@@ -372,11 +384,14 @@ class AiPlayer(private val session: Session, private val nationId: Int) {
             // 價值換算成錢：打掉一支貴的部隊比打掉一支便宜的值錢，
             // 而自己的損失也用同一把尺量，AI 才不會拿戰列艦去換運輸船。
             // 一個四編制的部隊值四支的錢，也要夠多的傷害才打得死。
-            var score = worth(defender, dealt) - worth(unit, taken)
+            // 侵略性格把自己的損失看輕一半：它願意拿兵去換城。
+            val lossWeight = if (aggressive) AGGRESSIVE_LOSS_WEIGHT else 1f
+            var score = worth(defender, dealt) - worth(unit, taken) * lossWeight
             if (dealt >= defender.hp) score += defender.kind.cost * defender.size * 0.5f
-            if (taken >= unit.hp) score -= unit.kind.cost * unit.size * 0.8f
+            if (taken >= unit.hp) score -= unit.kind.cost * unit.size * 0.8f * lossWeight
             // 守著城市的敵人優先清掉，那是勝利條件所在。
             if (session.map.provinceAt(defender.tile)?.capitalTile == defender.tile) score *= 1.3f
+            if (aggressive) score += assaultValue(ctx, defender)
 
             if (score > bestScore) {
                 bestScore = score
@@ -438,6 +453,7 @@ class AiPlayer(private val session: Session, private val nationId: Int) {
             if (owner < 0) score += 25f
             // 隔著海的目標要渡海才到得了：同一塊陸地上還有事做就先做。
             if (needsCrossing(unit, province.capitalTile)) score -= OVERSEAS_GOAL_PENALTY
+            if (aggressive) score += coupling(unit, province.capitalTile)
             if (score > bestScore) {
                 bestScore = score
                 best = province.capitalTile
@@ -464,6 +480,129 @@ class AiPlayer(private val session: Session, private val nationId: Int) {
             }
         }
         return best
+    }
+
+    // ------------------------------------------------------------------
+    // 集結（只有侵略性格）
+    // ------------------------------------------------------------------
+    //
+    // 貪心的部隊各自挑「離我近、等級高」的城，兵力就平均攤在每一座城前面，哪一座都打不下。
+    // 閃電戰要的是同步：大家選同一個目標，而且同時動手。這裡把它寫成兩件事。
+    //
+    // 1. 打哪裡 —— 共識動態。每支部隊的目標是一個狀態 x_i，選目標時加上一個耦合項：
+    //      x_i(t+1) = argmax_g [ 自己的分數_i(g) + 耦合(g, 已經選了 g 的同伴數) ]
+    //    同一回合裡部隊一支一支依序選，等於 Gauss–Seidel 迭代；上一回合的目標留在 [memory]，
+    //    給一點慣性當阻尼，免得今天打 A、明天打 B。耦合不是線性的：在湊齊「打下這座城要的
+    //    兵力」N* 之前是吸引，湊齊之後變成排斥，多出來的兵自己去找下一座城。耦合太強會全軍
+    //    擠去同一座城、側翼全空；太弱就退回各打各的。
+    //
+    // 2. 何時打 —— 法定數。單獨一擊算下來常常不划算（城裡的守軍只吃一半傷害、反擊卻是全額），
+    //    但主攻城市周圍湊到 N* 的 [QUORUM_PERCENT] 之後，就不再要求每一擊都划算。
+    //    先到的部隊停在城外等，人到齊了一起打。
+
+    /**
+     * 這一回合的主攻城市（城市格 → 打下它估計要幾支部隊 N*）。一回合算一次。
+     *
+     * 一座城值不值得主攻，看三件事：城的等級、手邊夠不夠兵（N* 越小越好打），以及打下來
+     * 能不能讓一個國家投降 —— 城越少的國家越值得先打，滅掉一國就少一條戰線。
+     */
+    private val focus: Map<Int, Int> by lazy { if (aggressive) chooseFocus() else emptyMap() }
+
+    /** 這一回合已經選了某個目標的部隊數（[coupling] 的耦合對象）。 */
+    private val committed = HashMap<Int, Int>()
+
+    /** 跨回合記住的目標（部隊 id → 目標格）。 */
+    private val memory: HashMap<Int, Int> by lazy { goalMemoryOf(session, nationId) }
+
+    private fun chooseFocus(): Map<Int, Int> {
+        val attackers = session.units.filter {
+            it.nationId == nationId && it.isAlive && !it.isLoaded &&
+                it.kind.domain == Domain.LAND && it.kind.canAttack && !it.kind.isSupplier
+        }
+        if (attackers.isEmpty()) return emptyMap()
+        val defenders = session.units.filter {
+            it.isAlive && it.kind.domain == Domain.LAND && session.isHostile(it.nationId, nationId)
+        }
+        val citiesOf = HashMap<Int, Int>()
+        for (province in session.map.provinces) {
+            val owner = session.provinceOwner[province.id]
+            if (owner >= 0 && province.hasCity) citiesOf[owner] = (citiesOf[owner] ?: 0) + 1
+        }
+
+        val tiles = ArrayList<Int>()
+        val needs = ArrayList<Int>()
+        val scores = ArrayList<Float>()
+        for (province in session.map.provinces) {
+            if (!province.hasCity) continue
+            val owner = session.provinceOwner[province.id]
+            if (owner < 0 || !session.isHostile(owner, nationId)) continue
+            val tile = province.capitalTile
+            val land = landmassOf(tile)
+            var near = 0
+            var closest = Int.MAX_VALUE
+            for (unit in attackers) {
+                if (landmassOf(unit.tile) != land) continue
+                val d = session.map.distance(unit.tile, tile)
+                if (d < closest) closest = d
+                if (d <= FOCUS_REACH) near++
+            }
+            if (near == 0) continue
+            var garrison = 0
+            for (other in defenders) {
+                if (session.map.distance(other.tile, tile) <= 1) garrison += other.hp
+            }
+            val need = needFor(garrison, session.cityHp[province.id])
+            val value = province.cityTier * 30f + 20f + KNOCKOUT_VALUE / (citiesOf[owner] ?: 1)
+            // near / (near + need)：兵越多越好打，但不會無限上升；N* 大的城要更多兵才追得上。
+            val score = value * near / (near + need) - closest * 1.5f
+            tiles.add(tile)
+            needs.add(need)
+            scores.add(score)
+        }
+        val count = 1 + attackers.size / UNITS_PER_FOCUS
+        val order = scores.indices.sortedByDescending { scores[it] }.take(count)
+        return order.associate { tiles[it] to needs[it] }
+    }
+
+    /**
+     * 選目標時的耦合項：主攻城市在湊齊 N* 之前加分，越缺人加得越多；湊齊之後扣分。
+     * 上一回合選的目標再加 [GOAL_INERTIA]。
+     */
+    private fun coupling(unit: ArmyUnit, tile: Int): Float {
+        var bonus = 0f
+        val need = focus[tile]
+        if (need != null) {
+            val already = committed[tile] ?: 0
+            bonus += if (already < need) {
+                FOCUS_BASE + FOCUS_PULL * (need - already) / need
+            } else {
+                -OVERCOMMIT
+            }
+        }
+        if (memory[unit.id] == tile) bonus += GOAL_INERTIA
+        return bonus
+    }
+
+    /**
+     * 侵略性格攻城時多算的價值：這一擊順便打掉的城防；主攻城市湊到法定數之後，
+     * 再加一份「成群動手」的加分，讓不划算的單擊也打得出去。
+     */
+    private fun assaultValue(ctx: CombatContext, defender: ArmyUnit): Float {
+        val pid = session.cityProvinceAt(defender.tile)
+        if (pid < 0) return 0f
+        var value = Combat.previewCityDamage(ctx).coerceAtMost(session.cityHp[pid]) * WALL_POINT_VALUE
+        val need = focus[defender.tile] ?: return value
+        if (assembledAround(defender.tile) >= quorumOf(need)) {
+            value += defender.kind.cost * defender.size * ASSAULT_BONUS
+        }
+        return value
+    }
+
+    /** 現在站在 [tile] 兩格以內、能打的己方陸軍有幾支。 */
+    private fun assembledAround(tile: Int): Int = session.units.count {
+        it.nationId == nationId && it.isAlive && !it.isLoaded &&
+            it.kind.domain == Domain.LAND && it.kind.canAttack &&
+            session.map.distance(it.tile, tile) <= ASSEMBLY_RANGE
     }
 
     /** 補給車跟著自己人跑：找補給最低的友軍，站到它旁邊。 */
@@ -838,6 +977,68 @@ class AiPlayer(private val session: Session, private val nationId: Int) {
 
         /** 隔海目標的扣分：大約等於十格的距離，本地的目標優先。 */
         const val OVERSEAS_GOAL_PENALTY = 25f
+
+        // ---- 集結（侵略性格），見 AiPlayer 的「集結」一節 ----
+
+        /** 侵略性格看待自己損失的權重。 */
+        const val AGGRESSIVE_LOSS_WEIGHT = 0.5f
+
+        /** 打掉一點城防值多少（跟拆空城的權重一樣）。 */
+        const val WALL_POINT_VALUE = 0.4f
+
+        /** 湊到法定數之後，每一擊額外加的分數：守方造價 × 編制 × 這個比例。 */
+        const val ASSAULT_BONUS = 0.3f
+
+        /** 法定數：主攻城市周圍要有 N* 的這個百分比才一起動手。 */
+        const val QUORUM_PERCENT = 60
+
+        /** 「在城外集結」的範圍。 */
+        const val ASSEMBLY_RANGE = 2
+
+        /** 距離這麼近的部隊才算「手邊的兵」。 */
+        const val FOCUS_REACH = 8
+
+        /** 每這麼多支能打的部隊，多一座主攻城市。 */
+        const val UNITS_PER_FOCUS = 15
+
+        /** 主攻城市在湊齊之前的吸引力：固定的 [FOCUS_BASE]，加上依缺額遞減的 [FOCUS_PULL]。 */
+        const val FOCUS_BASE = 30f
+        const val FOCUS_PULL = 40f
+
+        /** 湊齊之後再選它的扣分。 */
+        const val OVERCOMMIT = 20f
+
+        /** 繼續打上一回合選的目標的加分（阻尼）。 */
+        const val GOAL_INERTIA = 15f
+
+        /** 「打下它就滅掉一國」的價值，除以那一國剩下的城數。 */
+        const val KNOCKOUT_VALUE = 60f
+
+        /** N* 的估計：每支部隊每回合大約打掉這麼多守軍 HP 或城防，預計這麼多回合打下來。 */
+        const val ASSAULT_DAMAGE_PER_UNIT = 22
+        const val ASSAULT_TURNS = 3
+        const val MIN_ASSAULT = 2
+        const val MAX_ASSAULT = 12
+
+        /**
+         * 打下一座城估計要幾支部隊（N*）。守軍與城防在交火裡是同時被削的，
+         * 所以取兩者中大的那個，而不是相加。
+         */
+        fun needFor(garrisonHp: Int, cityHp: Int): Int =
+            (maxOf(garrisonHp, cityHp) / ASSAULT_DAMAGE_PER_UNIT / ASSAULT_TURNS + 1)
+                .coerceIn(MIN_ASSAULT, MAX_ASSAULT)
+
+        fun quorumOf(need: Int): Int = (need * QUORUM_PERCENT + 99) / 100
+
+        /**
+         * 跨回合的目標記憶。AiPlayer 每回合重建，記憶只好掛在 Session 上；用弱參照，
+         * 一局結束就跟著回收。不存進存檔：讀檔後第一回合重新選一次，差別只是少一回合的慣性。
+         */
+        private val goalMemory = java.util.WeakHashMap<Session, HashMap<Int, HashMap<Int, Int>>>()
+
+        @Synchronized
+        private fun goalMemoryOf(session: Session, nationId: Int): HashMap<Int, Int> =
+            goalMemory.getOrPut(session) { HashMap() }.getOrPut(nationId) { HashMap() }
 
         private val landmassCache = java.util.WeakHashMap<WorldMap, IntArray>()
 

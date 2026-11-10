@@ -15,7 +15,7 @@ startYear 1985
 starTurns 30,33
 
 [nations]
-DEU|nation_frg|#6E7A86|21|AGGRESSIVE|1600|3,2,3,3,0,3|🇩🇪|NATO|1
+DEU|nation_frg|#6E7A86|21|BALANCED|1600|3,2,3,3,0,3|🇩🇪|NATO|1
 FRA|nation_fra|#4C5C9E|5|BALANCED|1200|1,1,1,0,0,1|🇫🇷|NATO|1
 GBR|nation_gbr|#8C4C4C|0|BALANCED|1200|1,1,1,0,0,1|🇬🇧|NATO|1
 NLD|nation_nld|#C4813C|9|TURTLE|500|1,1,1,0,0,1|🇳🇱|NATO|1

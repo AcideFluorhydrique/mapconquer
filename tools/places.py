@@ -325,7 +325,7 @@ NATIONS = {
     "PRT": ("Portugal",       "葡萄牙",     "葡萄牙",     "#4C8C7A", "TURTLE",       300),
     "BEL": ("Belgium",        "比利時",     "比利时",     "#9E8C4C", "TURTLE",       320),
     "NLD": ("Netherlands",    "尼德蘭",     "尼德兰",     "#C4813C", "TURTLE",       380),
-    "DEU": ("Germany",        "德意志",     "德意志",     "#6E7A86", "AGGRESSIVE",  1150),
+    "DEU": ("Germany",        "德意志",     "德意志",     "#6E7A86", "BALANCED",    1150),
     "AUT": ("Austria",        "奧地利",     "奥地利",     "#A0A6AC", "TURTLE",       340),
     "CHE": ("Switzerland",    "瑞士",       "瑞士",       "#B45C5C", "TURTLE",       360),
     "ITA": ("Italy",          "義大利",     "意大利",     "#5C9E6E", "OPPORTUNIST",  700),
@@ -344,15 +344,15 @@ NATIONS = {
     "ISL": ("Iceland",        "冰島",       "冰岛",       "#93A8B4", "TURTLE",       150),
     "UKR": ("Ukraine",        "烏克蘭",     "乌克兰",     "#C4A83C", "BALANCED",     620),
     "BLR": ("Belarus",        "白俄羅斯",   "白俄罗斯",   "#8C9A6E", "TURTLE",       280),
-    "RUS": ("Russia",         "俄羅斯",     "俄罗斯",     "#8C6E4C", "AGGRESSIVE",  1500),
+    "RUS": ("Russia",         "俄羅斯",     "俄罗斯",     "#8C6E4C", "BALANCED",    1500),
     "KAZ": ("Kazakhstan",     "哈薩克",     "哈萨克",     "#4C9E93", "BALANCED",     440),
     "UZB": ("Uzbekistan",     "烏茲別克",   "乌兹别克",   "#7AA88C", "TURTLE",       260),
     "TKM": ("Turkmenistan",   "土庫曼",     "土库曼",     "#A8956E", "TURTLE",       220),
     "AZE": ("Azerbaijan",     "亞塞拜然",   "阿塞拜疆",   "#6E9E4C", "TURTLE",       260),
     "GEO": ("Georgia",        "喬治亞",     "格鲁吉亚",   "#9EA8B4", "TURTLE",       200),
     "MNG": ("Mongolia",       "蒙古",       "蒙古",       "#B4A05C", "TURTLE",       240),
-    "TUR": ("Turkey",         "土耳其",     "土耳其",     "#A84C4C", "AGGRESSIVE",   740),
-    "IRN": ("Iran",           "伊朗",       "伊朗",       "#4C8C6E", "AGGRESSIVE",   700),
+    "TUR": ("Turkey",         "土耳其",     "土耳其",     "#A84C4C", "BALANCED",     740),
+    "IRN": ("Iran",           "伊朗",       "伊朗",       "#4C8C6E", "BALANCED",     700),
     "IRQ": ("Iraq",           "伊拉克",     "伊拉克",     "#8C8C4C", "OPPORTUNIST",  420),
     "SYR": ("Syria",          "敘利亞",     "叙利亚",     "#7A8C5C", "TURTLE",       260),
     "ISR": ("Israel",         "以色列",     "以色列",     "#5C86B4", "TURTLE",       420),
@@ -387,14 +387,14 @@ NATIONS = {
     "MOZ": ("Mozambique",     "莫三比克",   "莫桑比克",   "#7A9E6E", "TURTLE",       220),
     "MDG": ("Madagascar",     "馬達加斯加", "马达加斯加", "#8C6E9E", "TURTLE",       200),
     "IND": ("India",          "印度",       "印度",       "#C4864C", "BALANCED",    1150),
-    "PAK": ("Pakistan",       "巴基斯坦",   "巴基斯坦",   "#4C8C5C", "AGGRESSIVE",   560),
+    "PAK": ("Pakistan",       "巴基斯坦",   "巴基斯坦",   "#4C8C5C", "BALANCED",     560),
     "BGD": ("Bangladesh",     "孟加拉",     "孟加拉",     "#5C9E7A", "TURTLE",       320),
     "LKA": ("Sri Lanka",      "斯里蘭卡",   "斯里兰卡",   "#B4844C", "TURTLE",       220),
     "NPL": ("Nepal",          "尼泊爾",     "尼泊尔",     "#A85C5C", "TURTLE",       180),
     "CHN": ("China",          "中國",       "中国",       "#B4454C", "BALANCED",    1700),
     "TWN": ("Taiwan",         "臺灣",       "台湾",       "#4C86B4", "TURTLE",       520),
     "KOR": ("Korea",          "韓國",       "韩国",       "#5C9EB4", "TURTLE",       620),
-    "PRK": ("North Korea",    "北韓",       "朝鲜",       "#8C5C6E", "AGGRESSIVE",   360),
+    "PRK": ("North Korea",    "北韓",       "朝鲜",       "#8C5C6E", "BALANCED",     360),
     "JPN": ("Japan",          "日本",       "日本",       "#C45C5C", "BALANCED",    1200),
     "MMR": ("Myanmar",        "緬甸",       "缅甸",       "#8C9E4C", "TURTLE",       300),
     "THA": ("Thailand",       "泰國",       "泰国",       "#5C86A8", "BALANCED",     480),
@@ -702,6 +702,19 @@ COLD_WAR_RENAMES = {
 # 又不會讓一局永遠拖下去。
 CONQUEST_TURN_LIMIT = 200
 
+# 征服模式裡打閃電戰的國家（AI 性格 AGGRESSIVE：集中兵力、成群攻城，見 AiPlayer 的「集結」）。
+#
+# 侵略是逐年、逐國的決定，不寫在 NATIONS 的預設性格裡：同一個德國在 1939 年是閃擊波蘭與
+# 法國的一方，到了 1943 年已經轉入守勢。沒列在這裡的國家照 NATIONS（穩健或固守）。
+# 1943 與 1950 刻意留空：等全 AI 模擬看過 1939 的效果再決定。
+CONQUEST_AGGRESSORS = {
+    1939: {"DEU", "JPN"},
+    1943: set(),
+    1950: set(),
+    # 灰燼軍團的存在就是要攻佔世界。
+    1980: {LEGION},
+}
+
 
 # 征服劇本開局時不在自家城市裡的部隊：史實上的艦隊、前線與殘部。
 # (國家, 經度, 緯度, 兵種, 等級)，產生器找最近的空格放（陸軍找陸地、軍艦找海，
@@ -832,7 +845,7 @@ EXTRA_NATIONS = {
     # 只出現在戰區地圖上的小國（世界地圖上沒有它們的城市）。
     # 1980 年征服裡的敵人（見 CONQUEST_1980_REMNANTS 上面的說明）。它要佔領全世界，
     # 性格是侵略。地盤太大，造兵的速度與兵力總數另有上限（遊戲端 AiPlayer.isCapped）。
-    "LGN":       ("The Ashen Legion", "灰燼軍團", "灰烬军团", "#4A4458", "AGGRESSIVE", 3000),
+    "LGN":       ("The Ashen Legion", "灰燼軍團", "灰烬军团", "#4A4458", "BALANCED", 3000),
     "LTU":       ("Lithuania", "立陶宛", "立陶宛", "#8FA85C", "TURTLE", 300),
     "SVK":       ("Slovakia", "斯洛伐克", "斯洛伐克", "#5C6FA8", "TURTLE", 300),
     "LUX":       ("Luxembourg", "盧森堡", "卢森堡", "#5CA8A0", "TURTLE", 250),

@@ -375,6 +375,14 @@ object Combat {
     }
 
     /**
+     * 不改狀態的預測：這一擊順便打掉守方城防多少。守方不在城牆後面時是 0。
+     * AI 評估攻城用：城裡的守軍只吃一半傷害，光看打掉的 HP，攻城永遠不划算。
+     */
+    fun previewCityDamage(ctx: CombatContext): Int =
+        if (!ctx.defenderInCity) 0
+        else hit(ctx, meanRoll(ctx.attacker.kind), ctx.attacker.hp, canRetaliate(ctx)).toCity
+
+    /**
      * 一次交戰：攻方打一擊；守方活著而且能還手，就以挨打後的 HP 全力反擊一擊。
      * 反擊不打折 —— 參考遊戲的反擊跟主動攻擊走同一條公式。
      */
